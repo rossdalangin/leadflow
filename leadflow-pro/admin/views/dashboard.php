@@ -1,0 +1,67 @@
+<?php
+global $wpdb;
+$prefix = $wpdb->prefix . 'leadflow_';
+$total_leads = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads" );
+$active_campaigns = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}campaigns WHERE is_active = 1" );
+$total_emails = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}email_log" );
+$total_opens = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}email_log WHERE opens_count > 0" );
+$open_rate = $total_emails > 0 ? round( ($total_opens / $total_emails) * 100, 1 ) : 0;
+$conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status = 'Qualified'" );
+?>
+<div class="wrap leadflow-dashboard">
+	<h1>LeadFlow Pro Dashboard</h1>
+	<div class="leadflow-kpi-grid">
+		<div class="kpi-card">
+			<h3>Total Leads</h3>
+			<p class="kpi-value"><?php echo esc_html( $total_leads ); ?></p>
+		</div>
+		<div class="kpi-card">
+			<h3>Active Campaigns</h3>
+			<p class="kpi-value"><?php echo esc_html( $active_campaigns ); ?></p>
+		</div>
+		<div class="kpi-card">
+			<h3>Email Open Rate</h3>
+			<p class="kpi-value"><?php echo esc_html( $open_rate ); ?>%</p>
+		</div>
+		<div class="kpi-card">
+			<h3>Conversions</h3>
+			<p class="kpi-value"><?php echo esc_html( $conversions ); ?></p>
+		</div>
+	</div>
+
+	<div class="leadflow-charts-container">
+		<div class="chart-box">
+			<h3>Leads by Status</h3>
+			<canvas id="leadsStatusChart"></canvas>
+		</div>
+		<div class="chart-box">
+			<h3>Outreach Performance</h3>
+			<canvas id="outreachChart"></canvas>
+		</div>
+	</div>
+
+	<div class="leadflow-recent-activity">
+		<h3>Recent Activity</h3>
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th>Activity</th>
+					<th>Lead</th>
+					<th>Time</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Email Opened</td>
+					<td>Acme Corp</td>
+					<td>2 mins ago</td>
+				</tr>
+				<tr>
+					<td>Lead Discovered</td>
+					<td>Global Tech Solutions</td>
+					<td>15 mins ago</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>

@@ -1,0 +1,153 @@
+<?php
+/**
+ * LeadFlow_Core class for initializing the plugin.
+ *
+ * @package LeadFlowPro
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class LeadFlow_Core {
+
+	protected $loader;
+	protected $plugin_name;
+	protected $version;
+
+	public function __construct() {
+		$this->plugin_name = 'leadflow-pro';
+		$this->version     = LEADFLOW_PRO_VERSION;
+		$this->load_dependencies();
+		$this->set_locale();
+		$this->define_admin_hooks();
+		$this->define_public_hooks();
+	}
+
+	private function load_dependencies() {
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-loader.php';
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-security.php';
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-license.php';
+		require_once LEADFLOW_PRO_PATH . 'database/class-leadflow-db.php';
+		require_once LEADFLOW_PRO_PATH . 'api/class-leadflow-rest-api.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/ai/class-leadflow-ai.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/discovery/class-leadflow-discovery.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/crm/class-leadflow-crm.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/scraper/class-leadflow-scraper.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-outreach.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-email.php';
+
+		$this->loader = new LeadFlow_Loader();
+	}
+
+	private function set_locale() {
+		// Set locale logic if needed.
+	}
+
+	private function define_admin_hooks() {
+		$this->loader->add_action( 'admin_menu', $this, 'add_admin_menu' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_styles' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
+	}
+
+	private function define_public_hooks() {
+		// Define public hooks if needed.
+	}
+
+	public function add_admin_menu() {
+		add_menu_page(
+			'LeadFlow Pro',
+			'LeadFlow Pro',
+			'manage_options',
+			'leadflow-pro',
+			array( $this, 'display_dashboard' ),
+			'dashicons-chart-line',
+			25
+		);
+
+		add_submenu_page(
+			'leadflow-pro',
+			'Dashboard',
+			'Dashboard',
+			'manage_options',
+			'leadflow-pro',
+			array( $this, 'display_dashboard' )
+		);
+
+		add_submenu_page(
+			'leadflow-pro',
+			'Leads',
+			'Leads',
+			'manage_options',
+			'leadflow-leads',
+			array( $this, 'display_leads' )
+		);
+
+		add_submenu_page(
+			'leadflow-pro',
+			'Campaigns',
+			'Campaigns',
+			'manage_options',
+			'leadflow-campaigns',
+			array( $this, 'display_campaigns' )
+		);
+
+		add_submenu_page(
+			'leadflow-pro',
+			'Inbox',
+			'Inbox',
+			'manage_options',
+			'leadflow-inbox',
+			array( $this, 'display_inbox' )
+		);
+
+		add_submenu_page(
+			'leadflow-pro',
+			'Settings',
+			'Settings',
+			'manage_options',
+			'leadflow-settings',
+			array( $this, 'display_settings' )
+		);
+	}
+
+	public function display_dashboard() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/dashboard.php';
+	}
+
+	public function display_leads() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/leads.php';
+	}
+
+	public function display_campaigns() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/campaigns.php';
+	}
+
+	public function display_inbox() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/inbox.php';
+	}
+
+	public function display_settings() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/settings.php';
+	}
+
+	public function enqueue_styles() {
+		wp_enqueue_style( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/css/leadflow-admin.css', array(), $this->version, 'all' );
+	}
+
+	public function enqueue_scripts() {
+		wp_enqueue_script( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/js/leadflow-admin.js', array( 'jquery' ), $this->version, false );
+		wp_localize_script( $this->plugin_name, 'leadflowData', array(
+			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
+			'nonce'  => wp_create_nonce( 'wp_rest' ),
+			'isPro'  => LeadFlow_License::is_pro()
+		) );
+	}
+
+	public function run() {
+		$this->loader->run();
+		// Register REST API
+		$api = new LeadFlow_REST_API();
+		$api->register_routes();
+	}
+}
