@@ -21,7 +21,16 @@ class LeadFlow_AI {
 	 * @return string Completion result.
 	 */
 	public static function complete( $prompt, $context = array() ) {
-		$provider = self::get_active_provider();
+		if ( ! LeadFlow_License::check_limit( 'ai_usage' ) ) {
+			return 'AI usage limit reached on Free plan.';
+		}
+
+		$provider = isset( $context['provider'] ) ? $context['provider'] : self::get_active_provider();
+
+		// Pro gate for switching providers
+		if ( $provider !== 'openai' && ! LeadFlow_License::is_pro() ) {
+			return 'Switching AI providers is a Pro feature.';
+		}
 
 		switch ( $provider ) {
 			case 'openai':
@@ -67,5 +76,37 @@ class LeadFlow_AI {
 				'created_at'  => current_time( 'mysql' ),
 			)
 		);
+	}
+
+	/**
+	 * AI: Lead temperature scorer.
+	 */
+	public static function score_lead( $lead_data, $audit_data ) {
+		$prompt = "Score this lead (Hot/Warm/Cold) based on: " . wp_json_encode( $lead_data ) . " and audit: " . wp_json_encode( $audit_data ) . ". Provide one line reasoning.";
+		return self::complete( $prompt, array( 'feature' => 'lead_scorer', 'lead_id' => $lead_data['id'] ) );
+	}
+
+	/**
+	 * AI: Subject line generator.
+	 */
+	public static function generate_subject_lines( $business_name ) {
+		$prompt = "Generate 3 high-converting cold email subject lines for $business_name. Rank them by predicted open rate.";
+		return self::complete( $prompt, array( 'feature' => 'subject_generator' ) );
+	}
+
+	/**
+	 * AI: Reply sentiment analyzer.
+	 */
+	public static function analyze_sentiment( $reply_text ) {
+		$prompt = "Classify this email reply sentiment as Positive, Neutral, Negative, or Unsubscribe Intent: \"$reply_text\"";
+		return self::complete( $prompt, array( 'feature' => 'sentiment_analysis' ) );
+	}
+
+	/**
+	 * AI: Audit insight summary.
+	 */
+	public static function summarize_audit( $audit_results ) {
+		$prompt = "Convert these raw website audit flags into a plain-English sentence usable as an outreach hook: " . wp_json_encode( $audit_results );
+		return self::complete( $prompt, array( 'feature' => 'audit_insight' ) );
 	}
 }

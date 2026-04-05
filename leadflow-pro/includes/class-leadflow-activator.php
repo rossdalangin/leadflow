@@ -23,5 +23,11 @@ class LeadFlow_Activator {
 		if ( ! wp_next_scheduled( 'leadflow_process_scraper_queue' ) ) {
 			wp_schedule_event( time(), 'hourly', 'leadflow_process_scraper_queue' );
 		}
+		if ( ! wp_next_scheduled( 'leadflow_process_campaigns' ) ) {
+			wp_schedule_event( time(), 'hourly', 'leadflow_process_campaigns' );
+		}
+		if ( ! wp_next_scheduled( 'leadflow_poll_inbox' ) ) {
+			wp_schedule_event( time(), 'hourly', 'leadflow_poll_inbox' );
+		}
 	}
 }

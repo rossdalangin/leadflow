@@ -41,18 +41,52 @@ class LeadFlow_Discovery {
 		if ( isset( $body['results'] ) ) {
 			$leads = array();
 			foreach ( $body['results'] as $place ) {
-				$leads[] = array(
+				$lead_data = array(
 					'business_name' => $place['name'],
 					'website_url'   => isset( $place['website'] ) ? $place['website'] : '',
 					'phone'         => isset( $place['formatted_phone_number'] ) ? $place['formatted_phone_number'] : '',
 					'email'         => '', // Google Places doesn't return emails directly
 					'lead_source'   => 'Google Places',
 				);
+
+				if ( ! self::is_duplicate( $lead_data ) ) {
+					$leads[] = $lead_data;
+				}
 			}
 			return $leads;
 		}
 
 		return array();
+	}
+
+	/**
+	 * LinkedIn OAuth stub.
+	 */
+	public static function get_linkedin_auth_url() {
+		$client_id = get_option( 'leadflow_linkedin_client_id' );
+		$redirect  = admin_url( 'admin.php?page=leadflow-settings&linkedin_callback=1' );
+		return "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=$client_id&redirect_uri=" . urlencode($redirect) . "&scope=r_liteprofile%20r_emailaddress";
+	}
+
+	/**
+	 * Deduplication logic (match by domain or email).
+	 */
+	public static function is_duplicate( $lead_data ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		if ( ! empty( $lead_data['email'] ) ) {
+			$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}leads WHERE email = %s", $lead_data['email'] ) );
+			if ( $exists ) return true;
+		}
+
+		if ( ! empty( $lead_data['website_url'] ) ) {
+			$domain = parse_url( $lead_data['website_url'], PHP_URL_HOST );
+			$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}leads WHERE website_url LIKE %s", '%' . $domain . '%' ) );
+			if ( $exists ) return true;
+		}
+
+		return false;
 	}
 
 	/**

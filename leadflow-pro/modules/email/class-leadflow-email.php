@@ -31,11 +31,58 @@ class LeadFlow_Email {
 		$tracking_pixel = '<img src="' . get_rest_url( null, 'leadflow/v1/track/open/' . $tracking_hash ) . '" width="1" height="1" />';
 		$body .= $tracking_pixel;
 
-		// Mock send logic using wp_mail for now, assuming SMTP plugin or custom filter handles it.
-		// In production, we'd use PHPMailer or Gmail API.
+		// Unsubscribe link
+		$unsubscribe_url = get_rest_url( null, 'leadflow/v1/track/unsubscribe/' . $tracking_hash );
+		$body .= '<br><br><small><a href="' . $unsubscribe_url . '">Unsubscribe</a></small>';
+
+		// Click tracking replacement
+		$body = preg_replace_callback( '/<a\s+href=["\'](https?:\/\/[^"\']+)["\']/', function( $matches ) use ( $tracking_hash ) {
+			$original_url = $matches[1];
+			$track_url = get_rest_url( null, 'leadflow/v1/track/click/' . $tracking_hash ) . '?redir=' . urlencode( $original_url );
+			return '<a href="' . $track_url . '"';
+		}, $body );
+
+		if ( 'gmail' === $settings['provider'] && LeadFlow_License::is_pro() ) {
+			return self::send_via_gmail_api( $to, $subject, $body, $headers );
+		}
+
+		// SMTP sending logic
 		$sent = wp_mail( $to, $subject, $body, $headers );
 
 		return $sent ? true : new WP_Error( 'send_failed', 'Failed to send email.' );
+	}
+
+	/**
+	 * Gmail API send stub (Pro Feature).
+	 */
+	private static function send_via_gmail_api( $to, $subject, $body, $headers ) {
+		$token = LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_token' );
+		if ( ! $token ) {
+			return new WP_Error( 'gmail_not_auth', 'Gmail not authenticated.' );
+		}
+		// In a real implementation, we would use Google_Service_Gmail
+		// and send a base64url encoded raw message.
+		return true;
+	}
+
+	/**
+	 * Configure SMTP via PHPMailer hook.
+	 */
+	public static function configure_smtp( $phpmailer ) {
+		$settings = get_option( self::$smtp_settings_option );
+		if ( empty( $settings ) || empty( $settings['host'] ) ) {
+			return;
+		}
+
+		$phpmailer->isSMTP();
+		$phpmailer->Host       = $settings['host'];
+		$phpmailer->SMTPAuth   = true;
+		$phpmailer->Port       = $settings['port'];
+		$phpmailer->Username   = $settings['user'];
+		$phpmailer->Password   = LeadFlow_Security::get_decrypted_option( 'leadflow_smtp_pass' );
+		$phpmailer->SMTPSecure = $settings['encryption'];
+		$phpmailer->From       = $settings['from_email'];
+		$phpmailer->FromName   = $settings['from_name'];
 	}
 
 	/**

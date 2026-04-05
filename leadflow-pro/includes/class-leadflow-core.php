@@ -36,6 +36,7 @@ class LeadFlow_Core {
 		require_once LEADFLOW_PRO_PATH . 'modules/scraper/class-leadflow-scraper.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-outreach.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-email.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/compliance/class-leadflow-compliance.php';
 
 		$this->loader = new LeadFlow_Loader();
 	}
@@ -48,10 +49,35 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'admin_menu', $this, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
+		$this->loader->add_action( 'admin_init', $this, 'register_settings' );
 	}
 
 	private function define_public_hooks() {
-		// Define public hooks if needed.
+		$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
+		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
+		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
+		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
+	}
+
+	public function register_settings() {
+		register_setting( 'leadflow-settings-group', 'leadflow_google_places_api_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_ai_provider' );
+		register_setting( 'leadflow-settings-group', 'leadflow_openai_api_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_gemini_api_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_license_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_host' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_port' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_user' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_pass' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_name' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_email' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );
+
+		// Encryption hooks
+		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_openai_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_gemini_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_google_places_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 	}
 
 	public function add_admin_menu() {

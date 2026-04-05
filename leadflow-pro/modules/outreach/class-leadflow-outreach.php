@@ -86,6 +86,10 @@ class LeadFlow_Outreach {
 		) );
 
 		foreach ( $leads as $lead ) {
+			// Respect opt-outs
+			if ( LeadFlow_Compliance::is_opted_out( $lead->email ) ) {
+				continue;
+			}
 			self::run_sequence_for_lead( $campaign->id, $lead );
 		}
 	}

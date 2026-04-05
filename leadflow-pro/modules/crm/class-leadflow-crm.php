@@ -107,6 +107,26 @@ class LeadFlow_CRM {
 	}
 
 	/**
+	 * Calculate lead score based on data completeness (0-100).
+	 */
+	public static function calculate_completeness_score( $lead_id ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}leads WHERE id = %d", $lead_id ) );
+
+		if ( ! $lead ) return 0;
+
+		$score = 0;
+		if ( ! empty( $lead->business_name ) ) $score += 20;
+		if ( ! empty( $lead->website_url ) ) $score += 20;
+		if ( ! empty( $lead->email ) ) $score += 30;
+		if ( ! empty( $lead->phone ) ) $score += 15;
+		if ( ! empty( $lead->social_links ) && '[]' !== $lead->social_links ) $score += 15;
+
+		return $score;
+	}
+
+	/**
 	 * Add note to lead.
 	 */
 	public static function add_note( $lead_id, $content, $author_id = null ) {

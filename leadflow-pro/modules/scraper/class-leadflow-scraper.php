@@ -40,6 +40,8 @@ class LeadFlow_Scraper {
 
 		foreach ( $jobs as $job ) {
 			self::run_audit( $job->lead_id, $job->id );
+			// Per-domain rate limiting (max 1 request/2 seconds)
+			sleep( 2 );
 		}
 	}
 
@@ -77,6 +79,12 @@ class LeadFlow_Scraper {
 
 		$html = wp_remote_retrieve_body( $response );
 		$code = wp_remote_retrieve_response_code( $response );
+
+		// No crawling of login-protected pages or error pages
+		if ( 200 !== $code || stripos( $html, 'wp-login.php' ) !== false || stripos( $html, 'log in' ) !== false ) {
+			$wpdb->update( "{$prefix}scrape_queue", array( 'status' => 'Failed', 'error_log' => 'Login protected or non-200 response' ), array( 'id' => $job_id ) );
+			return;
+		}
 
 		$audit_results = self::parse_html( $html, $url );
 
@@ -146,15 +154,38 @@ class LeadFlow_Scraper {
 	 */
 	private static function parse_html( $html, $url ) {
 		$results = array(
-			'email'        => '',
-			'social_links' => array(),
-			'has_ssl'      => strpos( $url, 'https://' ) === 0,
-			'load_time'    => 0.5, // Mock value
+			'email'                 => '',
+			'social_links'          => array(),
+			'has_ssl'               => strpos( $url, 'https://' ) === 0,
+			'has_contact_form'      => false,
+			'is_mobile_responsive'  => false,
+			'outdated_design'       => false,
+			'load_time'             => 0.5, // Mock value for heuristic
 		);
 
-		// Extract emails using regex
+		// Extract emails using regex + mailto
 		if ( preg_match( '/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}/', $html, $matches ) ) {
 			$results['email'] = $matches[0];
+		} elseif ( preg_match( '/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})/', $html, $matches ) ) {
+			$results['email'] = $matches[1];
+		}
+
+		// Detect contact forms
+		if ( stripos( $html, '<form' ) !== false && ( stripos( $html, 'contact' ) !== false || stripos( $html, 'message' ) !== false ) ) {
+			$results['has_contact_form'] = true;
+		}
+
+		// Mobile responsiveness check
+		if ( stripos( $html, 'name="viewport"' ) !== false && stripos( $html, 'width=device-width' ) !== false ) {
+			$results['is_mobile_responsive'] = true;
+		}
+
+		// Outdated design signals (e.g., old copyright year)
+		$current_year = date( 'Y' );
+		if ( preg_match( '/©\s*(20[0-1][0-9])/', $html, $matches ) ) {
+			if ( (int) $matches[1] < (int) $current_year - 2 ) {
+				$results['outdated_design'] = true;
+			}
 		}
 
 		// Extract social links
