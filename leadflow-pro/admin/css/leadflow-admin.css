@@ -177,3 +177,17 @@
 .license-status.inactive {
 	color: #d63638;
 }
+
+.score-pill {
+	padding: 3px 10px;
+	border-radius: 12px;
+	font-size: 0.8rem;
+	font-weight: bold;
+	color: #fff;
+}
+
+.score-green { background: #008a20; }
+.score-orange { background: #d94f00; }
+.score-red { background: #d63638; }
+
+.status-discovery { background: #646970; color: #fff; }

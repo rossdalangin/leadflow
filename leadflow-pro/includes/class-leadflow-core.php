@@ -102,6 +102,15 @@ class LeadFlow_Core {
 
 		add_submenu_page(
 			'leadflow-pro',
+			'Lead Discovery',
+			'Lead Discovery',
+			'manage_options',
+			'leadflow-discovery',
+			array( $this, 'display_discovery' )
+		);
+
+		add_submenu_page(
+			'leadflow-pro',
 			'Leads',
 			'Leads',
 			'manage_options',
@@ -141,6 +150,10 @@ class LeadFlow_Core {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/dashboard.php';
 	}
 
+	public function display_discovery() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/discovery.php';
+	}
+
 	public function display_leads() {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/leads.php';
 	}
@@ -162,7 +175,10 @@ class LeadFlow_Core {
 	}
 
 	public function enqueue_scripts() {
-		wp_enqueue_script( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/js/leadflow-admin.js', array( 'jquery' ), $this->version, false );
+		// Enqueue Chart.js for Analytics
+		wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', array(), '4.4.0', true );
+
+		wp_enqueue_script( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/js/leadflow-admin.js', array( 'jquery', 'chart-js' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'leadflowData', array(
 			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
 			'nonce'  => wp_create_nonce( 'wp_rest' ),

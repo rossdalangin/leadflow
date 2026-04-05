@@ -88,12 +88,13 @@ class LeadFlow_Scraper {
 
 		$audit_results = self::parse_html( $html, $url );
 
-		// Update lead with enriched data
+		// Update lead with enriched data and full audit results
 		$wpdb->update(
 			"{$prefix}leads",
 			array(
 				'email'        => ! empty( $lead->email ) ? $lead->email : $audit_results['email'],
 				'social_links' => wp_json_encode( $audit_results['social_links'] ),
+				'audit_data'   => wp_json_encode( $audit_results ),
 				'updated_at'   => current_time( 'mysql' ),
 			),
 			array( 'id' => $lead_id )

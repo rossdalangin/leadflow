@@ -26,6 +26,7 @@
 				<thead>
 					<tr>
 						<th>Business Name</th>
+						<th>Score</th>
 						<th>Website</th>
 						<th>Email</th>
 						<th>Status</th>
