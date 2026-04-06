@@ -50,6 +50,7 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_init', $this, 'register_settings' );
+		$this->loader->add_action( 'admin_notices', $this, 'display_usage_notices' );
 	}
 
 	private function define_public_hooks() {
@@ -57,6 +58,19 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
 		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
+	}
+
+	public function display_usage_notices() {
+		if ( ! LeadFlow_License::is_pro() ) {
+			global $wpdb;
+			$prefix = $wpdb->prefix . 'leadflow_';
+			$budget = (int) get_option( 'leadflow_token_budget', 50000 );
+			$used = $wpdb->get_var( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage" );
+
+			if ( $used >= ( $budget * 0.8 ) ) {
+				echo '<div class="notice notice-warning"><p><strong>LeadFlow Pro:</strong> You have consumed ' . $used . ' AI tokens (80% of your budget). Consider upgrading to Pro for unlimited AI.</p></div>';
+			}
+		}
 	}
 
 	public function register_settings() {

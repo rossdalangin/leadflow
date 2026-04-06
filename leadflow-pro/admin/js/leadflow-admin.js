@@ -46,6 +46,50 @@
 			});
 		}
 
+		// Inbox Item Click
+		$(document).on('click', '.inbox-item', function() {
+			const leadId = $(this).data('lead-id');
+			const leadName = $(this).find('.inbox-item-lead').text();
+
+			$('#viewLeadName').text(leadName);
+			$('.inbox-item').removeClass('active');
+			$(this).addClass('active');
+			$('#inboxReply').show();
+			$('#aiLeadTools').show().find('button').data('lead-id', leadId);
+			$('.export-data-btn, .delete-lead-btn').data('lead-id', leadId);
+
+			loadThread(leadId);
+		});
+
+		function loadThread(leadId) {
+			$('#inboxThread').html('<p>Loading conversation...</p>');
+			// In real app, fetch from email_log API
+		}
+
+		// Send Reply
+		$('#sendReplyBtn').on('click', function() {
+			const leadId = $('.inbox-item.active').data('lead-id');
+			const message = $('#replyText').val();
+			if (!message) return;
+
+			$(this).text('Sending...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/inbox/reply',
+				method: 'POST',
+				data: { lead_id: leadId, message: message },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					$('#replyText').val('');
+					$('#sendReplyBtn').text('Send Reply').prop('disabled', false);
+					alert('Reply sent!');
+					loadThread(leadId);
+				}
+			});
+		});
+
 		function renderLeadTable(leads) {
 			const tbody = $('#leadTableBody');
 			tbody.empty();
@@ -72,6 +116,81 @@
 		if ($('#leadTableBody').length) {
 			fetchLeads();
 		}
+
+		// AI Score Lead
+		$(document).on('click', '.ai-score-btn', function() {
+			const btn = $(this);
+			const leadId = btn.data('lead-id');
+			btn.text('Scoring...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/ai/complete',
+				method: 'POST',
+				data: {
+					context: {
+						feature: 'lead_scorer',
+						lead_data: { id: leadId }, // Simplified
+						audit_data: {} // In real app, fetch from state
+					}
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(response) {
+					alert('AI Lead Score: ' + response.result);
+					btn.text('✨ AI: Score Lead').prop('disabled', false);
+				}
+			});
+		});
+
+		// Export Data (GDPR)
+		$(document).on('click', '.export-data-btn', function() {
+			const leadId = $(this).data('lead-id');
+			window.open(apiUrl + '/leads/' + leadId + '/export?_wpnonce=' + nonce);
+		});
+
+		// Delete Lead (GDPR)
+		$(document).on('click', '.delete-lead-btn', function() {
+			if (!confirm('Are you sure you want to PERMANENTLY delete all data for this lead?')) return;
+
+			const leadId = $(this).data('lead-id');
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId,
+				method: 'DELETE',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Lead deleted successfully.');
+					location.reload();
+				}
+			});
+		});
+
+		// AI Summarize Audit
+		$(document).on('click', '.ai-summarize-btn', function() {
+			const btn = $(this);
+			const leadId = btn.data('lead-id');
+			btn.text('Summarizing...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/ai/complete',
+				method: 'POST',
+				data: {
+					context: {
+						feature: 'audit_insight',
+						audit_results: {} // In real app, fetch from state
+					}
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(response) {
+					alert('AI Audit Summary: ' + response.result);
+					btn.text('✨ AI: Summarize Audit').prop('disabled', false);
+				}
+			});
+		});
 
 		function calculateCompleteness(lead) {
 			let score = 0;

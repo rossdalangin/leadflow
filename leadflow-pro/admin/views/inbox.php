@@ -65,6 +65,15 @@
 			<div id="leadSidebarContent">
 				<p>Select a lead to see audit results and insights.</p>
 			</div>
+			<div id="aiLeadTools" style="display:none; margin-top:20px;">
+				<button class="button button-small ai-score-btn">✨ AI: Score Lead</button>
+				<button class="button button-small ai-summarize-btn" style="margin-top:10px;">✨ AI: Summarize Audit</button>
+			</div>
+			<div class="gdpr-tools" style="margin-top:30px; border-top:1px solid #eee; padding-top:15px;">
+				<h4>GDPR Compliance</h4>
+				<button class="button button-small export-data-btn">Export Data</button>
+				<button class="button button-small delete-lead-btn" style="color:#d63638;">Delete Lead</button>
+			</div>
 		</div>
 	</div>
 </div>

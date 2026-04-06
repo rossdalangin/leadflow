@@ -25,6 +25,10 @@
 						<label><input type="checkbox" name="leadflow_no_ssl_audit" value="1" <?php checked( 1, get_option( 'leadflow_no_ssl_audit' ), true ); ?>> Check for SSL certificate</label>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">Scraping Ethics (Crawl Delay)</th>
+					<td><input type="number" name="leadflow_crawl_delay" value="<?php echo esc_attr( get_option( 'leadflow_crawl_delay', 2 ) ); ?>" class="small-text"> seconds</td>
+				</tr>
 			</table>
 		</div>
 
@@ -52,6 +56,12 @@
 
 		<div id="ai" class="settings-section" style="display:none;">
 			<?php include_once LEADFLOW_PRO_PATH . 'admin/views/settings-ai.php'; ?>
+			<table class="form-table">
+				<tr>
+					<th scope="row">Monthly Token Budget (AI)</th>
+					<td><input type="number" name="leadflow_token_budget" value="<?php echo esc_attr( get_option( 'leadflow_token_budget', 50000 ) ); ?>" class="regular-text"> tokens</td>
+				</tr>
+			</table>
 		</div>
 
 		<div id="license" class="settings-section" style="display:none;">

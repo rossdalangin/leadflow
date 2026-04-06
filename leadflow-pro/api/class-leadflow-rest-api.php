@@ -34,6 +34,19 @@ class LeadFlow_REST_API {
 				'callback'            => array( $this, 'update_lead' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_lead' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/export', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'export_lead' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
 		) );
 
 		register_rest_route( 'leadflow/v1', '/ai/complete', array(
@@ -83,6 +96,14 @@ class LeadFlow_REST_API {
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
+
+		register_rest_route( 'leadflow/v1', '/leads/export-csv', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'export_csv' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
 	}
 
 	public function check_permission() {
@@ -104,6 +125,18 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( array( 'id' => $lead_id ) );
+	}
+
+	public function delete_lead( $request ) {
+		$id = $request['id'];
+		LeadFlow_Compliance::delete_lead_data( $id );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function export_lead( $request ) {
+		$id   = $request['id'];
+		$data = LeadFlow_Compliance::export_lead_data( $id );
+		return rest_ensure_response( $data );
 	}
 
 	public function update_lead( $request ) {
@@ -210,6 +243,10 @@ class LeadFlow_REST_API {
 		}
 
 		wp_die( 'Invalid request.' );
+	}
+
+	public function export_csv() {
+		return LeadFlow_CRM::export_to_csv();
 	}
 
 	public function discovery_search( $request ) {

@@ -38,10 +38,12 @@ class LeadFlow_Scraper {
 
 		$jobs = $wpdb->get_results( "SELECT * FROM {$prefix}scrape_queue WHERE status = 'Pending' AND scheduled_at <= NOW() LIMIT 5" );
 
+		$delay = (int) get_option( 'leadflow_crawl_delay', 2 );
+
 		foreach ( $jobs as $job ) {
 			self::run_audit( $job->lead_id, $job->id );
-			// Per-domain rate limiting (max 1 request/2 seconds)
-			sleep( 2 );
+			// Per-domain rate limiting
+			sleep( $delay );
 		}
 	}
 

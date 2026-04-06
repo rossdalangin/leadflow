@@ -141,7 +141,10 @@ class LeadFlow_Email {
 
 		if ( $lead ) {
 			LeadFlow_CRM::update_status( $lead->id, 'Replied' );
-			LeadFlow_CRM::add_note( $lead->id, "Inbound Reply: " . $body );
+
+			// AI: Analyze sentiment
+			$sentiment = LeadFlow_AI::analyze_sentiment( $body );
+			LeadFlow_CRM::add_note( $lead->id, "Inbound Reply (Sentiment: $sentiment): " . $body );
 
 			// Log as replied in email log
 			$wpdb->update(
