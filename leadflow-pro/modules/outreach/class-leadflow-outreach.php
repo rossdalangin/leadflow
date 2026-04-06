@@ -49,8 +49,9 @@ class LeadFlow_Outreach {
 				'campaign_id' => $campaign_id,
 				'step_order'  => $step_data['order'],
 				'delay_days'  => $step_data['delay'],
-				'subject'     => $step_data['subject'],
+				'subject'     => isset( $step_data['subject'] ) ? $step_data['subject'] : '',
 				'body'        => $step_data['body'],
+				'step_type'   => isset( $step_data['type'] ) ? $step_data['type'] : 'email', // email, linkedin, facebook
 			)
 		);
 	}
@@ -78,11 +79,10 @@ class LeadFlow_Outreach {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		// Get leads matching status filter that are not currently in an active sequence
+		// Get leads matching status filter that are not currently in an active sequence (across ALL active campaigns)
 		$leads = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$prefix}leads WHERE status = %s AND id NOT IN (SELECT lead_id FROM {$prefix}email_log WHERE campaign_id = %d AND status != 'Replied')",
-			$campaign->status_filter,
-			$campaign->id
+			"SELECT * FROM {$prefix}leads WHERE status = %s AND id NOT IN (SELECT lead_id FROM {$prefix}email_log WHERE status != 'Replied' AND campaign_id IN (SELECT id FROM {$prefix}campaigns WHERE is_active = 1))",
+			$campaign->status_filter
 		) );
 
 		foreach ( $leads as $lead ) {
@@ -122,10 +122,39 @@ class LeadFlow_Outreach {
 			if ( $next_step ) {
 				$delay_reached = ( strtotime( current_time( 'mysql' ) ) - strtotime( $last_step->created_at ) ) >= ( $next_step->delay_days * DAY_IN_SECONDS );
 				if ( $delay_reached ) {
-					self::send_step_email( $lead, $next_step, $campaign_id );
+					if ( 'email' === $next_step->step_type ) {
+						self::send_step_email( $lead, $next_step, $campaign_id );
+					} else {
+						self::create_social_task( $lead, $next_step, $campaign_id );
+					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * Create a social outreach task for the user.
+	 */
+	private static function create_social_task( $lead, $step, $campaign_id ) {
+		$message = self::personalize_email( $step->body, $lead );
+		$task_desc = "Social Outreach Task (" . ucfirst( $step->step_type ) . "):\n$message";
+
+		LeadFlow_CRM::add_note( $lead->id, $task_desc, 0 );
+		LeadFlow_CRM::update_status( $lead->id, 'Contacted' );
+
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$wpdb->insert(
+			"{$prefix}email_log",
+			array(
+				'lead_id'     => $lead->id,
+				'campaign_id' => $campaign_id,
+				'step_id'     => $step->id,
+				'subject'     => 'Social: ' . ucfirst( $step->step_type ),
+				'status'      => 'Sent',
+				'created_at'  => current_time( 'mysql' ),
+			)
+		);
 	}
 
 	/**

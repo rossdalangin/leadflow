@@ -29,6 +29,14 @@
 					<th scope="row">Scraping Ethics (Crawl Delay)</th>
 					<td><input type="number" name="leadflow_crawl_delay" value="<?php echo esc_attr( get_option( 'leadflow_crawl_delay', 2 ) ); ?>" class="small-text"> seconds</td>
 				</tr>
+				<tr>
+					<th scope="row">LinkedIn API (Client ID)</th>
+					<td><input type="text" name="leadflow_linkedin_client_id" value="<?php echo esc_attr( get_option( 'leadflow_linkedin_client_id' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">Facebook App ID (Groups)</th>
+					<td><input type="text" name="leadflow_facebook_app_id" value="<?php echo esc_attr( get_option( 'leadflow_facebook_app_id' ) ); ?>" class="regular-text"></td>
+				</tr>
 			</table>
 		</div>
 

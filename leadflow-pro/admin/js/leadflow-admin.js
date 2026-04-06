@@ -460,6 +460,17 @@
 			});
 		});
 
+		// Toggle email fields in campaign builder
+		$(document).on('change', '.step-type', function() {
+			const type = $(this).val();
+			const card = $(this).closest('.step-card');
+			if (type === 'email') {
+				card.find('.email-fields').show();
+			} else {
+				card.find('.email-fields').hide();
+			}
+		});
+
 		// AI Subject Line
 		$('.ai-subject-btn').on('click', function() {
 			const btn = $(this);

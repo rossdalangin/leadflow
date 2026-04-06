@@ -27,7 +27,7 @@ class LeadFlow_CRM {
 			'website_url'   => '',
 			'email'         => '',
 			'phone'         => '',
-			'social_links'  => '',
+			'social_links'  => wp_json_encode( array() ),
 			'lead_source'   => 'Manual',
 			'status'        => 'New',
 			'assigned_to'   => get_current_user_id(),

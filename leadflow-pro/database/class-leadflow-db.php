@@ -93,6 +93,7 @@ class LeadFlow_DB {
 			delay_days INT UNSIGNED DEFAULT 0,
 			subject VARCHAR(255) NOT NULL,
 			body LONGTEXT NOT NULL,
+			step_type VARCHAR(20) DEFAULT 'email',
 			PRIMARY KEY (id),
 			KEY campaign_id (campaign_id)
 		) $charset_collate;

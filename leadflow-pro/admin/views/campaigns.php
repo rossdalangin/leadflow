@@ -51,10 +51,19 @@
 				<div class="sequence-steps" id="sequenceSteps">
 					<h3>Sequence Steps</h3>
 					<div class="step-card">
-						<h4>Step 1: Initial Email</h4>
-						<p><label>Subject</label><br><input type="text" name="step[1][subject]" class="step-subject" value="Quick question about {{business_name}}"></p>
-						<button type="button" class="button ai-subject-btn">✨ AI: Generate Subject</button>
-						<p><label>Body</label><br><textarea name="step[1][body]" class="step-body" rows="5">Hi {{business_name}} team, I saw your website {{website}} and noticed something...</textarea></p>
+						<h4>Step 1</h4>
+						<p><label>Step Type</label><br>
+							<select name="step[1][type]" class="step-type">
+								<option value="email">Email</option>
+								<option value="linkedin">LinkedIn Connection/Message</option>
+								<option value="facebook">Facebook Group Outreach</option>
+							</select>
+						</p>
+						<div class="email-fields">
+							<p><label>Subject</label><br><input type="text" name="step[1][subject]" class="step-subject" value="Quick question about {{business_name}}"></p>
+							<button type="button" class="button ai-subject-btn">✨ AI: Generate Subject</button>
+						</div>
+						<p><label>Message Body</label><br><textarea name="step[1][body]" class="step-body" rows="5">Hi {{business_name}} team, I saw your website {{website}} and noticed something...</textarea></p>
 						<button type="button" class="button ai-writer-btn">✨ AI: Write this for me</button>
 					</div>
 				</div>

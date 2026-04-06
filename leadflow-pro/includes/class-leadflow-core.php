@@ -89,6 +89,8 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_openai' );
 		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_gemini' );
 		register_setting( 'leadflow-settings-group', 'leadflow_crawl_delay' );
+		register_setting( 'leadflow-settings-group', 'leadflow_linkedin_client_id' );
+		register_setting( 'leadflow-settings-group', 'leadflow_facebook_app_id' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_name' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_email' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );

@@ -28,6 +28,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/discovery/social', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'discovery_social' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/activity', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -339,6 +347,25 @@ class LeadFlow_REST_API {
 		$emails = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}email_log WHERE lead_id = %d ORDER BY created_at ASC", $lead_id ) );
 
 		return rest_ensure_response( array( 'notes' => $notes, 'emails' => $emails ) );
+	}
+
+	public function discovery_social( $request ) {
+		$keyword = $request['keyword'];
+		$source  = $request['source']; // 'linkedin' or 'facebook'
+
+		if ( empty( $keyword ) ) {
+			return new WP_Error( 'missing_params', 'Keyword is required.', array( 'status' => 400 ) );
+		}
+
+		if ( 'linkedin' === $source ) {
+			$leads = LeadFlow_Discovery::search_linkedin( $keyword );
+		} elseif ( 'facebook' === $source ) {
+			$leads = LeadFlow_Discovery::search_facebook_groups( $keyword );
+		} else {
+			return new WP_Error( 'invalid_source', 'Invalid source.', array( 'status' => 400 ) );
+		}
+
+		return rest_ensure_response( $leads );
 	}
 
 	public function discovery_search( $request ) {
