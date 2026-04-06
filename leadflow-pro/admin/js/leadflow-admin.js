@@ -289,29 +289,32 @@
 		}
 
 		function renderCharts() {
-			// Fetch status data from API (simplified for this example)
 			$.ajax({
-				url: apiUrl + '/leads',
+				url: apiUrl + '/analytics/overview',
 				method: 'GET',
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
-				success: function(leads) {
-					const counts = {};
-					leads.forEach(l => {
-						counts[l.status] = (counts[l.status] || 0) + 1;
-					});
+				success: function(data) {
+					// Leads by Status Chart
+					const statusLabels = data.status_counts.map(s => s.status);
+					const statusValues = data.status_counts.map(s => s.count);
 
 					new Chart(document.getElementById('leadsStatusChart'), {
 						type: 'doughnut',
 						data: {
-							labels: Object.keys(counts),
+							labels: statusLabels,
 							datasets: [{
-								data: Object.values(counts),
-								backgroundColor: ['#2271b1', '#72aee6', '#3582c4', '#0073aa']
+								data: statusValues,
+								backgroundColor: ['#2271b1', '#72aee6', '#3582c4', '#0073aa', '#f0b849', '#d63638', '#008a20']
 							}]
 						}
 					});
+
+					// Update KPI values if elements exist
+					if ($('.leadflow-kpi-grid').length) {
+						$('.kpi-card:nth-child(3) .kpi-value').text( (data.metrics.sent > 0 ? Math.round((data.metrics.opened / data.metrics.sent) * 100) : 0) + '%' );
+					}
 				}
 			});
 

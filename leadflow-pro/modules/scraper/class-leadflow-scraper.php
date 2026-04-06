@@ -67,7 +67,7 @@ class LeadFlow_Scraper {
 		$url = $lead->website_url;
 
 		// Robots.txt compliance check
-		if ( ! self::is_allowed_by_robots( $url ) ) {
+		if ( get_option( 'leadflow_robots_check', 1 ) && ! self::is_allowed_by_robots( $url ) ) {
 			$wpdb->update( "{$prefix}scrape_queue", array( 'status' => 'Failed', 'error_log' => 'Blocked by robots.txt' ), array( 'id' => $job_id ) );
 			return;
 		}

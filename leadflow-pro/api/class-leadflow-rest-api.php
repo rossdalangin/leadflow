@@ -144,6 +144,14 @@ class LeadFlow_REST_API {
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
+
+		register_rest_route( 'leadflow/v1', '/analytics/overview', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_overview_analytics' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
 	}
 
 	public function check_permission() {
@@ -283,6 +291,17 @@ class LeadFlow_REST_API {
 		}
 
 		wp_die( 'Invalid request.' );
+	}
+
+	public function get_overview_analytics( $request ) {
+		$start = $request->get_param( 'start' );
+		$end   = $request->get_param( 'end' );
+
+		return rest_ensure_response( array(
+			'status_counts' => LeadFlow_Analytics::get_leads_by_status(),
+			'metrics'       => LeadFlow_Analytics::get_outreach_metrics( $start, $end ),
+			'ai_usage'      => LeadFlow_Analytics::get_ai_usage_stats(),
+		) );
 	}
 
 	public function get_campaign_analytics( $request ) {

@@ -37,6 +37,7 @@ class LeadFlow_Core {
 		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-outreach.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-email.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/compliance/class-leadflow-compliance.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/analytics/class-leadflow-analytics.php';
 
 		$this->loader = new LeadFlow_Loader();
 	}
