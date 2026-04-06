@@ -1,5 +1,6 @@
 <div class="wrap leadflow-campaigns">
-	<h1 class="wp-heading-inline">Outreach Campaigns</h1>
+	<h1 class="wp-heading-inline">Outreach Automation</h1>
+	<p class="description">Design multi-step outreach sequences. Campaigns automatically pause when a lead replies, ensuring a natural conversation flow.</p>
 	<a href="#" class="page-title-action" id="createCampaignBtn">Create New Campaign</a>
 	<hr class="wp-header-end">
 
@@ -50,6 +51,7 @@
 				<hr>
 				<div class="sequence-steps" id="sequenceSteps">
 					<h3>Sequence Steps</h3>
+					<p class="description">Define the steps in your sequence. Each step can be an email or a manual social task.</p>
 					<div class="step-card">
 						<h4>Step 1</h4>
 						<p><label>Step Type</label><br>

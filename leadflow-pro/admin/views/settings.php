@@ -1,21 +1,30 @@
 <div class="wrap leadflow-settings">
-	<h1>LeadFlow Pro Settings</h1>
+	<h1>Plugin Configuration</h1>
+	<p class="description">Configure your API keys, email servers, and AI preferences to power your lead generation engine.</p>
+
 	<h2 class="nav-tab-wrapper">
-		<a href="#general" class="nav-tab nav-tab-active">General</a>
-		<a href="#smtp" class="nav-tab">SMTP / Email</a>
-		<a href="#ai" class="nav-tab">AI Provider</a>
-		<a href="#license" class="nav-tab">License</a>
+		<a href="#general" class="nav-tab nav-tab-active"><span class="dashicons dashicons-admin-generic"></span> General</a>
+		<a href="#smtp" class="nav-tab"><span class="dashicons dashicons-email-alt"></span> SMTP / Email</a>
+		<a href="#ai" class="nav-tab"><span class="dashicons dashicons-cloud"></span> AI Provider</a>
+		<a href="#license" class="nav-tab"><span class="dashicons dashicons-shield"></span> License</a>
 	</h2>
 
-	<form method="post" action="options.php">
+	<form method="post" action="options.php" class="leadflow-settings-form">
 		<?php settings_fields( 'leadflow-settings-group' ); ?>
 		<?php do_settings_sections( 'leadflow-settings-group' ); ?>
 
 		<div id="general" class="settings-section active">
 			<h2>General Settings</h2>
+			<p class="description">Core functionality settings for the LeadFlow Pro engine.</p>
 			<table class="form-table">
 				<tr>
-					<th scope="row">Discovery Engine (Google Places API Key)</th>
+					<th scope="row">
+						Discovery Engine (Google Places API Key)
+						<p class="description" style="font-weight:normal; margin-top:5px;">
+							<span class="dashicons dashicons-info" style="font-size:16px; width:16px; height:16px;"></span>
+							Used to find businesses on Google Maps. Get your key from Google Cloud Console.
+						</p>
+					</th>
 					<td><input type="text" name="leadflow_google_places_api_key" value="<?php echo esc_attr( get_option( 'leadflow_google_places_api_key' ) ); ?>" class="regular-text"></td>
 				</tr>
 				<tr>
@@ -41,7 +50,8 @@
 		</div>
 
 		<div id="smtp" class="settings-section" style="display:none;">
-			<h2>SMTP Configuration</h2>
+			<h2>SMTP & Email Configuration</h2>
+			<p class="description">Configure how LeadFlow Pro sends outreach emails. We recommend using a dedicated workspace or professional SMTP provider like SendGrid or Mailgun.</p>
 			<table class="form-table">
 				<tr>
 					<th scope="row">From Name</th>
@@ -63,6 +73,7 @@
 		</div>
 
 		<div id="ai" class="settings-section" style="display:none;">
+			<p class="description">Select your AI provider and set your monthly token budget. Pro users can choose between OpenAI GPT-4o and Gemini 1.5 Pro for maximum accuracy.</p>
 			<?php include_once LEADFLOW_PRO_PATH . 'admin/views/settings-ai.php'; ?>
 			<table class="form-table">
 				<tr>
@@ -77,7 +88,8 @@
 		</div>
 
 		<div id="license" class="settings-section" style="display:none;">
-			<h2>License Key</h2>
+			<h2>License Key & Pro Features</h2>
+			<p class="description">Enter your license key to unlock unlimited leads, advanced AI tools, Kanban views, and more.</p>
 			<table class="form-table">
 				<tr>
 					<th scope="row">License Key</th>

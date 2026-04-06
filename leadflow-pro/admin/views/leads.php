@@ -1,5 +1,6 @@
 <div class="wrap leadflow-leads">
 	<h1 class="wp-heading-inline">Lead CRM</h1>
+	<p class="description">Manage your leads through the sales funnel. Use the Table view for bulk management or Kanban for pipeline visualization.</p>
 	<a href="#" class="page-title-action" id="addLeadBtn">Add New Lead</a>
 	<a href="<?php echo esc_url( rest_url( 'leadflow/v1/leads/export-csv' ) ); ?>" class="page-title-action" style="margin-left:5px;">Export CSV (Pro)</a>
 	<hr class="wp-header-end">

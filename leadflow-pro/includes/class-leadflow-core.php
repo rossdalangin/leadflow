@@ -167,6 +167,14 @@ class LeadFlow_Core {
 			'leadflow-settings',
 			array( $this, 'display_settings' )
 		);
+
+		// Handle data seeding via URL trigger for demo purposes
+		if ( isset( $_GET['leadflow_seed'] ) && current_user_can( 'manage_options' ) ) {
+			LeadFlow_DB::seed_data();
+			add_action( 'admin_notices', function() {
+				echo '<div class="notice notice-success is-dismissible"><p>Sample data seeded successfully!</p></div>';
+			} );
+		}
 	}
 
 	public function display_dashboard() {

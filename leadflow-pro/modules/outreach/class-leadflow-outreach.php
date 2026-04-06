@@ -194,9 +194,11 @@ class LeadFlow_Outreach {
 
 		$audit_hook = '';
 		if ( isset( $audit_data['has_ssl'] ) && ! $audit_data['has_ssl'] ) {
-			$audit_hook = "I noticed your site doesn't have SSL.";
+			$audit_hook = "I noticed your website " . $lead->website_url . " is missing an SSL certificate, which can turn away potential customers.";
 		} elseif ( isset( $audit_data['outdated_design'] ) && $audit_data['outdated_design'] ) {
-			$audit_hook = "I noticed your site design is a bit outdated.";
+			$audit_hook = "I was checking out your site and noticed the design looks a bit dated—updating this could significantly improve your conversion rate.";
+		} elseif ( isset( $audit_data['is_mobile_responsive'] ) && ! $audit_data['is_mobile_responsive'] ) {
+			$audit_hook = "I noticed your site isn't fully mobile-responsive, which might be costing you a lot of mobile traffic.";
 		}
 
 		$tokens = array(

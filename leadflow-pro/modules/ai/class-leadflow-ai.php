@@ -1,6 +1,16 @@
 <?php
 /**
- * LeadFlow_AI class for routing AI requests to the appropriate adapter.
+ * LeadFlow_AI: The Intelligence Core
+ *
+ * This module serves as the brain of the plugin. It uses a provider-agnostic
+ * adapter pattern, allowing you to switch between OpenAI and Google Gemini
+ * without changing a single line of business logic.
+ *
+ * Key Features:
+ * - Content Generation: Writing personalized cold emails.
+ * - Lead Scoring: Categorizing leads by 'temperature' based on data.
+ * - Sentiment Analysis: Detecting if a lead is interested or wants to opt-out.
+ * - Audit Summaries: Converting technical data into sales hooks.
  *
  * @package LeadFlowPro
  */

@@ -18,20 +18,25 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 	<hr class="wp-header-end">
 
 	<div class="leadflow-kpi-grid">
-		<!-- KPI Cards: High-level metrics for quick ROI assessment -->
+		<!-- KPI Cards: High-level metrics for quick ROI assessment.
+		     Pro Tip: Watch the Open Rate; if it drops below 20%, try the AI Subject Line Generator. -->
 		<div class="kpi-card">
+			<span class="dashicons dashicons-groups" style="font-size:32px; color:var(--leadflow-primary);"></span>
 			<h3>Total Leads</h3>
 			<p class="kpi-value"><?php echo esc_html( $total_leads ); ?></p>
 		</div>
 		<div class="kpi-card">
+			<span class="dashicons dashicons-megaphone" style="font-size:32px; color:var(--leadflow-secondary);"></span>
 			<h3>Active Campaigns</h3>
 			<p class="kpi-value"><?php echo esc_html( $active_campaigns ); ?></p>
 		</div>
 		<div class="kpi-card">
+			<span class="dashicons dashicons-visibility" style="font-size:32px; color:var(--leadflow-accent);"></span>
 			<h3>Email Open Rate</h3>
 			<p class="kpi-value"><?php echo esc_html( $open_rate ); ?>%</p>
 		</div>
 		<div class="kpi-card">
+			<span class="dashicons dashicons-yes-alt" style="font-size:32px; color:var(--leadflow-success);"></span>
 			<h3>Conversions</h3>
 			<p class="kpi-value"><?php echo esc_html( $conversions ); ?></p>
 		</div>

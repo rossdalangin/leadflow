@@ -1,5 +1,6 @@
 <div class="wrap leadflow-inbox">
-	<h1 class="wp-heading-inline">Lead Inbox</h1>
+	<h1 class="wp-heading-inline">Unified Inbox</h1>
+	<p class="description">Centralize your lead communications. AI automatically analyzes the sentiment of incoming replies to help you prioritize your follow-ups.</p>
 	<hr class="wp-header-end">
 
 	<div class="leadflow-inbox-container">
@@ -63,7 +64,7 @@
 		<div class="inbox-sidebar" id="inboxSidebar">
 			<h3>Lead Overview</h3>
 			<div id="leadSidebarContent">
-				<p>Select a lead to see audit results and insights.</p>
+				<p>Select a lead to see audit results and insights. Our smart auditor automatically extracts emails, social links, and technical hooks from the website.</p>
 			</div>
 			<div id="aiLeadTools" style="display:none; margin-top:20px;">
 				<button class="button button-small ai-score-btn">✨ AI: Score Lead</button>

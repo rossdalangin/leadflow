@@ -32,6 +32,22 @@
 			}
 		});
 
+		// Discovery Source Switching
+		$('.leadflow-discovery .tab-btn').on('click', function() {
+			const source = $(this).data('source');
+			$('.leadflow-discovery .tab-btn').removeClass('active');
+			$(this).addClass('active');
+			$('#discoverySource').val(source);
+
+			if (source === 'google') {
+				$('#locationInputWrapper').show();
+				$('#discoveryLabel').text('Keyword (e.g. Dentist, Plumber)');
+			} else {
+				$('#locationInputWrapper').hide();
+				$('#discoveryLabel').text(source === 'linkedin' ? 'Industry or Job Title' : 'Facebook Group Keyword');
+			}
+		});
+
 		// Fetch Leads for Table
 		function fetchLeads() {
 			$.ajax({
@@ -51,6 +67,9 @@
 			const leadId = $(this).data('lead-id');
 			const leadName = $(this).find('.inbox-item-lead').text();
 
+			// Find the lead data from the table (simulated state)
+			// In a real app, you'd fetch the full lead object
+
 			$('#viewLeadName').text(leadName);
 			$('.inbox-item').removeClass('active');
 			$(this).addClass('active');
@@ -59,7 +78,45 @@
 			$('.export-data-btn, .delete-lead-btn').data('lead-id', leadId);
 
 			loadThread(leadId);
+			loadLeadSidebar(leadId);
 		});
+
+		function loadLeadSidebar(leadId) {
+			const sidebar = $('#leadSidebarContent');
+			sidebar.html('<p>Loading audit data...</p>');
+
+			$.ajax({
+				url: apiUrl + '/leads', // Filter by ID in real app
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(leads) {
+					const lead = leads.find(l => l.id == leadId);
+					if (lead && lead.audit_data) {
+						const audit = JSON.parse(lead.audit_data);
+						let html = `
+							<div class="audit-summary">
+								<p><strong>Website:</strong> <a href="${lead.website_url}" target="_blank">${lead.website_url}</a></p>
+								<ul class="audit-checklist">
+									<li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL Secure' : '❌ No SSL'}</li>
+									<li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile Friendly' : '❌ Not Mobile Responsive'}</li>
+									<li class="${audit.outdated_design ? 'danger' : 'success'}">${audit.outdated_design ? '❌ Outdated Design' : '✅ Modern Design'}</li>
+									<li>⏱️ Load Time: ${audit.load_time}s</li>
+								</ul>
+								<p><strong>Social Links:</strong></p>
+								<div class="social-pills">
+									${Object.entries(JSON.parse(lead.social_links)).map(([platform, link]) => `<a href="${link}" target="_blank" class="social-pill ${platform}">${platform}</a>`).join('')}
+								</div>
+							</div>
+						`;
+						sidebar.html(html);
+					} else {
+						sidebar.html('<p>No audit data found. Try refreshing the lead.</p>');
+					}
+				}
+			});
+		}
 
 		function loadTags() {
 			$.ajax({
@@ -336,16 +393,20 @@
 		// Discovery Search
 		$('#discoverySearchForm').on('submit', function(e) {
 			e.preventDefault();
+			const source = $('#discoverySource').val();
 			const keyword = $('#discoveryKeyword').val();
 			const location = $('#discoveryLocation').val();
 			const btn = $('#startDiscoveryBtn');
 
 			btn.text('Discovering...').prop('disabled', true);
 
+			const endpoint = source === 'google' ? '/discovery/search' : '/discovery/social';
+			const ajaxData = source === 'google' ? { keyword: keyword, location: location } : { keyword: keyword, source: source };
+
 			$.ajax({
-				url: apiUrl + '/discovery/search',
+				url: apiUrl + endpoint,
 				method: 'GET',
-				data: { keyword: keyword, location: location },
+				data: ajaxData,
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
@@ -474,6 +535,31 @@
 			}
 		});
 
+		// Add Step in Campaign Builder
+		$('#addStepBtn').on('click', function() {
+			const stepCount = $('.step-card').length + 1;
+			const newStep = `
+				<div class="step-card">
+					<h4>Step ${stepCount}</h4>
+					<p><label>Step Type</label><br>
+						<select name="step[${stepCount}][type]" class="step-type">
+							<option value="email">Email</option>
+							<option value="linkedin">LinkedIn Connection/Message</option>
+							<option value="facebook">Facebook Group Outreach</option>
+						</select>
+					</p>
+					<div class="email-fields">
+						<p><label>Subject</label><br><input type="text" name="step[${stepCount}][subject]" class="step-subject" value="Follow up ${stepCount}"></p>
+						<button type="button" class="button ai-subject-btn">✨ AI: Generate Subject</button>
+					</div>
+					<p><label>Delay (Days)</label><br><input type="number" name="step[${stepCount}][delay]" value="3"></p>
+					<p><label>Message Body</label><br><textarea name="step[${stepCount}][body]" class="step-body" rows="5"></textarea></p>
+					<button type="button" class="button ai-writer-btn">✨ AI: Write this for me</button>
+				</div>
+			`;
+			$('#sequenceSteps').append(newStep);
+		});
+
 		// AI Subject Line
 		$('.ai-subject-btn').on('click', function() {
 			const btn = $(this);
@@ -512,10 +598,15 @@
 				success: function(leads) {
 					$('.kanban-items').empty();
 					leads.forEach(lead => {
+						const score = calculateCompleteness(lead);
 						const item = $(`
 							<div class="kanban-item" data-id="${lead.id}">
-								<strong>${lead.business_name}</strong>
-								<p>${lead.email || 'No email'}</p>
+								<div class="kanban-item-header">
+									<strong>${lead.business_name}</strong>
+									<span class="score-pill score-${getScoreColor(score)}">${score}%</span>
+								</div>
+								<p class="kanban-item-url">${lead.website_url || ''}</p>
+								<p class="kanban-item-email">${lead.email || 'No email'}</p>
 							</div>
 						`);
 						$(`.kanban-column[data-status="${lead.status}"] .kanban-items`).append(item);

@@ -33,16 +33,24 @@
 	</table>
 
 	<h3>Usage this month</h3>
+	<?php
+	global $wpdb;
+	$prefix = $wpdb->prefix . 'leadflow_';
+	$openai_used = $wpdb->get_var( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage WHERE provider = 'openai'" ) ?: 0;
+	$gemini_used = $wpdb->get_var( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage WHERE provider = 'gemini'" ) ?: 0;
+	$openai_budget = get_option( 'leadflow_token_budget_openai', 50000 );
+	$gemini_budget = get_option( 'leadflow_token_budget_gemini', 50000 );
+	?>
 	<div class="ai-usage-grid">
 		<div class="ai-usage-card">
 			<h4>OpenAI</h4>
-			<p class="usage-value">1,240 tokens</p>
-			<p class="usage-limit">Limit: Unlimited (Pro)</p>
+			<p class="usage-value"><?php echo number_format($openai_used); ?> tokens</p>
+			<p class="usage-limit">Budget: <?php echo number_format($openai_budget); ?></p>
 		</div>
 		<div class="ai-usage-card">
 			<h4>Gemini</h4>
-			<p class="usage-value">0 tokens</p>
-			<p class="usage-limit">Limit: 5 calls (Free)</p>
+			<p class="usage-value"><?php echo number_format($gemini_used); ?> tokens</p>
+			<p class="usage-limit">Budget: <?php echo number_format($gemini_budget); ?></p>
 		</div>
 	</div>
 

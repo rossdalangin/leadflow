@@ -37,9 +37,9 @@ All endpoints are prefixed with `/wp-json/leadflow/v1`.
 
 ---
 
-## 3. Installation & Setup Guide
+## 3. Step-by-Step Installation & Setup Guide
 
-1. **Upload:** Upload the `leadflow-pro` folder to your `/wp-content/plugins/` directory.
+1. **Upload:** Upload the `leadflow-pro` folder to your `/wp-content/plugins/` directory via FTP or WordPress Admin.
 2. **Activate:** Navigate to Plugins -> Installed Plugins and click **Activate** on LeadFlow Pro.
 3. **Database:** Upon activation, LeadFlow Pro will automatically create 9 custom database tables.
 4. **Settings:** Go to LeadFlow Pro -> Settings.
@@ -47,6 +47,7 @@ All endpoints are prefixed with `/wp-json/leadflow/v1`.
    - **SMTP:** Configure your "From" address and SMTP server for outreach.
    - **AI:** Choose OpenAI or Gemini and add your API Key.
 5. **First Lead:** Go to Leads -> Add New Lead. Enter a website URL to trigger the automated auditor.
+6. **Automate:** Build your first campaign, set a status filter (e.g., 'New'), and watch the engine take over.
 
 ---
 
