@@ -160,6 +160,29 @@ class LeadFlow_DB {
 	 * Seed initial tags or data if necessary.
 	 */
 	public static function seed_data() {
-		// Example seeding logic can go here.
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		// Seed sample tags
+		$tags = array(
+			array( 'name' => 'High Intent', 'slug' => 'high-intent' ),
+			array( 'name' => 'Needs Website', 'slug' => 'needs-website' ),
+			array( 'name' => 'No SSL', 'slug' => 'no-ssl' ),
+		);
+
+		foreach ( $tags as $tag ) {
+			$wpdb->insert( "{$prefix}lead_tags", $tag );
+		}
+
+		// Seed a sample lead
+		$wpdb->insert( "{$prefix}leads", array(
+			'business_name' => 'Sample Agency',
+			'website_url'   => 'https://example.com',
+			'email'         => 'contact@example.com',
+			'lead_source'   => 'Sample Data',
+			'status'        => 'New',
+			'created_at'    => current_time( 'mysql' ),
+			'updated_at'    => current_time( 'mysql' ),
+		) );
 	}
 }

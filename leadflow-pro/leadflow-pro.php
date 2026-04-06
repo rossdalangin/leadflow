@@ -10,6 +10,11 @@
  * Domain Path: /languages
  *
  * @package LeadFlowPro
+ *
+ * DESIGN NOTES:
+ * This plugin uses a modular architecture where each core feature (Discovery, CRM, Outreach, etc.)
+ * is isolated in the 'modules/' directory. This allows for independent testing and scaling.
+ * We avoid CPTs for the lead engine to ensure high-performance SQL queries during bulk operations.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
