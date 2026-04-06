@@ -57,7 +57,7 @@
 
 	<div class="csv-import-box chart-box" style="margin-top: 30px;">
 		<h3>Bulk Import via CSV</h3>
-		<p>Upload a CSV file to import leads directly into the CRM.</p>
+		<p>Upload a CSV file to import leads directly into the CRM. <a href="<?php echo esc_url( rest_url( 'leadflow/v1/discovery/sample-csv' ) ); ?>?_wpnonce=<?php echo wp_create_nonce('wp_rest'); ?>" target="_blank">Download Sample Template</a></p>
 		<form id="csvImportForm" enctype="multipart/form-data">
 			<input type="file" name="leads_csv" accept=".csv" required>
 			<button type="submit" class="button">Upload and Import</button>

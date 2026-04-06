@@ -168,6 +168,9 @@
 						<span class="license-status <?php echo LeadFlow_License::is_pro() ? 'active' : 'inactive'; ?>">
 							<?php echo LeadFlow_License::is_pro() ? 'Active (Pro)' : 'Inactive (Free)'; ?>
 						</span>
+						<?php if ( ! LeadFlow_License::is_pro() ) : ?>
+							<p><button type="button" class="button" id="activateDemoLicense">✨ Activate Demo Pro License</button></p>
+						<?php endif; ?>
 					</td>
 				</tr>
 			</table>

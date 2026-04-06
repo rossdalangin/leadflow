@@ -124,4 +124,20 @@
 			</form>
 		</div>
 	</div>
+
+	<!-- Edit Lead Modal -->
+	<div id="editLeadModal" class="leadflow-modal" style="display:none;">
+		<div class="modal-content">
+			<h2>Edit Lead</h2>
+			<form id="editLeadForm">
+				<input type="hidden" name="id" id="editLeadId">
+				<p><label>Contact First Name</label><br><input type="text" name="first_name" id="editFirstName"></p>
+				<p><label>Business Name</label><br><input type="text" name="business_name" id="editBusinessName" required></p>
+				<p><label>Website URL</label><br><input type="url" name="website_url" id="editWebsiteUrl"></p>
+				<p><label>Email</label><br><input type="email" name="email" id="editEmail"></p>
+				<p><label>Phone Number</label><br><input type="text" name="phone" id="editPhone"></p>
+				<p><button type="submit" class="button button-primary">Update Lead</button> <button type="button" class="button close-modal">Cancel</button></p>
+			</form>
+		</div>
+	</div>
 </div>

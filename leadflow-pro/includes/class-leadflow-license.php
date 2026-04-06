@@ -59,6 +59,15 @@ class LeadFlow_License {
 	}
 
 	/**
+	 * Activate a demo license for development/testing.
+	 */
+	public static function activate_demo_license() {
+		update_option( self::$license_option, 'LF-DEMO-PRO-2024' );
+		update_option( self::$license_status, 'active' );
+		return true;
+	}
+
+	/**
 	 * Enforce limits based on plan.
 	 */
 	public static function check_limit( $resource ) {

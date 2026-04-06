@@ -205,6 +205,22 @@ class LeadFlow_REST_API {
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
+
+		register_rest_route( 'leadflow/v1', '/license/activate-demo', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'activate_demo_license' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/discovery/sample-csv', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'download_sample_csv' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
 	}
 
 	public function check_permission() {
@@ -575,6 +591,23 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( $leads );
+	}
+
+	public function download_sample_csv() {
+		header( 'Content-Type: text/csv' );
+		header( 'Content-Disposition: attachment; filename="leadflow_sample_import.csv"' );
+
+		$output = fopen( 'php://output', 'w' );
+		fputcsv( $output, array( 'Business Name', 'Website', 'Email', 'Phone', 'Social Links (JSON String)' ) );
+		fputcsv( $output, array( 'Acme Corp', 'https://acme.com', 'info@acme.com', '+1-555-0199', '{"linkedin":"https://linkedin.com/company/acme"}' ) );
+		fputcsv( $output, array( 'Globex', 'https://globex.co', 'hr@globex.co', '+1-555-0200', '{}' ) );
+		fclose( $output );
+		exit;
+	}
+
+	public function activate_demo_license() {
+		LeadFlow_License::activate_demo_license();
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function send_reply( $request ) {

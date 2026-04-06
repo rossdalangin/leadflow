@@ -156,15 +156,26 @@ class LeadFlow_DB {
 			$wpdb->insert( "{$prefix}lead_tags", $tag );
 		}
 
-		// Seed a sample lead
-		$wpdb->insert( "{$prefix}leads", array(
-			'business_name' => 'Sample Agency',
-			'website_url'   => 'https://example.com',
-			'email'         => 'contact@example.com',
-			'lead_source'   => 'Sample Data',
-			'status'        => 'New',
-			'created_at'    => current_time( 'mysql' ),
-			'updated_at'    => current_time( 'mysql' ),
-		) );
+		$sample_leads = array(
+			array( 'business_name' => 'Acme Dental', 'website_url' => 'https://acmedental.com', 'email' => 'info@acmedental.com', 'phone' => '555-0101', 'status' => 'New' ),
+			array( 'business_name' => 'Swift Logistics', 'website_url' => 'https://swiftlogistics.io', 'email' => 'ops@swiftlogistics.io', 'phone' => '555-0102', 'status' => 'Contacted' ),
+			array( 'business_name' => 'Blue Sky Realty', 'website_url' => 'https://blueskyrealty.com', 'email' => 'sales@blueskyrealty.com', 'phone' => '555-0103', 'status' => 'Replied' ),
+			array( 'business_name' => 'Elite Plumbing', 'website_url' => 'http://eliteplumbing.net', 'email' => 'help@eliteplumbing.net', 'phone' => '555-0104', 'status' => 'New' ),
+			array( 'business_name' => 'Main St Cafe', 'website_url' => 'https://mainstcafe.com', 'email' => 'hello@mainstcafe.com', 'phone' => '555-0105', 'status' => 'Qualified' ),
+			array( 'business_name' => 'Global Tech Sol', 'website_url' => 'https://globaltech.com', 'email' => 'hr@globaltech.com', 'phone' => '555-0106', 'status' => 'New' ),
+			array( 'business_name' => 'Precision Law', 'website_url' => 'https://precisionlaw.com', 'email' => 'legal@precisionlaw.com', 'phone' => '555-0107', 'status' => 'Contacted' ),
+			array( 'business_name' => 'Sparkle Cleaning', 'website_url' => 'http://sparkleclean.io', 'email' => 'clean@sparkleclean.io', 'phone' => '555-0108', 'status' => 'New' ),
+			array( 'business_name' => 'Peak Fitness', 'website_url' => 'https://peakfit.com', 'email' => 'gym@peakfit.com', 'phone' => '555-0109', 'status' => 'Replied' ),
+			array( 'business_name' => 'Urban Architect', 'website_url' => 'https://urbanarch.com', 'email' => 'design@urbanarch.com', 'phone' => '555-0110', 'status' => 'New' ),
+		);
+
+		foreach ( $sample_leads as $lead ) {
+			$wpdb->insert( "{$prefix}leads", array_merge( $lead, array(
+				'lead_source'   => 'Sample Data',
+				'social_links'  => wp_json_encode( array( 'facebook' => 'https://facebook.com/sample', 'linkedin' => 'https://linkedin.com/company/sample' ) ),
+				'created_at'    => current_time( 'mysql' ),
+				'updated_at'    => current_time( 'mysql' ),
+			) ) );
+		}
 	}
 }

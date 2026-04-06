@@ -263,6 +263,53 @@
 			});
 		});
 
+		// Edit Lead Modal Trigger
+		$(document).on('click', '.edit-lead-btn', function() {
+			const id = $(this).data('id');
+			$.ajax({
+				url: apiUrl + '/leads',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(leads) {
+					const lead = leads.find(l => l.id == id);
+					if (lead) {
+						$('#editLeadId').val(lead.id);
+						$('#editFirstName').val(lead.first_name);
+						$('#editBusinessName').val(lead.business_name);
+						$('#editWebsiteUrl').val(lead.website_url);
+						$('#editEmail').val(lead.email);
+						$('#editPhone').val(lead.phone);
+						$('#editLeadModal').fadeIn();
+					}
+				}
+			});
+		});
+
+		$('#editLeadForm').on('submit', function(e) {
+			e.preventDefault();
+			const id = $('#editLeadId').val();
+			const data = $(this).serialize();
+
+			$.ajax({
+				url: apiUrl + '/leads/' + id,
+				method: 'POST', // EDITABLE
+				data: data,
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					$('#editLeadModal').fadeOut();
+					fetchLeads();
+					alert('Lead updated successfully!');
+				},
+				error: function(err) {
+					alert('Error: ' + err.responseJSON.message);
+				}
+			});
+		});
+
 		// Send Reply
 		$('#sendReplyBtn').on('click', function() {
 			const leadId = $('.inbox-item.active').data('lead-id');
@@ -340,6 +387,7 @@
 						<td>${escapeHtml(lead.updated_at)}</td>
 						<td>
 							<button class="button button-small view-lead" data-id="${lead.id}">View</button>
+								<button class="button button-small edit-lead-btn" data-id="${lead.id}">Edit</button>
 							<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
 							<button class="button button-small opt-out-lead" data-email="${escapeHtml(lead.email)}">Opt-out</button>
 						</td>
@@ -939,7 +987,7 @@
 						<button type="button" class="button ai-subject-btn">✨ AI: Generate Subject</button>
 					</div>
 					<p><label>Delay (Days)</label><br><input type="number" name="step[${stepCount}][delay]" value="3"></p>
-					<p><label>Message Body</label><br><textarea name="step[${stepCount}][body]" class="step-body" rows="5"></textarea></p>
+					<p><label>Message Body</label><br><textarea name="step[${stepCount}][body]" class="step-body" rows="5" style="width:100%;"></textarea></p>
 					<button type="button" class="button ai-writer-btn">✨ AI: Write this for me</button>
 				</div>
 			`;
@@ -1142,6 +1190,28 @@
 				error: function(err) {
 					alert('Failed to send test email: ' + err.responseJSON.message);
 					btn.text('Send Test Email').prop('disabled', false);
+				}
+			});
+		});
+
+		// Activate Demo License
+		$('#activateDemoLicense').on('click', function() {
+			const btn = $(this);
+			btn.text('Activating...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/license/activate-demo',
+				method: 'POST',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Demo Pro License activated! Reloading...');
+					location.reload();
+				},
+				error: function() {
+					alert('Activation failed.');
+					btn.text('✨ Activate Demo Pro License').prop('disabled', false);
 				}
 			});
 		});
