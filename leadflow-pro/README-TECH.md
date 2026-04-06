@@ -21,7 +21,7 @@
 - `leadflow-pro/modules/ai/class-leadflow-ai.php`: Unified AI adapter (router).
 - `leadflow-pro/modules/ai/class-leadflow-ai-openai.php`: OpenAI (GPT-4o) specific adapter.
 - `leadflow-pro/modules/ai/class-leadflow-ai-gemini.php`: Google Gemini 1.5 Pro specific adapter.
-- `leadflow-pro/modules/analytics/`: Data aggregation and reporting logic.
+- `leadflow-pro/modules/analytics/class-leadflow-analytics.php`: Data aggregation and reporting logic.
 - `leadflow-pro/modules/compliance/`: GDPR, opt-out, and scraping ethics logic.
 - `leadflow-pro/admin/views/dashboard.php`: Main analytics dashboard.
 - `leadflow-pro/admin/views/leads.php`: CRM lead list and Kanban view.

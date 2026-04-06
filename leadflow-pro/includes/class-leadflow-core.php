@@ -59,6 +59,15 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
 		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
+		$this->loader->add_action( 'rest_api_init', $this, 'register_rest_routes' );
+	}
+
+	/**
+	 * Register all REST API routes on rest_api_init.
+	 */
+	public function register_rest_routes() {
+		$api = new LeadFlow_REST_API();
+		$api->register_routes();
 	}
 
 	public function display_usage_notices() {
@@ -219,8 +228,5 @@ class LeadFlow_Core {
 
 	public function run() {
 		$this->loader->run();
-		// Register REST API
-		$api = new LeadFlow_REST_API();
-		$api->register_routes();
 	}
 }
