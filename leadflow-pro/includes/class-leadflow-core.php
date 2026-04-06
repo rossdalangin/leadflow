@@ -110,6 +110,9 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_port' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_user' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_pass' );
+		register_setting( 'leadflow-settings-group', 'leadflow_email_provider' );
+		register_setting( 'leadflow-settings-group', 'leadflow_gmail_token' );
+		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );
 		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_openai' );
 		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_gemini' );
 		register_setting( 'leadflow-settings-group', 'leadflow_crawl_delay' );
@@ -117,7 +120,6 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_facebook_app_id' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_name' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_email' );
-		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_host' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_port' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_user' );
@@ -127,6 +129,7 @@ class LeadFlow_Core {
 		// Encryption hooks
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_imap_pass', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_gmail_token', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_openai_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_gemini_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_google_places_api_key', array( 'LeadFlow_Security', 'encrypt' ) );

@@ -17,14 +17,16 @@ class LeadFlow_Email {
 	 * Send an email via SMTP or Gmail API.
 	 */
 	public static function send( $to, $subject, $body, $headers = array() ) {
-		$settings = get_option( self::$smtp_settings_option );
+		$from_name  = get_option( 'leadflow_smtp_from_name' );
+		$from_email = get_option( 'leadflow_smtp_from_email' );
+		$provider   = get_option( 'leadflow_email_provider', 'smtp' );
 
-		if ( empty( $settings ) ) {
-			return new WP_Error( 'not_configured', 'SMTP settings not configured.' );
+		if ( empty( $from_email ) ) {
+			return new WP_Error( 'not_configured', 'Email settings not configured.' );
 		}
 
 		$headers[] = 'Content-Type: text/html; charset=UTF-8';
-		$headers[] = 'From: ' . $settings['from_name'] . ' <' . $settings['from_email'] . '>';
+		$headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
 
 		// Open tracking pixel (using hash for privacy)
 		$tracking_hash  = wp_hash( $to );
@@ -42,7 +44,7 @@ class LeadFlow_Email {
 			return '<a href="' . $track_url . '"';
 		}, $body );
 
-		if ( 'gmail' === $settings['provider'] && LeadFlow_License::is_pro() ) {
+		if ( 'gmail' === $provider && LeadFlow_License::is_pro() ) {
 			return self::send_via_gmail_api( $to, $subject, $body, $headers );
 		}
 
@@ -93,20 +95,20 @@ class LeadFlow_Email {
 	 * Configure SMTP via PHPMailer hook.
 	 */
 	public static function configure_smtp( $phpmailer ) {
-		$settings = get_option( self::$smtp_settings_option );
-		if ( empty( $settings ) || empty( $settings['host'] ) ) {
+		$host = get_option( 'leadflow_smtp_host' );
+		if ( empty( $host ) ) {
 			return;
 		}
 
 		$phpmailer->isSMTP();
-		$phpmailer->Host       = $settings['host'];
+		$phpmailer->Host       = $host;
 		$phpmailer->SMTPAuth   = true;
-		$phpmailer->Port       = $settings['port'];
-		$phpmailer->Username   = $settings['user'];
+		$phpmailer->Port       = get_option( 'leadflow_smtp_port', 587 );
+		$phpmailer->Username   = get_option( 'leadflow_smtp_user' );
 		$phpmailer->Password   = LeadFlow_Security::get_decrypted_option( 'leadflow_smtp_pass' );
-		$phpmailer->SMTPSecure = $settings['encryption'];
-		$phpmailer->From       = $settings['from_email'];
-		$phpmailer->FromName   = $settings['from_name'];
+		$phpmailer->SMTPSecure = get_option( 'leadflow_smtp_encryption', 'tls' );
+		$phpmailer->From       = get_option( 'leadflow_smtp_from_email' );
+		$phpmailer->FromName   = get_option( 'leadflow_smtp_from_name' );
 	}
 
 	/**
@@ -114,12 +116,6 @@ class LeadFlow_Email {
 	 */
 	public static function poll_inbox() {
 		if ( ! function_exists( 'imap_open' ) ) {
-			return;
-		}
-
-		$settings = get_option( 'leadflow_imap_settings' );
-
-		if ( empty( $settings ) ) {
 			return;
 		}
 

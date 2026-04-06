@@ -16,6 +16,18 @@
 			$(this).addClass('nav-tab-active');
 		});
 
+		// Toggle Email Provider Settings
+		$('select[name="leadflow_email_provider"]').on('change', function() {
+			const provider = $(this).val();
+			if (provider === 'gmail') {
+				$('.gmail-only').show();
+				$('.smtp-only').hide();
+			} else {
+				$('.gmail-only').hide();
+				$('.smtp-only').show();
+			}
+		}).trigger('change');
+
 		// Lead View Switching
 		$('.leadflow-tabs .tab-btn').on('click', function() {
 			const view = $(this).data('view');
@@ -446,6 +458,35 @@
 				success: function() {
 					alert('Lead deleted successfully.');
 					location.reload();
+				}
+			});
+		});
+
+		// AI Write Personalized Email
+		$(document).on('click', '.ai-write-personalized-btn', function() {
+			const btn = $(this);
+			const lead = window.currentLead;
+
+			if (!lead) return;
+
+			btn.text('Writing...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/ai/complete',
+				method: 'POST',
+				data: {
+					context: {
+						feature: 'email_writer',
+						lead_data: lead,
+						audit_data: lead.audit_data ? JSON.parse(lead.audit_data) : {}
+					}
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(response) {
+					$('#replyText').val(response.result);
+					btn.text('✨ AI: Personalized Email').prop('disabled', false);
 				}
 			});
 		});
@@ -940,6 +981,7 @@
 			const provider = $(this).data('provider');
 			const btn = $(this);
 			btn.text('Testing...').prop('disabled', true);
+			const startTime = Date.now();
 
 			$.ajax({
 				url: apiUrl + '/ai/complete',
@@ -952,7 +994,8 @@
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
 				success: function(response) {
-					alert(provider + ' connection successful: ' + response.result);
+					const latency = Date.now() - startTime;
+					alert(provider + ' connection successful in ' + latency + 'ms. Response: ' + response.result);
 					btn.text('Test Connection').prop('disabled', false);
 				},
 				error: function() {

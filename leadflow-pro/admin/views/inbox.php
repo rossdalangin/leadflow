@@ -53,6 +53,7 @@
 			<div class="inbox-reply" id="inboxReply" style="display:none;">
 				<div class="reply-toolbar">
 					<button class="button button-small ai-reply-btn" title="AI: Suggest Reply">✨ AI: Suggest Reply</button>
+					<button class="button button-small ai-write-personalized-btn" title="AI: Write Personalized Email">✨ AI: Personalized Email</button>
 				</div>
 				<textarea id="replyText" rows="4" placeholder="Write your reply..."></textarea>
 				<div class="reply-actions">

@@ -211,7 +211,16 @@ class LeadFlow_REST_API {
 
 	public function create_lead( $request ) {
 		$params  = $request->get_params();
-		$lead_id = LeadFlow_CRM::create_lead( $params );
+
+		$data = array();
+		$fields = array( 'first_name', 'business_name', 'website_url', 'email', 'phone', 'status', 'lead_source' );
+		foreach ( $fields as $field ) {
+			if ( isset( $params[ $field ] ) ) {
+				$data[ $field ] = $params[ $field ];
+			}
+		}
+
+		$lead_id = LeadFlow_CRM::create_lead( $data );
 
 		if ( is_wp_error( $lead_id ) ) {
 			return new WP_Error( $lead_id->get_error_code(), $lead_id->get_error_message(), array( 'status' => 400 ) );
@@ -257,7 +266,7 @@ class LeadFlow_REST_API {
 		$prefix = $wpdb->prefix . 'leadflow_';
 
 		$data = array();
-		$fields = array( 'business_name', 'website_url', 'email', 'phone', 'status', 'assigned_to' );
+		$fields = array( 'first_name', 'business_name', 'website_url', 'email', 'phone', 'status', 'assigned_to' );
 		foreach ( $fields as $field ) {
 			if ( isset( $params[ $field ] ) ) {
 				$data[ $field ] = $params[ $field ];

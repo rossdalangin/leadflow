@@ -100,7 +100,7 @@ class LeadFlow_AI {
 	 * AI: Subject line generator.
 	 */
 	public static function generate_subject_lines( $business_name ) {
-		$prompt = "Generate 3 high-converting cold email subject lines for $business_name. Rank them by predicted open rate.";
+		$prompt = "Generate 3 high-converting cold email subject lines for $business_name. Rank them by predicted open rate. Output only the lines, one per line.";
 		return self::complete( $prompt, array( 'feature' => 'subject_generator' ) );
 	}
 

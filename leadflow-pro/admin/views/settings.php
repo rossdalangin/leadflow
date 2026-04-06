@@ -25,7 +25,7 @@
 							Used to find businesses on Google Maps. Get your key from Google Cloud Console.
 						</p>
 					</th>
-					<td><input type="text" name="leadflow_google_places_api_key" value="<?php echo esc_attr( get_option( 'leadflow_google_places_api_key' ) ); ?>" class="regular-text"></td>
+					<td><input type="text" name="leadflow_google_places_api_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_google_places_api_key' ) ); ?>" class="regular-text"></td>
 				</tr>
 				<tr>
 					<th scope="row">Scraping Logic</th>
@@ -40,34 +40,70 @@
 				</tr>
 				<tr>
 					<th scope="row">LinkedIn API (Client ID)</th>
-					<td><input type="text" name="leadflow_linkedin_client_id" value="<?php echo esc_attr( get_option( 'leadflow_linkedin_client_id' ) ); ?>" class="regular-text"></td>
+					<td><input type="text" name="leadflow_linkedin_client_id" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_linkedin_client_id' ) ); ?>" class="regular-text"></td>
 				</tr>
 				<tr>
 					<th scope="row">Facebook App ID (Groups)</th>
-					<td><input type="text" name="leadflow_facebook_app_id" value="<?php echo esc_attr( get_option( 'leadflow_facebook_app_id' ) ); ?>" class="regular-text"></td>
+					<td><input type="text" name="leadflow_facebook_app_id" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_facebook_app_id' ) ); ?>" class="regular-text"></td>
 				</tr>
 			</table>
 		</div>
 
 		<div id="smtp" class="settings-section" style="display:none;">
-			<h2>SMTP (Sending)</h2>
-			<p class="description">Configure how LeadFlow Pro sends outreach emails. We recommend using a dedicated workspace or professional SMTP provider like SendGrid or Mailgun.</p>
+			<h2>Email Sending Configuration</h2>
+			<p class="description">Configure how LeadFlow Pro sends outreach emails. We recommend using a dedicated workspace or professional SMTP provider.</p>
+
 			<table class="form-table">
 				<tr>
+					<th scope="row">Email Provider</th>
+					<td>
+						<select name="leadflow_email_provider">
+							<option value="smtp" <?php selected( 'smtp', get_option( 'leadflow_email_provider', 'smtp' ) ); ?>>Standard SMTP</option>
+							<option value="gmail" <?php selected( 'gmail', get_option( 'leadflow_email_provider', 'smtp' ) ); ?>>Gmail API (Pro)</option>
+						</select>
+					</td>
+				</tr>
+				<tr class="gmail-only" style="display:none;">
+					<th scope="row">Gmail API Token</th>
+					<td><input type="password" name="leadflow_gmail_token" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_token' ) ); ?>" class="regular-text"></td>
+				</tr>
+			</table>
+
+			<h3 class="smtp-only">SMTP Settings</h3>
+			<table class="form-table smtp-only">
+				<tr>
 					<th scope="row">From Name</th>
-					<td><input type="text" name="leadflow_smtp_from_name" value="<?php echo esc_attr( get_option( 'leadflow_smtp_from_name' ) ); ?>" class="regular-text"></td>
+					<td><input type="text" name="leadflow_smtp_from_name" value="<?php echo esc_attr( get_option( 'leadflow_smtp_from_name' ) ); ?>" class="regular-text" placeholder="John Doe"></td>
 				</tr>
 				<tr>
 					<th scope="row">From Email</th>
-					<td><input type="email" name="leadflow_smtp_from_email" value="<?php echo esc_attr( get_option( 'leadflow_smtp_from_email' ) ); ?>" class="regular-text"></td>
+					<td><input type="email" name="leadflow_smtp_from_email" value="<?php echo esc_attr( get_option( 'leadflow_smtp_from_email' ) ); ?>" class="regular-text" placeholder="john@example.com"></td>
 				</tr>
 				<tr>
 					<th scope="row">SMTP Host</th>
-					<td><input type="text" name="leadflow_smtp_host" value="<?php echo esc_attr( get_option( 'leadflow_smtp_host' ) ); ?>" class="regular-text"></td>
+					<td><input type="text" name="leadflow_smtp_host" value="<?php echo esc_attr( get_option( 'leadflow_smtp_host' ) ); ?>" class="regular-text" placeholder="smtp.mailtrap.io"></td>
 				</tr>
 				<tr>
 					<th scope="row">SMTP Port</th>
-					<td><input type="number" name="leadflow_smtp_port" value="<?php echo esc_attr( get_option( 'leadflow_smtp_port' ) ); ?>" class="regular-text"></td>
+					<td><input type="number" name="leadflow_smtp_port" value="<?php echo esc_attr( get_option( 'leadflow_smtp_port', 587 ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">SMTP Username</th>
+					<td><input type="text" name="leadflow_smtp_user" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_smtp_user' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">SMTP Password</th>
+					<td><input type="password" name="leadflow_smtp_pass" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_smtp_pass' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">Encryption</th>
+					<td>
+						<select name="leadflow_smtp_encryption">
+							<option value="tls" <?php selected( 'tls', get_option( 'leadflow_smtp_encryption', 'tls' ) ); ?>>TLS</option>
+							<option value="ssl" <?php selected( 'ssl', get_option( 'leadflow_smtp_encryption', 'tls' ) ); ?>>SSL</option>
+							<option value="none" <?php selected( 'none', get_option( 'leadflow_smtp_encryption', 'tls' ) ); ?>>None</option>
+						</select>
+					</td>
 				</tr>
 			</table>
 
@@ -115,7 +151,7 @@
 				<tr>
 					<th scope="row">License Key</th>
 					<td>
-						<input type="text" name="leadflow_license_key" value="<?php echo esc_attr( get_option( 'leadflow_license_key' ) ); ?>" class="regular-text">
+						<input type="text" name="leadflow_license_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_license_key' ) ); ?>" class="regular-text">
 						<p class="description">Enter your license key to enable Pro features.</p>
 					</td>
 				</tr>

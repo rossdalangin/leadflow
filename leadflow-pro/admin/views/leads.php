@@ -91,9 +91,10 @@
 		<div class="modal-content">
 			<h2>Add New Lead</h2>
 			<form id="addLeadForm">
-				<p><label>Business Name</label><br><input type="text" name="business_name" required></p>
-				<p><label>Website URL</label><br><input type="url" name="website_url"></p>
-				<p><label>Email</label><br><input type="email" name="email"></p>
+				<p><label>Contact First Name</label><br><input type="text" name="first_name" placeholder="e.g. John"></p>
+				<p><label>Business Name</label><br><input type="text" name="business_name" required placeholder="e.g. Acme Corp"></p>
+				<p><label>Website URL</label><br><input type="url" name="website_url" placeholder="https://..."></p>
+				<p><label>Email</label><br><input type="email" name="email" placeholder="john@example.com"></p>
 				<p><button type="submit" class="button button-primary">Save Lead</button> <button type="button" class="button close-modal">Cancel</button></p>
 			</form>
 		</div>

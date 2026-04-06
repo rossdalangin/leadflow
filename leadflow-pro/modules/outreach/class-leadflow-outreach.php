@@ -33,7 +33,11 @@ class LeadFlow_Outreach {
 			)
 		);
 
-		return $result ? $wpdb->insert_id : false;
+		if ( ! $result ) {
+			return new WP_Error( 'db_error', 'Failed to create campaign.' );
+		}
+
+		return $wpdb->insert_id;
 	}
 
 	/**

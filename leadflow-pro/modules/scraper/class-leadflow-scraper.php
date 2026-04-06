@@ -105,7 +105,7 @@ class LeadFlow_Scraper {
 		);
 
 		// Log audit as a note
-		$audit_summary = "Website Audit Completed:\n- SSL: " . ( $audit_results['has_ssl'] ? 'Yes' : 'No' ) . "\n- Mobile: " . ( $audit_results['is_mobile_responsive'] ? 'Yes' : 'No' ) . "\n- Emails Found: " . ( $audit_results['email'] ?: 'None' ) . "\n- Performance: " . $audit_results['load_time'] . "s";
+		$audit_summary = "Website Audit Completed:\n- SSL: " . ( $audit_results['has_ssl'] ? 'Yes' : 'No' ) . "\n- Mobile: " . ( $audit_results['is_mobile_responsive'] ? 'Yes' : 'No' ) . "\n- Performance: " . $audit_results['load_time'] . "s\n- Outdated Design: " . ($audit_results['outdated_design'] ? 'Yes' : 'No');
 		LeadFlow_CRM::add_note( $lead_id, $audit_summary, 0 ); // 0 for system note
 
 		// AI: Automatically qualify lead
