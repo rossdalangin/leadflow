@@ -174,15 +174,20 @@ class LeadFlow_Outreach {
 			global $wpdb;
 			$prefix = $wpdb->prefix . 'leadflow_';
 
+			// Pull tracking hash from content (hacky but reliable for now)
+			preg_match( '/\/track\/open\/([a-zA-Z0-9]+)/', $personalized_body, $matches );
+			$tracking_hash = isset( $matches[1] ) ? $matches[1] : '';
+
 			$wpdb->insert(
 				"{$prefix}email_log",
 				array(
-					'lead_id'     => $lead->id,
-					'campaign_id' => $campaign_id,
-					'step_id'     => $step->id,
-					'subject'     => $personalized_subj,
-					'status'      => 'Sent',
-					'created_at'  => current_time( 'mysql' ),
+					'lead_id'       => $lead->id,
+					'campaign_id'   => $campaign_id,
+					'step_id'       => $step->id,
+					'tracking_hash' => $tracking_hash,
+					'subject'       => $personalized_subj,
+					'status'        => 'Sent',
+					'created_at'    => current_time( 'mysql' ),
 				)
 			);
 

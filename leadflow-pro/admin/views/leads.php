@@ -119,6 +119,7 @@
 				<p><label>Business Name</label><br><input type="text" name="business_name" required placeholder="e.g. Acme Corp"></p>
 				<p><label>Website URL</label><br><input type="url" name="website_url" placeholder="https://..."></p>
 				<p><label>Email</label><br><input type="email" name="email" placeholder="john@example.com"></p>
+				<p><label>Phone Number</label><br><input type="text" name="phone" placeholder="+1-555-0199"></p>
 				<p><button type="submit" class="button button-primary">Save Lead</button> <button type="button" class="button close-modal">Cancel</button></p>
 			</form>
 		</div>

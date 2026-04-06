@@ -232,6 +232,12 @@
 
 			btn.text('Thinking...').prop('disabled', true);
 
+			// Pull last inbound email content from thread
+			let lastInbound = $('#inboxThread .thread-item.email').last().find('.thread-content').text();
+			if (!lastInbound) {
+				lastInbound = 'I am interested in your services, tell me more.';
+			}
+
 			$.ajax({
 				url: apiUrl + '/ai/complete',
 				method: 'POST',
@@ -239,7 +245,7 @@
 					context: {
 						feature: 'reply_suggestion',
 						lead_id: leadId,
-						inbound_text: 'I am interested in your services, tell me more.' // Mock - in real app, pull last inbound from thread
+						inbound_text: lastInbound
 					}
 				},
 				beforeSend: function(xhr) {
@@ -280,45 +286,57 @@
 			});
 		});
 
+		function escapeHtml(text) {
+			if (!text) return '';
+			const map = {
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#039;'
+			};
+			return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+		}
+
 		function renderLeadTable(leads) {
 			const tbody = $('#leadTableBody');
 			tbody.empty();
 
-			// Get users for assignment select
 			$.get(apiUrl + '/users', function(users) {
-			leads.forEach(lead => {
-				const audit = lead.audit_data ? JSON.parse(lead.audit_data) : {};
-				const score = calculateCompleteness(lead);
-				tbody.append(`
-					<tr>
-						<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
-						<td><strong>${lead.business_name}</strong></td>
-						<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
-						<td><a href="${lead.website_url}" target="_blank">${lead.website_url}</a></td>
-						<td>${lead.email}</td>
-						<td>
-							<select class="inline-assignee-update" data-id="${lead.id}">
-								<option value="">Unassigned</option>
-								${users.map(u => `<option value="${u.id}" ${lead.assigned_to == u.id ? 'selected' : ''}>${u.name}</option>`).join('')}
-							</select>
-						</td>
-						<td>
-							<select class="inline-status-update" data-id="${lead.id}">
-								<option value="New" ${lead.status === 'New' ? 'selected' : ''}>New</option>
-								<option value="Contacted" ${lead.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
-								<option value="Replied" ${lead.status === 'Replied' ? 'selected' : ''}>Replied</option>
-								<option value="Qualified" ${lead.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
-							</select>
-						</td>
-						<td>${lead.updated_at}</td>
-						<td>
-							<button class="button button-small view-lead" data-id="${lead.id}">View</button>
-							<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
-							<button class="button button-small opt-out-lead" data-email="${lead.email}">Opt-out</button>
-						</td>
-					</tr>
-				`);
-			});
+				leads.forEach(lead => {
+					const audit = lead.audit_data ? JSON.parse(lead.audit_data) : {};
+					const score = calculateCompleteness(lead);
+					const row = $(`
+						<tr>
+							<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
+							<td><strong>${escapeHtml(lead.business_name)}</strong></td>
+							<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
+							<td><a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></td>
+							<td>${escapeHtml(lead.email)}</td>
+							<td>
+								<select class="inline-assignee-update" data-id="${lead.id}">
+									<option value="">Unassigned</option>
+									${users.map(u => `<option value="${u.id}" ${lead.assigned_to == u.id ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}
+								</select>
+							</td>
+							<td>
+								<select class="inline-status-update" data-id="${lead.id}">
+									<option value="New" ${lead.status === 'New' ? 'selected' : ''}>New</option>
+									<option value="Contacted" ${lead.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
+									<option value="Replied" ${lead.status === 'Replied' ? 'selected' : ''}>Replied</option>
+									<option value="Qualified" ${lead.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
+								</select>
+							</td>
+							<td>${escapeHtml(lead.updated_at)}</td>
+							<td>
+								<button class="button button-small view-lead" data-id="${lead.id}">View</button>
+								<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
+								<button class="button button-small opt-out-lead" data-email="${escapeHtml(lead.email)}">Opt-out</button>
+							</td>
+						</tr>
+					`);
+					tbody.append(row);
+				});
 			});
 		}
 
@@ -741,18 +759,19 @@
 			const tbody = $('#discoveryResultsBody');
 			tbody.empty();
 			leads.forEach((lead, index) => {
-				tbody.append(`
+				const row = $(`
 					<tr>
 						<th class="check-column"><input type="checkbox" class="discovery-item-check" value="${index}"></th>
-						<td><strong>${lead.business_name}</strong></td>
-						<td><a href="${lead.website_url}" target="_blank">${lead.website_url}</a></td>
-						<td>${lead.phone}</td>
-						<td><span class="status-badge status-discovery">${lead.lead_source}</span></td>
+						<td><strong>${escapeHtml(lead.business_name)}</strong></td>
+						<td><a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></td>
+						<td>${escapeHtml(lead.phone)}</td>
+						<td><span class="status-badge status-discovery">${escapeHtml(lead.lead_source)}</span></td>
 						<td>
 							<button class="button button-small import-lead" data-index="${index}">Import</button>
 						</td>
 					</tr>
 				`);
+				tbody.append(row);
 			});
 
 			// Store current discovery results globally for easy import
@@ -959,11 +978,11 @@
 						const item = $(`
 							<div class="kanban-item" data-id="${lead.id}">
 								<div class="kanban-item-header">
-									<strong>${lead.business_name}</strong>
+									<strong>${escapeHtml(lead.business_name)}</strong>
 									<span class="score-pill score-${getScoreColor(score)}">${score}%</span>
 								</div>
-								<p class="kanban-item-url">${lead.website_url || ''}</p>
-								<p class="kanban-item-email">${lead.email || 'No email'}</p>
+								<p class="kanban-item-url">${escapeHtml(lead.website_url) || ''}</p>
+								<p class="kanban-item-email">${escapeHtml(lead.email) || 'No email'}</p>
 							</div>
 						`);
 						$(`.kanban-column[data-status="${lead.status}"] .kanban-items`).append(item);

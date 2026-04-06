@@ -38,6 +38,10 @@ class LeadFlow_CRM {
 
 		$data = wp_parse_args( $data, $defaults );
 
+		// Final sanitization before DB
+		$data['email']       = sanitize_email( $data['email'] );
+		$data['website_url'] = esc_url_raw( $data['website_url'] );
+
 		$result = $wpdb->insert( "{$prefix}leads", $data );
 
 		if ( ! $result ) {
@@ -72,6 +76,11 @@ class LeadFlow_CRM {
 
 		$args = wp_parse_args( $args, $defaults );
 
+		// Whitelist for SQL Injection prevention
+		$allowed_orderby = array( 'id', 'business_name', 'email', 'status', 'created_at', 'updated_at' );
+		$orderby         = in_array( $args['orderby'], $allowed_orderby, true ) ? $args['orderby'] : 'created_at';
+		$order           = 'DESC' === strtoupper( $args['order'] ) ? 'DESC' : 'ASC';
+
 		$where = array( '1=1' );
 		if ( ! empty( $args['status'] ) ) {
 			$where[] = $wpdb->prepare( 'status = %s', $args['status'] );
@@ -83,7 +92,7 @@ class LeadFlow_CRM {
 		$where_str = implode( ' AND ', $where );
 
 		$query = $wpdb->prepare(
-			"SELECT * FROM {$prefix}leads WHERE $where_str ORDER BY {$args['orderby']} {$args['order']} LIMIT %d OFFSET %d",
+			"SELECT * FROM {$prefix}leads WHERE $where_str ORDER BY $orderby $order LIMIT %d OFFSET %d",
 			$args['limit'],
 			$args['offset']
 		);

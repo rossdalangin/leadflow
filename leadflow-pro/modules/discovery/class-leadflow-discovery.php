@@ -186,10 +186,11 @@ class LeadFlow_Discovery {
 
 		while ( ( $data = fgetcsv( $handle ) ) !== false ) {
 			LeadFlow_CRM::create_lead( array(
-				'business_name' => $data[0],
-				'website_url'   => $data[1],
-				'email'         => $data[2],
-				'phone'         => $data[3],
+				'business_name' => isset( $data[0] ) ? $data[0] : '',
+				'website_url'   => isset( $data[1] ) ? $data[1] : '',
+				'email'         => isset( $data[2] ) ? $data[2] : '',
+				'phone'         => isset( $data[3] ) ? $data[3] : '',
+				'social_links'  => isset( $data[4] ) ? $data[4] : wp_json_encode( array() ),
 				'lead_source'   => 'CSV Import',
 			) );
 			$count++;

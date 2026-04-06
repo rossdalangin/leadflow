@@ -28,8 +28,10 @@ class LeadFlow_Email {
 		$headers[] = 'Content-Type: text/html; charset=UTF-8';
 		$headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
 
-		// Open tracking pixel (using hash for privacy)
-		$tracking_hash  = wp_hash( $to );
+		// Generate a unique tracking hash for this specific email instance
+		$tracking_hash = wp_hash( $to . current_time( 'mysql' ) . uniqid() );
+
+		// Open tracking pixel
 		$tracking_pixel = '<img src="' . get_rest_url( null, 'leadflow/v1/track/open/' . $tracking_hash ) . '" width="1" height="1" />';
 		$body .= $tracking_pixel;
 
@@ -196,23 +198,10 @@ class LeadFlow_Email {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		// Identify lead by matching hash (Iterate or store hash in lead table for performance)
-		$leads = $wpdb->get_results( "SELECT id, email FROM {$prefix}leads" );
-		$lead_id = 0;
-
-		foreach ( $leads as $lead ) {
-			if ( wp_hash( $lead->email ) === $hash ) {
-				$lead_id = $lead->id;
-				break;
-			}
-		}
-
-		if ( $lead_id ) {
-			$wpdb->query( $wpdb->prepare(
-				"UPDATE {$prefix}email_log SET status = 'Opened', opens_count = opens_count + 1, last_tracked_at = %s WHERE lead_id = %d ORDER BY created_at DESC LIMIT 1",
-				current_time( 'mysql' ),
-				$lead_id
-			) );
-		}
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE {$prefix}email_log SET status = 'Opened', opens_count = opens_count + 1, last_tracked_at = %s WHERE tracking_hash = %s",
+			current_time( 'mysql' ),
+			$hash
+		) );
 	}
 }

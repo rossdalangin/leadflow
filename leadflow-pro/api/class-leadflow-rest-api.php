@@ -221,11 +221,25 @@ class LeadFlow_REST_API {
 		$params  = $request->get_params();
 
 		$data = array();
-		$fields = array( 'first_name', 'business_name', 'website_url', 'email', 'phone', 'status', 'lead_source' );
-		foreach ( $fields as $field ) {
+		$fields = array(
+			'first_name'    => 'sanitize_text_field',
+			'business_name' => 'sanitize_text_field',
+			'website_url'   => 'esc_url_raw',
+			'email'         => 'sanitize_email',
+			'phone'         => 'sanitize_text_field',
+			'status'        => 'sanitize_text_field',
+			'lead_source'   => 'sanitize_text_field',
+			'social_links'  => 'wp_kses_post', // JSON string
+		);
+
+		foreach ( $fields as $field => $sanitizer ) {
 			if ( isset( $params[ $field ] ) ) {
-				$data[ $field ] = $params[ $field ];
+				$data[ $field ] = call_user_func( $sanitizer, $params[ $field ] );
 			}
+		}
+
+		if ( empty( $data['business_name'] ) ) {
+			return new WP_Error( 'missing_field', 'Business Name is required.', array( 'status' => 400 ) );
 		}
 
 		$lead_id = LeadFlow_CRM::create_lead( $data );
@@ -274,10 +288,20 @@ class LeadFlow_REST_API {
 		$prefix = $wpdb->prefix . 'leadflow_';
 
 		$data = array();
-		$fields = array( 'first_name', 'business_name', 'website_url', 'email', 'phone', 'status', 'assigned_to' );
-		foreach ( $fields as $field ) {
+		$fields = array(
+			'first_name'    => 'sanitize_text_field',
+			'business_name' => 'sanitize_text_field',
+			'website_url'   => 'esc_url_raw',
+			'email'         => 'sanitize_email',
+			'phone'         => 'sanitize_text_field',
+			'status'        => 'sanitize_text_field',
+			'assigned_to'   => 'absint',
+			'social_links'  => 'wp_kses_post', // JSON string
+		);
+
+		foreach ( $fields as $field => $sanitizer ) {
 			if ( isset( $params[ $field ] ) ) {
-				$data[ $field ] = $params[ $field ];
+				$data[ $field ] = call_user_func( $sanitizer, $params[ $field ] );
 			}
 		}
 
@@ -339,18 +363,11 @@ class LeadFlow_REST_API {
 		$hash   = $request['id'];
 		$redir  = $request->get_param( 'redir' );
 
-		// Identify lead
-		$leads = $wpdb->get_results( "SELECT id, email FROM {$prefix}leads" );
-		foreach ( $leads as $lead ) {
-			if ( wp_hash( $lead->email ) === $hash ) {
-				$wpdb->query( $wpdb->prepare(
-					"UPDATE {$prefix}email_log SET status = 'Clicked', clicks_count = clicks_count + 1, last_tracked_at = %s WHERE lead_id = %d ORDER BY created_at DESC LIMIT 1",
-					current_time( 'mysql' ),
-					$lead->id
-				) );
-				break;
-			}
-		}
+		$wpdb->query( $wpdb->prepare(
+			"UPDATE {$prefix}email_log SET status = 'Clicked', clicks_count = clicks_count + 1, last_tracked_at = %s WHERE tracking_hash = %s",
+			current_time( 'mysql' ),
+			$hash
+		) );
 
 		if ( ! empty( $redir ) ) {
 			wp_redirect( esc_url_raw( $redir ) );
@@ -365,12 +382,14 @@ class LeadFlow_REST_API {
 		$prefix = $wpdb->prefix . 'leadflow_';
 		$hash   = $request['id'];
 
-		$leads = $wpdb->get_results( "SELECT id, email FROM {$prefix}leads" );
-		foreach ( $leads as $lead ) {
-			if ( wp_hash( $lead->email ) === $hash ) {
-				LeadFlow_Compliance::add_opt_out( $lead->email, 'Unsubscribe Link' );
-				wp_die( 'You have been successfully unsubscribed.' );
-			}
+		$email = $wpdb->get_var( $wpdb->prepare(
+			"SELECT l.email FROM {$prefix}leads l JOIN {$prefix}email_log e ON l.id = e.lead_id WHERE e.tracking_hash = %s",
+			$hash
+		) );
+
+		if ( $email ) {
+			LeadFlow_Compliance::add_opt_out( $email, 'Unsubscribe Link' );
+			wp_die( 'You have been successfully unsubscribed.' );
 		}
 
 		wp_die( 'Invalid request.' );
@@ -575,6 +594,21 @@ class LeadFlow_REST_API {
 		if ( is_wp_error( $sent ) ) {
 			return $sent;
 		}
+
+		// Pull tracking hash from content (if any)
+		preg_match( '/\/track\/open\/([a-zA-Z0-9]+)/', $message, $matches );
+		$tracking_hash = isset( $matches[1] ) ? $matches[1] : '';
+
+		$wpdb->insert(
+			"{$prefix}email_log",
+			array(
+				'lead_id'       => $lead_id,
+				'tracking_hash' => $tracking_hash,
+				'subject'       => 'Re: Your inquiry',
+				'status'        => 'Sent',
+				'created_at'    => current_time( 'mysql' ),
+			)
+		);
 
 		LeadFlow_CRM::add_note( $lead_id, "Outbound Reply: " . $message );
 

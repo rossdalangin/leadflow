@@ -105,6 +105,7 @@ class LeadFlow_DB {
 			lead_id BIGINT UNSIGNED NOT NULL,
 			campaign_id BIGINT UNSIGNED,
 			step_id BIGINT UNSIGNED,
+			tracking_hash VARCHAR(64),
 			subject VARCHAR(255),
 			status VARCHAR(20) DEFAULT 'Sent', -- Sent, Failed, Opened, Clicked, Replied
 			opens_count INT UNSIGNED DEFAULT 0,
@@ -112,6 +113,7 @@ class LeadFlow_DB {
 			last_tracked_at DATETIME,
 			created_at DATETIME NOT NULL,
 			PRIMARY KEY (id),
+			UNIQUE KEY tracking_hash (tracking_hash),
 			KEY lead_id (lead_id),
 			KEY campaign_id (campaign_id)
 		) $charset_collate;
