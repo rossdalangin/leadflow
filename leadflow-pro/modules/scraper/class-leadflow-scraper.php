@@ -72,7 +72,9 @@ class LeadFlow_Scraper {
 			return;
 		}
 
-		$response = wp_remote_get( $url, array( 'timeout' => 20, 'user-agent' => 'LeadFlowPro-Bot/1.0' ) );
+		$start_time = microtime( true );
+		$response   = wp_remote_get( $url, array( 'timeout' => 20, 'user-agent' => 'LeadFlowPro-Bot/1.0' ) );
+		$load_time  = round( microtime( true ) - $start_time, 3 );
 
 		if ( is_wp_error( $response ) ) {
 			$wpdb->update( "{$prefix}scrape_queue", array( 'status' => 'Failed', 'error_log' => $response->get_error_message() ), array( 'id' => $job_id ) );
@@ -88,7 +90,7 @@ class LeadFlow_Scraper {
 			return;
 		}
 
-		$audit_results = self::parse_html( $html, $url );
+		$audit_results = self::parse_html( $html, $url, $load_time );
 
 		// Update lead with enriched data and full audit results
 		$wpdb->update(
@@ -155,7 +157,7 @@ class LeadFlow_Scraper {
 	/**
 	 * Parse HTML to extract contact info and signals.
 	 */
-	private static function parse_html( $html, $url ) {
+	private static function parse_html( $html, $url, $load_time ) {
 		$results = array(
 			'email'                 => '',
 			'social_links'          => array(),
@@ -163,7 +165,7 @@ class LeadFlow_Scraper {
 			'has_contact_form'      => false,
 			'is_mobile_responsive'  => false,
 			'outdated_design'       => false,
-			'load_time'             => 0.5, // Mock value for heuristic
+			'load_time'             => $load_time,
 		);
 
 		// Extract emails using regex + mailto

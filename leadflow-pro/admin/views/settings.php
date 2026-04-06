@@ -58,8 +58,12 @@
 			<?php include_once LEADFLOW_PRO_PATH . 'admin/views/settings-ai.php'; ?>
 			<table class="form-table">
 				<tr>
-					<th scope="row">Monthly Token Budget (AI)</th>
-					<td><input type="number" name="leadflow_token_budget" value="<?php echo esc_attr( get_option( 'leadflow_token_budget', 50000 ) ); ?>" class="regular-text"> tokens</td>
+					<th scope="row">OpenAI Monthly Token Budget</th>
+					<td><input type="number" name="leadflow_token_budget_openai" value="<?php echo esc_attr( get_option( 'leadflow_token_budget_openai', 50000 ) ); ?>" class="regular-text"> tokens</td>
+				</tr>
+				<tr>
+					<th scope="row">Gemini Monthly Token Budget</th>
+					<td><input type="number" name="leadflow_token_budget_gemini" value="<?php echo esc_attr( get_option( 'leadflow_token_budget_gemini', 50000 ) ); ?>" class="regular-text"> tokens</td>
 				</tr>
 			</table>
 		</div>

@@ -64,11 +64,14 @@ class LeadFlow_Core {
 		if ( ! LeadFlow_License::is_pro() ) {
 			global $wpdb;
 			$prefix = $wpdb->prefix . 'leadflow_';
-			$budget = (int) get_option( 'leadflow_token_budget', 50000 );
-			$used = $wpdb->get_var( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage" );
 
-			if ( $used >= ( $budget * 0.8 ) ) {
-				echo '<div class="notice notice-warning"><p><strong>LeadFlow Pro:</strong> You have consumed ' . $used . ' AI tokens (80% of your budget). Consider upgrading to Pro for unlimited AI.</p></div>';
+			foreach ( array( 'openai', 'gemini' ) as $provider ) {
+				$budget = (int) get_option( "leadflow_token_budget_$provider", 50000 );
+				$used = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage WHERE provider = %s", $provider ) );
+
+				if ( $used >= ( $budget * 0.8 ) ) {
+					echo '<div class="notice notice-warning"><p><strong>LeadFlow Pro:</strong> You have consumed ' . $used . ' ' . ucfirst( $provider ) . ' tokens (80% of your budget). Consider upgrading to Pro for unlimited AI.</p></div>';
+				}
 			}
 		}
 	}
@@ -83,6 +86,9 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_port' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_user' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_pass' );
+		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_openai' );
+		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_gemini' );
+		register_setting( 'leadflow-settings-group', 'leadflow_crawl_delay' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_name' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_email' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );

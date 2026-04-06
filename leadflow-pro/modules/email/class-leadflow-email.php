@@ -53,15 +53,39 @@ class LeadFlow_Email {
 	}
 
 	/**
-	 * Gmail API send stub (Pro Feature).
+	 * Gmail API send implementation (Pro Feature).
 	 */
 	private static function send_via_gmail_api( $to, $subject, $body, $headers ) {
 		$token = LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_token' );
 		if ( ! $token ) {
 			return new WP_Error( 'gmail_not_auth', 'Gmail not authenticated.' );
 		}
-		// In a real implementation, we would use Google_Service_Gmail
-		// and send a base64url encoded raw message.
+
+		// Encapsulate the raw RFC 2822 message
+		$boundary = uniqid( 'np', true );
+		$raw_message  = "To: $to\r\n";
+		$raw_message .= "Subject: $subject\r\n";
+		$raw_message .= "MIME-Version: 1.0\r\n";
+		$raw_message .= "Content-Type: multipart/alternative; boundary=\"$boundary\"\r\n\r\n";
+		$raw_message .= "--$boundary\r\n";
+		$raw_message .= "Content-Type: text/html; charset=UTF-8\r\n\r\n";
+		$raw_message .= $body . "\r\n\r\n";
+		$raw_message .= "--$boundary--";
+
+		$encoded_message = strtr( base64_encode( $raw_message ), array( '+' => '-', '/' => '_', '=' => '' ) );
+
+		$response = wp_remote_post( 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send', array(
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $token,
+				'Content-Type'  => 'application/json',
+			),
+			'body' => wp_json_encode( array( 'raw' => $encoded_message ) ),
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
 		return true;
 	}
 

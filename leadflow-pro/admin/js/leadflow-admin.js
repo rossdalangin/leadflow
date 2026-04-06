@@ -61,6 +61,27 @@
 			loadThread(leadId);
 		});
 
+		function loadTags() {
+			$.ajax({
+				url: apiUrl + '/tags',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(tags) {
+					const select = $('#addTagSelect');
+					select.find('option:not(:first)').remove();
+					tags.forEach(tag => {
+						select.append(`<option value="${tag.id}">${tag.name}</option>`);
+					});
+				}
+			});
+		}
+
+		if ($('#addTagSelect').length) {
+			loadTags();
+		}
+
 		function loadThread(leadId) {
 			$('#inboxThread').html('<p>Loading conversation...</p>');
 

@@ -69,6 +69,13 @@
 				<button class="button button-small ai-score-btn">✨ AI: Score Lead</button>
 				<button class="button button-small ai-summarize-btn" style="margin-top:10px;">✨ AI: Summarize Audit</button>
 			</div>
+			<div class="tag-tools" style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+				<h4>Lead Tags</h4>
+				<div id="leadTagsList"></div>
+				<select id="addTagSelect">
+					<option value="">+ Add Tag</option>
+				</select>
+			</div>
 			<div class="gdpr-tools" style="margin-top:30px; border-top:1px solid #eee; padding-top:15px;">
 				<h4>GDPR Compliance</h4>
 				<button class="button button-small export-data-btn">Export Data</button>

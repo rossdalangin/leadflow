@@ -120,6 +120,22 @@ class LeadFlow_REST_API {
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
+
+		register_rest_route( 'leadflow/v1', '/tags', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_tags' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/tags', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_lead_tags' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
 	}
 
 	public function check_permission() {
@@ -284,6 +300,30 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( $stats );
+	}
+
+	public function get_tags() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$tags = $wpdb->get_results( "SELECT * FROM {$prefix}lead_tags" );
+		return rest_ensure_response( $tags );
+	}
+
+	public function update_lead_tags( $request ) {
+		global $wpdb;
+		$lead_id = $request['id'];
+		$tags = $request->get_param( 'tags' ); // Array of tag IDs
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$wpdb->delete( "{$prefix}lead_tag_relationships", array( 'lead_id' => $lead_id ) );
+
+		if ( ! empty( $tags ) ) {
+			foreach ( $tags as $tag_id ) {
+				$wpdb->insert( "{$prefix}lead_tag_relationships", array( 'lead_id' => $lead_id, 'tag_id' => $tag_id ) );
+			}
+		}
+
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function export_csv() {
