@@ -9,7 +9,13 @@ $open_rate = $total_emails > 0 ? round( ($total_opens / $total_emails) * 100, 1 
 $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status = 'Qualified'" );
 ?>
 <div class="wrap leadflow-dashboard">
-	<h1>LeadFlow Pro Dashboard</h1>
+	<h1 class="wp-heading-inline">LeadFlow Pro Dashboard</h1>
+	<div class="dashboard-filters" style="float:right; margin-top:10px;">
+		<input type="date" id="statsDateStart"> to <input type="date" id="statsDateEnd">
+		<button class="button" id="refreshStats">Refresh</button>
+	</div>
+	<hr class="wp-header-end">
+
 	<div class="leadflow-kpi-grid">
 		<div class="kpi-card">
 			<h3>Total Leads</h3>
@@ -38,6 +44,24 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 			<h3>Outreach Performance</h3>
 			<canvas id="outreachChart"></canvas>
 		</div>
+	</div>
+
+	<div class="leadflow-campaign-stats chart-box">
+		<h3>Campaign Performance</h3>
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th>Campaign</th>
+					<th>Sent</th>
+					<th>Opens</th>
+					<th>Clicks</th>
+					<th>Replies</th>
+				</tr>
+			</thead>
+			<tbody id="campaignStatsBody">
+				<!-- Populated by JS -->
+			</tbody>
+		</table>
 	</div>
 
 	<div class="leadflow-recent-activity">

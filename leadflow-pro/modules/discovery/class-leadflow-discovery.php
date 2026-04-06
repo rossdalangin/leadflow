@@ -90,6 +90,37 @@ class LeadFlow_Discovery {
 	}
 
 	/**
+	 * Generic business directory scraper (Simulated).
+	 */
+	public static function scrape_directory( $url ) {
+		if ( empty( $url ) ) {
+			return new WP_Error( 'missing_url', 'Directory URL is required.' );
+		}
+
+		$response = wp_remote_get( $url, array( 'timeout' => 20 ) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$html = wp_remote_retrieve_body( $response );
+
+		// Simulated pattern: <div class="business-card" data-name="Business Name" data-website="http://...">
+		$leads = array();
+		if ( preg_match_all( '/data-name=["\'](.*?)["\']\s+data-website=["\'](.*?)["\']/', $html, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$leads[] = array(
+					'business_name' => $match[1],
+					'website_url'   => $match[2],
+					'lead_source'   => 'Directory Scraper',
+				);
+			}
+		}
+
+		return $leads;
+	}
+
+	/**
 	 * Bulk import leads from CSV.
 	 *
 	 * @param string $file_path The path to the CSV file.

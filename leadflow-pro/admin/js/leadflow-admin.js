@@ -63,7 +63,36 @@
 
 		function loadThread(leadId) {
 			$('#inboxThread').html('<p>Loading conversation...</p>');
-			// In real app, fetch from email_log API
+
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/activity',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const thread = $('#inboxThread');
+					thread.empty();
+
+					const items = [...data.notes, ...data.emails];
+					items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+					items.forEach(item => {
+						const type = item.subject ? 'email' : 'note';
+						const content = item.body || item.content || item.subject;
+						thread.append(`
+							<div class="thread-item ${type}">
+								<div class="thread-meta">${item.created_at}</div>
+								<div class="thread-content">${content}</div>
+							</div>
+						`);
+					});
+
+					if (items.length === 0) {
+						thread.html('<p>No activity yet.</p>');
+					}
+				}
+			});
 		}
 
 		// Send Reply
@@ -210,6 +239,32 @@
 
 		if ($('#leadsStatusChart').length) {
 			renderCharts();
+			fetchCampaignStats();
+		}
+
+		function fetchCampaignStats() {
+			$.ajax({
+				url: apiUrl + '/analytics/campaigns',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const tbody = $('#campaignStatsBody');
+					tbody.empty();
+					data.forEach(stat => {
+						tbody.append(`
+							<tr>
+								<td><strong>${stat.name}</strong></td>
+								<td>${stat.sent}</td>
+								<td>${stat.opens}</td>
+								<td>${stat.clicks}</td>
+								<td>${stat.replies}</td>
+							</tr>
+						`);
+					});
+				}
+			});
 		}
 
 		function renderCharts() {

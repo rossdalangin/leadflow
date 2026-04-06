@@ -161,10 +161,21 @@ class LeadFlow_Outreach {
 	 * Personalize email content with tokens.
 	 */
 	private static function personalize_email( $content, $lead ) {
+		$audit_data = ! empty( $lead->audit_data ) ? JSON_decode( $lead->audit_data, true ) : array();
+
+		$audit_hook = '';
+		if ( isset( $audit_data['has_ssl'] ) && ! $audit_data['has_ssl'] ) {
+			$audit_hook = "I noticed your site doesn't have SSL.";
+		} elseif ( isset( $audit_data['outdated_design'] ) && $audit_data['outdated_design'] ) {
+			$audit_hook = "I noticed your site design is a bit outdated.";
+		}
+
 		$tokens = array(
 			'{{business_name}}' => $lead->business_name,
 			'{{website}}'       => $lead->website_url,
 			'{{email}}'         => $lead->email,
+			'{{city}}'          => isset( $audit_data['city'] ) ? $audit_data['city'] : '',
+			'{{audit_flag}}'    => $audit_hook,
 		);
 
 		return strtr( $content, $tokens );

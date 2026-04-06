@@ -28,6 +28,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/activity', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_lead_activity' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)', array(
 			array(
 				'methods'             => WP_REST_Server::EDITABLE,
@@ -101,6 +109,14 @@ class LeadFlow_REST_API {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'export_csv' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/analytics/campaigns', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_campaign_analytics' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
@@ -245,8 +261,44 @@ class LeadFlow_REST_API {
 		wp_die( 'Invalid request.' );
 	}
 
+	public function get_campaign_analytics( $request ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$campaigns = $wpdb->get_results( "SELECT id, name FROM {$prefix}campaigns" );
+		$stats = array();
+
+		foreach ( $campaigns as $campaign ) {
+			$sent = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d", $campaign->id ) );
+			$opens = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND opens_count > 0", $campaign->id ) );
+			$clicks = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND clicks_count > 0", $campaign->id ) );
+			$replies = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND status = 'Replied'", $campaign->id ) );
+
+			$stats[] = array(
+				'name' => $campaign->name,
+				'sent' => $sent,
+				'opens' => $opens,
+				'clicks' => $clicks,
+				'replies' => $replies,
+			);
+		}
+
+		return rest_ensure_response( $stats );
+	}
+
 	public function export_csv() {
 		return LeadFlow_CRM::export_to_csv();
+	}
+
+	public function get_lead_activity( $request ) {
+		global $wpdb;
+		$lead_id = $request['id'];
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$notes = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}lead_notes WHERE lead_id = %d ORDER BY created_at ASC", $lead_id ) );
+		$emails = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}email_log WHERE lead_id = %d ORDER BY created_at ASC", $lead_id ) );
+
+		return rest_ensure_response( array( 'notes' => $notes, 'emails' => $emails ) );
 	}
 
 	public function discovery_search( $request ) {
