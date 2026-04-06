@@ -119,4 +119,12 @@ class LeadFlow_AI {
 		$prompt = "Convert these raw website audit flags into a plain-English sentence usable as an outreach hook: " . wp_json_encode( $audit_results );
 		return self::complete( $prompt, array( 'feature' => 'audit_insight' ) );
 	}
+
+	/**
+	 * AI: Suggest a reply to an inbound message.
+	 */
+	public static function suggest_reply( $inbound_text ) {
+		$prompt = "Suggest a professional and friendly reply to this email from a potential lead: \"$inbound_text\"";
+		return self::complete( $prompt, array( 'feature' => 'reply_suggestion' ) );
+	}
 }

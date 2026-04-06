@@ -315,6 +315,9 @@ class LeadFlow_REST_API {
 			case 'audit_insight':
 				$result = LeadFlow_AI::summarize_audit( $context['audit_results'] );
 				break;
+			case 'reply_suggestion':
+				$result = LeadFlow_AI::suggest_reply( $context['inbound_text'] );
+				break;
 			default:
 				$result = LeadFlow_AI::complete( $prompt, $context );
 		}

@@ -11,14 +11,14 @@
 		<tr>
 			<th scope="row">OpenAI API Key</th>
 			<td>
-				<input type="password" name="leadflow_openai_api_key" value="<?php echo esc_attr( get_option( 'leadflow_openai_api_key' ) ); ?>" class="regular-text">
+				<input type="password" name="leadflow_openai_api_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_openai_api_key' ) ); ?>" class="regular-text">
 				<button type="button" class="button test-ai-connection" data-provider="openai">Test Connection</button>
 			</td>
 		</tr>
 		<tr>
 			<th scope="row">Gemini API Key</th>
 			<td>
-				<input type="password" name="leadflow_gemini_api_key" value="<?php echo esc_attr( get_option( 'leadflow_gemini_api_key' ) ); ?>" class="regular-text">
+				<input type="password" name="leadflow_gemini_api_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_gemini_api_key' ) ); ?>" class="regular-text">
 				<button type="button" class="button test-ai-connection" data-provider="gemini">Test Connection</button>
 			</td>
 		</tr>

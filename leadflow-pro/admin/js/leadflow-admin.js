@@ -224,6 +224,38 @@
 			});
 		}
 
+		// AI Suggest Reply
+		$(document).on('click', '.ai-reply-btn', function() {
+			const btn = $(this);
+			const leadId = $('.inbox-item.active').data('lead-id') || (window.currentLead ? window.currentLead.id : null);
+			if (!leadId) return;
+
+			btn.text('Thinking...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/ai/complete',
+				method: 'POST',
+				data: {
+					context: {
+						feature: 'reply_suggestion',
+						lead_id: leadId,
+						inbound_text: 'I am interested in your services, tell me more.' // Mock - in real app, pull last inbound from thread
+					}
+				},
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(response) {
+					$('#replyText').val(response.result);
+					btn.text('✨ AI: Suggest Reply').prop('disabled', false);
+				},
+				error: function() {
+					alert('AI reply generation failed.');
+					btn.text('✨ AI: Suggest Reply').prop('disabled', false);
+				}
+			});
+		});
+
 		// Send Reply
 		$('#sendReplyBtn').on('click', function() {
 			const leadId = $('.inbox-item.active').data('lead-id');
