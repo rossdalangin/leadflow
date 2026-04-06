@@ -62,6 +62,44 @@
 			});
 		}
 
+		// Bulk Import Selected
+		$('#importSelectedLeads').on('click', function() {
+			const selectedIndices = [];
+			$('.discovery-item-check:checked').each(function() {
+				selectedIndices.push($(this).val());
+			});
+
+			if (selectedIndices.length === 0) {
+				alert('Please select at least one lead to import.');
+				return;
+			}
+
+			const btn = $(this);
+			const originalText = btn.text();
+			btn.text('Bulk Importing...').prop('disabled', true);
+
+			let processed = 0;
+			selectedIndices.forEach(index => {
+				const lead = window.currentDiscoveryResults[index];
+				$.ajax({
+					url: apiUrl + '/leads',
+					method: 'POST',
+					data: lead,
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader('X-WP-Nonce', nonce);
+					},
+					success: function() {
+						processed++;
+						if (processed === selectedIndices.length) {
+							alert('Bulk import complete!');
+							btn.text(originalText).prop('disabled', false);
+							location.reload();
+						}
+					}
+				});
+			});
+		});
+
 		// Inbox Item Click
 		$(document).on('click', '.inbox-item', function() {
 			const leadId = $(this).data('lead-id');
