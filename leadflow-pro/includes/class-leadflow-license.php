@@ -77,9 +77,10 @@ class LeadFlow_License {
 				$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}campaigns" );
 				return $count < 1;
 			case 'ai_usage':
-				// Mock logic for AI usage limit on Free plan
-				$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}ai_usage" );
-				return $count < 5;
+				$provider = get_option( 'leadflow_ai_provider', 'openai' );
+				$budget = (int) get_option( "leadflow_token_budget_$provider", 50000 );
+				$used = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage WHERE provider = %s", $provider ) );
+				return $used < $budget;
 			default:
 				return false;
 		}

@@ -295,6 +295,54 @@
 			fetchLeads();
 		}
 
+		// View Lead Detail
+		$(document).on('click', '.view-lead', function() {
+			const leadId = $(this).data('id');
+			$('#leadDetailModal').fadeIn();
+
+			// Load activity into the modal thread
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/activity',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const thread = $('#detailLeadThread');
+					thread.empty();
+					const items = [...data.notes, ...data.emails];
+					items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+					items.forEach(item => {
+						const type = item.subject ? 'email' : 'note';
+						const content = item.body || item.content || item.subject;
+						thread.append(`<div class="thread-item ${type}"><div class="thread-meta">${item.created_at}</div><div class="thread-content">${content}</div></div>`);
+					});
+				}
+			});
+
+			// Load lead data into the modal sidebar
+			$.ajax({
+				url: apiUrl + '/leads',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(leads) {
+					const lead = leads.find(l => l.id == leadId);
+					window.currentLead = lead; // Update global context for AI buttons
+					$('#detailLeadName').text(lead.business_name);
+
+					if (lead.audit_data) {
+						const audit = JSON.parse(lead.audit_data);
+						let html = `<div class="audit-summary"><ul class="audit-checklist"><li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL' : '❌ No SSL'}</li><li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile' : '❌ No Mobile'}</li><li>⏱️ Load: ${audit.load_time}s</li></ul></div>`;
+						$('#detailLeadSidebar').html(html);
+					}
+
+					$('#detailAiTools button').data('lead-id', leadId);
+				}
+			});
+		});
+
 		// CSV Import
 		$('#csvImportForm').on('submit', function(e) {
 			e.preventDefault();
@@ -356,6 +404,17 @@
 		if ($('#campaignListBody').length) {
 			fetchCampaigns();
 		}
+
+		// Campaign Actions (Pause/Delete)
+		$(document).on('click', '.campaign-action', function() {
+			const id = $(this).data('id');
+			const action = $(this).data('action');
+
+			if (action === 'delete' && !confirm('Delete this campaign?')) return;
+
+			// In real app, call API. For now, alert.
+			alert('Campaign ' + action + ' triggered for ID ' + id);
+		});
 
 		// Select All Leads
 		$('#selectAllLeads').on('change', function() {
@@ -697,6 +756,8 @@
 		// Create Campaign
 		$('#createCampaignBtn').on('click', function(e) {
 			e.preventDefault();
+			$('#sequenceSteps').empty();
+			$('#addStepBtn').trigger('click'); // Add first step
 			$('#campaignBuilderModal').fadeIn();
 		});
 
@@ -920,6 +981,28 @@
 			alert('Status updated to ' + newStatus);
 		});
 
+		// Add Tag to Lead
+		$(document).on('change', '#addTagSelect', function() {
+			const tagId = $(this).val();
+			const leadId = window.currentLead ? window.currentLead.id : (window.selectedInboxLeadId || null);
+			if (!tagId || !leadId) return;
+
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/tags',
+				method: 'POST',
+				data: { tags: [tagId] }, // In production, this would append
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Tag added successfully.');
+					if (window.currentLead) {
+						loadLeadSidebar(leadId);
+					}
+				}
+			});
+		});
+
 		// Inline Assignee Update
 		$(document).on('change', '.inline-assignee-update', function() {
 			const leadId = $(this).data('id');
@@ -972,6 +1055,32 @@
 					alert('Audit completed and AI insights updated!');
 					btn.text('Audit').prop('disabled', false);
 					fetchLeads();
+				}
+			});
+		});
+
+		// Send Test Email
+		$('#sendTestEmail').on('click', function() {
+			const email = $('#testEmailAddr').val();
+			if (!email) return;
+
+			const btn = $(this);
+			btn.text('Sending...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/settings/test-email',
+				method: 'POST',
+				data: { email: email },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Test email sent successfully! Please check your inbox.');
+					btn.text('Send Test Email').prop('disabled', false);
+				},
+				error: function(err) {
+					alert('Failed to send test email: ' + err.responseJSON.message);
+					btn.text('Send Test Email').prop('disabled', false);
 				}
 			});
 		});

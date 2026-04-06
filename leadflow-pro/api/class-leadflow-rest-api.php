@@ -28,6 +28,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/settings/test-email', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'test_email' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/audit', array(
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -513,6 +521,21 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( array( 'id' => $campaign_id ) );
+	}
+
+	public function test_email( $request ) {
+		$to = $request->get_param( 'email' );
+		if ( empty( $to ) ) {
+			return new WP_Error( 'missing_email', 'Test email address is required.', array( 'status' => 400 ) );
+		}
+
+		$sent = LeadFlow_Email::send( $to, 'LeadFlow Pro: Test Email', '<p>Your email configuration is working correctly!</p>' );
+
+		if ( is_wp_error( $sent ) ) {
+			return $sent;
+		}
+
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function discovery_search( $request ) {

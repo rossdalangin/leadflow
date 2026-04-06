@@ -105,6 +105,13 @@
 						</select>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">Test Delivery</th>
+					<td>
+						<input type="email" id="testEmailAddr" class="regular-text" placeholder="your-email@example.com">
+						<button type="button" class="button" id="sendTestEmail">Send Test Email</button>
+					</td>
+				</tr>
 			</table>
 
 			<h2>IMAP (Inbox Receiving)</h2>

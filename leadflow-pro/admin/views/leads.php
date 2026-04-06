@@ -86,6 +86,30 @@
 		</div>
 	</div>
 
+	<!-- Lead Detail Modal -->
+	<div id="leadDetailModal" class="leadflow-modal" style="display:none;">
+		<div class="modal-content" style="max-width: 900px; height: 80vh; display: flex; flex-direction: column;">
+			<div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+				<h2 id="detailLeadName">Lead Details</h2>
+				<button class="button close-modal">Close</button>
+			</div>
+			<div class="modal-body" style="flex:1; overflow-y:auto; display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
+				<div class="lead-activity-section">
+					<h3>Activity Log & Conversation</h3>
+					<div id="detailLeadThread" class="inbox-thread" style="height:400px; border:1px solid var(--leadflow-border); border-radius:12px;"></div>
+				</div>
+				<div class="lead-info-section">
+					<h3>Audit Insights</h3>
+					<div id="detailLeadSidebar" class="inbox-sidebar" style="background:transparent; border:none; padding:0;"></div>
+					<div id="detailAiTools" style="margin-top:20px;">
+						<button class="button button-small ai-score-btn">✨ AI: Score</button>
+						<button class="button button-small ai-summarize-btn">✨ AI: Hook</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<!-- Add Lead Modal -->
 	<div id="addLeadModal" class="leadflow-modal" style="display:none;">
 		<div class="modal-content">

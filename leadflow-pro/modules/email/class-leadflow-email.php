@@ -174,6 +174,12 @@ class LeadFlow_Email {
 			$sentiment = LeadFlow_AI::analyze_sentiment( $body );
 			LeadFlow_CRM::add_note( $lead->id, "Inbound Reply (Sentiment: $sentiment): " . $body );
 
+			// Auto-detect unsubscribe intent
+			if ( LeadFlow_Compliance::detect_unsubscribe_intent( $body ) ) {
+				LeadFlow_Compliance::add_opt_out( $email, 'Detected in reply' );
+				LeadFlow_CRM::add_note( $lead->id, "Lead automatically added to suppression list due to unsubscribe intent.", 0 );
+			}
+
 			// Log as replied in email log
 			$wpdb->update(
 				"{$prefix}email_log",
