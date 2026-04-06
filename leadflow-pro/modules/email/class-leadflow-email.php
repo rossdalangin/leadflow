@@ -123,9 +123,17 @@ class LeadFlow_Email {
 			return;
 		}
 
-		$server = '{' . $settings['host'] . ':' . $settings['port'] . '/imap/' . $settings['encryption'] . '}INBOX';
-		$user   = $settings['user'];
-		$pass   = LeadFlow_Security::get_decrypted_option( 'leadflow_imap_pass' );
+		$host = get_option( 'leadflow_imap_host' );
+		$port = get_option( 'leadflow_imap_port' );
+		$user = get_option( 'leadflow_imap_user' );
+		$pass = LeadFlow_Security::get_decrypted_option( 'leadflow_imap_pass' );
+		$enc  = get_option( 'leadflow_imap_encryption', 'ssl' );
+
+		if ( empty( $host ) || empty( $user ) || empty( $pass ) ) {
+			return;
+		}
+
+		$server = '{' . $host . ':' . $port . '/imap/' . $enc . '}INBOX';
 
 		$inbox = imap_open( $server, $user, $pass );
 

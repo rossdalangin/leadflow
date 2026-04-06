@@ -202,6 +202,7 @@ class LeadFlow_Outreach {
 		}
 
 		$tokens = array(
+			'{{first_name}}'    => $lead->first_name,
 			'{{business_name}}' => $lead->business_name,
 			'{{website}}'       => $lead->website_url,
 			'{{email}}'         => $lead->email,

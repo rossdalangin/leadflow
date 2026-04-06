@@ -50,7 +50,7 @@
 		</div>
 
 		<div id="smtp" class="settings-section" style="display:none;">
-			<h2>SMTP & Email Configuration</h2>
+			<h2>SMTP (Sending)</h2>
 			<p class="description">Configure how LeadFlow Pro sends outreach emails. We recommend using a dedicated workspace or professional SMTP provider like SendGrid or Mailgun.</p>
 			<table class="form-table">
 				<tr>
@@ -68,6 +68,27 @@
 				<tr>
 					<th scope="row">SMTP Port</th>
 					<td><input type="number" name="leadflow_smtp_port" value="<?php echo esc_attr( get_option( 'leadflow_smtp_port' ) ); ?>" class="regular-text"></td>
+				</tr>
+			</table>
+
+			<h2>IMAP (Inbox Receiving)</h2>
+			<p class="description">Used to pull replies from your inbox and update lead statuses automatically.</p>
+			<table class="form-table">
+				<tr>
+					<th scope="row">IMAP Host</th>
+					<td><input type="text" name="leadflow_imap_host" value="<?php echo esc_attr( get_option( 'leadflow_imap_host' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">IMAP Port</th>
+					<td><input type="number" name="leadflow_imap_port" value="<?php echo esc_attr( get_option( 'leadflow_imap_port' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">IMAP User</th>
+					<td><input type="text" name="leadflow_imap_user" value="<?php echo esc_attr( get_option( 'leadflow_imap_user' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">IMAP Password</th>
+					<td><input type="password" name="leadflow_imap_pass" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_imap_pass' ) ); ?>" class="regular-text"></td>
 				</tr>
 			</table>
 		</div>

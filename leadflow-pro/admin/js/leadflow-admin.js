@@ -131,6 +131,7 @@
 				},
 				success: function(leads) {
 					const lead = leads.find(l => l.id == leadId);
+					window.currentLead = lead;
 					if (lead && lead.audit_data) {
 						const audit = JSON.parse(lead.audit_data);
 						let html = `
@@ -238,6 +239,9 @@
 		function renderLeadTable(leads) {
 			const tbody = $('#leadTableBody');
 			tbody.empty();
+
+			// Get users for assignment select
+			$.get(apiUrl + '/users', function(users) {
 			leads.forEach(lead => {
 				const audit = lead.audit_data ? JSON.parse(lead.audit_data) : {};
 				const score = calculateCompleteness(lead);
@@ -248,19 +252,97 @@
 						<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
 						<td><a href="${lead.website_url}" target="_blank">${lead.website_url}</a></td>
 						<td>${lead.email}</td>
-						<td><span class="status-badge status-${lead.status.toLowerCase()}">${lead.status}</span></td>
+						<td>
+							<select class="inline-assignee-update" data-id="${lead.id}">
+								<option value="">Unassigned</option>
+								${users.map(u => `<option value="${u.id}" ${lead.assigned_to == u.id ? 'selected' : ''}>${u.name}</option>`).join('')}
+							</select>
+						</td>
+						<td>
+							<select class="inline-status-update" data-id="${lead.id}">
+								<option value="New" ${lead.status === 'New' ? 'selected' : ''}>New</option>
+								<option value="Contacted" ${lead.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
+								<option value="Replied" ${lead.status === 'Replied' ? 'selected' : ''}>Replied</option>
+								<option value="Qualified" ${lead.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
+							</select>
+						</td>
 						<td>${lead.updated_at}</td>
 						<td>
 							<button class="button button-small view-lead" data-id="${lead.id}">View</button>
+							<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
+							<button class="button button-small opt-out-lead" data-email="${lead.email}">Opt-out</button>
 						</td>
 					</tr>
 				`);
+			});
 			});
 		}
 
 		// Initial Load
 		if ($('#leadTableBody').length) {
 			fetchLeads();
+		}
+
+		// CSV Import
+		$('#csvImportForm').on('submit', function(e) {
+			e.preventDefault();
+			const formData = new FormData();
+			formData.append('leads_csv', $(this).find('input[name="leads_csv"]')[0].files[0]);
+
+			const btn = $(this).find('button');
+			btn.text('Importing...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/discovery/import-csv',
+				method: 'POST',
+				data: formData,
+				processData: false,
+				contentType: false,
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(response) {
+					alert('Successfully imported ' + response.count + ' leads!');
+					btn.text('Upload and Import').prop('disabled', false);
+					fetchLeads();
+				},
+				error: function() {
+					alert('CSV Import failed.');
+					btn.text('Upload and Import').prop('disabled', false);
+				}
+			});
+		});
+
+		function fetchCampaigns() {
+			$.ajax({
+				url: apiUrl + '/campaigns',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(campaigns) {
+					const tbody = $('#campaignListBody');
+					tbody.empty();
+					campaigns.forEach(c => {
+						tbody.append(`
+							<tr>
+								<td><strong>${c.name}</strong></td>
+								<td>${c.status_filter}</td>
+								<td><span class="status-badge ${c.is_active == 1 ? 'status-replied' : 'status-new'}">${c.is_active == 1 ? 'Active' : 'Paused'}</span></td>
+								<td>${c.created_at}</td>
+								<td>
+									<button class="button button-small">Pause</button>
+									<button class="button button-small">Delete</button>
+								</td>
+							</tr>
+						`);
+					});
+				}
+			});
+		}
+
+		if ($('#campaignListBody').length) {
+			fetchCampaigns();
 		}
 
 		// Select All Leads
@@ -318,6 +400,10 @@
 		$(document).on('click', '.ai-score-btn', function() {
 			const btn = $(this);
 			const leadId = btn.data('lead-id');
+			const lead = window.currentLead;
+
+			if (!lead) return;
+
 			btn.text('Scoring...').prop('disabled', true);
 
 			$.ajax({
@@ -326,8 +412,8 @@
 				data: {
 					context: {
 						feature: 'lead_scorer',
-						lead_data: { id: leadId }, // Simplified
-						audit_data: {} // In real app, fetch from state
+						lead_data: lead,
+						audit_data: lead.audit_data ? JSON.parse(lead.audit_data) : {}
 					}
 				},
 				beforeSend: function(xhr) {
@@ -368,6 +454,13 @@
 		$(document).on('click', '.ai-summarize-btn', function() {
 			const btn = $(this);
 			const leadId = btn.data('lead-id');
+			const lead = window.currentLead;
+
+			if (!lead || !lead.audit_data) {
+				alert('No audit data to summarize.');
+				return;
+			}
+
 			btn.text('Summarizing...').prop('disabled', true);
 
 			$.ajax({
@@ -376,7 +469,7 @@
 				data: {
 					context: {
 						feature: 'audit_insight',
-						audit_results: {} // In real app, fetch from state
+						audit_results: JSON.parse(lead.audit_data)
 					}
 				},
 				beforeSend: function(xhr) {
@@ -560,6 +653,46 @@
 			});
 		}
 
+		// Create Campaign
+		$('#createCampaignBtn').on('click', function(e) {
+			e.preventDefault();
+			$('#campaignBuilderModal').fadeIn();
+		});
+
+		$('#campaignBuilderForm').on('submit', function(e) {
+			e.preventDefault();
+			const steps = [];
+			$('.step-card').each(function() {
+				steps.push({
+					type: $(this).find('.step-type').val(),
+					subject: $(this).find('.step-subject').val(),
+					body: $(this).find('.step-body').val(),
+					delay: $(this).find('input[type="number"]').val()
+				});
+			});
+
+			const data = {
+				name: $(this).find('input[name="name"]').val(),
+				status_filter: $(this).find('select[name="status_filter"]').val(),
+				steps: steps
+			};
+
+			$.ajax({
+				url: apiUrl + '/campaigns',
+				method: 'POST',
+				data: JSON.stringify(data),
+				contentType: 'application/json',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					$('#campaignBuilderModal').fadeOut();
+					alert('Campaign created and activated!');
+					location.reload();
+				}
+			});
+		});
+
 		// Add Lead Modal
 		$('#addLeadBtn').on('click', function(e) {
 			e.preventDefault();
@@ -737,6 +870,70 @@
 				}
 			});
 		}
+
+		// Inline Status Update
+		$(document).on('change', '.inline-status-update', function() {
+			const leadId = $(this).data('id');
+			const newStatus = $(this).val();
+			updateLeadStatus(leadId, newStatus);
+			alert('Status updated to ' + newStatus);
+		});
+
+		// Inline Assignee Update
+		$(document).on('change', '.inline-assignee-update', function() {
+			const leadId = $(this).data('id');
+			const assigneeId = $(this).val();
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId,
+				method: 'POST',
+				data: { assigned_to: assigneeId },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Lead reassigned successfully.');
+				}
+			});
+		});
+
+		// Opt-out Lead
+		$(document).on('click', '.opt-out-lead', function() {
+			const email = $(this).data('email');
+			if (!email) return;
+			if (!confirm('Add ' + email + ' to suppression list?')) return;
+
+			$.ajax({
+				url: apiUrl + '/compliance/opt-out',
+				method: 'POST',
+				data: { email: email },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Lead ' + email + ' added to suppression list.');
+					fetchLeads();
+				}
+			});
+		});
+
+		// Manual Audit Trigger
+		$(document).on('click', '.manual-audit', function() {
+			const leadId = $(this).data('id');
+			const btn = $(this);
+			btn.text('Auditing...').prop('disabled', true);
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/audit',
+				method: 'POST',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Audit completed and AI insights updated!');
+					btn.text('Audit').prop('disabled', false);
+					fetchLeads();
+				}
+			});
+		});
 
 		// Test AI Connection
 		$('.test-ai-connection').on('click', function() {

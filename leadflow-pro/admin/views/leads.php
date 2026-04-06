@@ -45,6 +45,7 @@
 						<th>Score</th>
 						<th>Website</th>
 						<th>Email</th>
+						<th>Assigned To</th>
 						<th>Status</th>
 						<th>Last Action</th>
 						<th>Actions</th>

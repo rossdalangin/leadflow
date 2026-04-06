@@ -23,6 +23,7 @@ class LeadFlow_CRM {
 		}
 
 		$defaults = array(
+			'first_name'    => '',
 			'business_name' => '',
 			'website_url'   => '',
 			'email'         => '',

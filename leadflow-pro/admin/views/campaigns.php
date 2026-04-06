@@ -10,27 +10,13 @@
 				<tr>
 					<th>Campaign Name</th>
 					<th>Status Filter</th>
-					<th>Active Leads</th>
-					<th>Avg. Open Rate</th>
-					<th>Avg. Reply Rate</th>
 					<th>Status</th>
+					<th>Created</th>
 					<th>Actions</th>
 				</tr>
 			</thead>
 			<tbody id="campaignListBody">
-				<tr>
-					<td>Web Design Outreach</td>
-					<td>New</td>
-					<td>145</td>
-					<td>32%</td>
-					<td>8.4%</td>
-					<td><span class="status-active">Active</span></td>
-					<td>
-						<button class="button button-small" data-id="1">Edit</button>
-						<button class="button button-small" data-id="1">Pause</button>
-						<button class="button button-small" data-id="1">Delete</button>
-					</td>
-				</tr>
+				<!-- Populated by JS -->
 			</tbody>
 		</table>
 	</div>

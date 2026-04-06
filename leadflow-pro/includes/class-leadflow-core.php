@@ -51,7 +51,21 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_init', $this, 'register_settings' );
+		$this->loader->add_action( 'admin_init', $this, 'handle_manual_actions' );
 		$this->loader->add_action( 'admin_notices', $this, 'display_usage_notices' );
+	}
+
+	/**
+	 * Handle manual actions like data seeding.
+	 */
+	public function handle_manual_actions() {
+		if ( isset( $_GET['leadflow_seed'] ) && current_user_can( 'manage_options' ) ) {
+			require_once LEADFLOW_PRO_PATH . 'database/class-leadflow-db.php';
+			LeadFlow_DB::seed_data();
+			add_action( 'admin_notices', function() {
+				echo '<div class="notice notice-success is-dismissible"><p><strong>Success:</strong> Sample leads and tags have been seeded into your CRM.</p></div>';
+			} );
+		}
 	}
 
 	private function define_public_hooks() {
@@ -104,9 +118,15 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_name' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_from_email' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );
+		register_setting( 'leadflow-settings-group', 'leadflow_imap_host' );
+		register_setting( 'leadflow-settings-group', 'leadflow_imap_port' );
+		register_setting( 'leadflow-settings-group', 'leadflow_imap_user' );
+		register_setting( 'leadflow-settings-group', 'leadflow_imap_pass' );
+		register_setting( 'leadflow-settings-group', 'leadflow_imap_encryption' );
 
 		// Encryption hooks
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_imap_pass', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_openai_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_gemini_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_google_places_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
@@ -177,13 +197,15 @@ class LeadFlow_Core {
 			array( $this, 'display_settings' )
 		);
 
-		// Handle data seeding via URL trigger for demo purposes
-		if ( isset( $_GET['leadflow_seed'] ) && current_user_can( 'manage_options' ) ) {
-			LeadFlow_DB::seed_data();
-			add_action( 'admin_notices', function() {
-				echo '<div class="notice notice-success is-dismissible"><p>Sample data seeded successfully!</p></div>';
-			} );
-		}
+		add_submenu_page(
+			'leadflow-pro',
+			'Upgrade to Pro',
+			'Upgrade to Pro',
+			'manage_options',
+			'leadflow-upgrade',
+			array( $this, 'display_upgrade' )
+		);
+
 	}
 
 	public function display_dashboard() {
@@ -208,6 +230,10 @@ class LeadFlow_Core {
 
 	public function display_settings() {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/settings.php';
+	}
+
+	public function display_upgrade() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/upgrade.php';
 	}
 
 	public function enqueue_styles() {

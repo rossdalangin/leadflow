@@ -28,6 +28,7 @@ class LeadFlow_DB {
 		-- Core lead records
 		CREATE TABLE {$prefix}leads (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			first_name VARCHAR(100),
 			business_name VARCHAR(255) NOT NULL,
 			website_url VARCHAR(255),
 			email VARCHAR(100),

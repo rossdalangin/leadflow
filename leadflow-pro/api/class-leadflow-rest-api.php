@@ -28,10 +28,42 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/audit', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'manual_audit' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/users', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_users' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/discovery/import-csv', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'import_csv' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/discovery/social', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'discovery_social' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/compliance/opt-out', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'add_opt_out' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
@@ -113,6 +145,19 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/campaigns', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_campaigns' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'create_campaign' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/export-csv', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -173,6 +218,24 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( array( 'id' => $lead_id ) );
+	}
+
+	public function manual_audit( $request ) {
+		$id = $request['id'];
+		LeadFlow_Scraper::run_manual_audit( $id );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_users() {
+		$users = get_users( array( 'role__in' => array( 'administrator', 'editor' ) ) );
+		$data  = array();
+		foreach ( $users as $user ) {
+			$data[] = array(
+				'id'   => $user->ID,
+				'name' => $user->display_name,
+			);
+		}
+		return rest_ensure_response( $data );
 	}
 
 	public function delete_lead( $request ) {
@@ -368,6 +431,27 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'notes' => $notes, 'emails' => $emails ) );
 	}
 
+	public function import_csv( $request ) {
+		$files = $request->get_file_params();
+		if ( empty( $files['leads_csv'] ) ) {
+			return new WP_Error( 'no_file', 'No file uploaded.', array( 'status' => 400 ) );
+		}
+
+		$file = $files['leads_csv'];
+		$count = LeadFlow_Discovery::import_from_csv( $file['tmp_name'] );
+
+		return rest_ensure_response( array( 'success' => true, 'count' => $count ) );
+	}
+
+	public function add_opt_out( $request ) {
+		$email = $request['email'];
+		if ( empty( $email ) ) {
+			return new WP_Error( 'missing_email', 'Email is required.', array( 'status' => 400 ) );
+		}
+		LeadFlow_Compliance::add_opt_out( $email, 'Manual Admin Action' );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
 	public function discovery_social( $request ) {
 		$keyword = $request['keyword'];
 		$source  = $request['source']; // 'linkedin' or 'facebook'
@@ -385,6 +469,41 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( $leads );
+	}
+
+	public function get_campaigns() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$campaigns = $wpdb->get_results( "SELECT * FROM {$prefix}campaigns" );
+		return rest_ensure_response( $campaigns );
+	}
+
+	public function create_campaign( $request ) {
+		$params = $request->get_params();
+
+		$campaign_id = LeadFlow_Outreach::create_campaign( array(
+			'name'          => $params['name'],
+			'goal'          => isset( $params['goal'] ) ? $params['goal'] : '',
+			'status_filter' => $params['status_filter'],
+		) );
+
+		if ( is_wp_error( $campaign_id ) ) {
+			return $campaign_id;
+		}
+
+		if ( isset( $params['steps'] ) && is_array( $params['steps'] ) ) {
+			foreach ( $params['steps'] as $index => $step ) {
+				LeadFlow_Outreach::add_step( $campaign_id, array(
+					'order'   => $index + 1,
+					'delay'   => $step['delay'],
+					'subject' => isset( $step['subject'] ) ? $step['subject'] : '',
+					'body'    => $step['body'],
+					'type'    => $step['type'],
+				) );
+			}
+		}
+
+		return rest_ensure_response( array( 'id' => $campaign_id ) );
 	}
 
 	public function discovery_search( $request ) {

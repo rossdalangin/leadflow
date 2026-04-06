@@ -105,10 +105,40 @@ class LeadFlow_Scraper {
 		);
 
 		// Log audit as a note
-		$audit_summary = "Website Audit Completed:\n- SSL: " . ( $audit_results['has_ssl'] ? 'Yes' : 'No' ) . "\n- Emails Found: " . ( $audit_results['email'] ?: 'None' ) . "\n- Performance: " . $audit_results['load_time'] . "s";
+		$audit_summary = "Website Audit Completed:\n- SSL: " . ( $audit_results['has_ssl'] ? 'Yes' : 'No' ) . "\n- Mobile: " . ( $audit_results['is_mobile_responsive'] ? 'Yes' : 'No' ) . "\n- Emails Found: " . ( $audit_results['email'] ?: 'None' ) . "\n- Performance: " . $audit_results['load_time'] . "s";
 		LeadFlow_CRM::add_note( $lead_id, $audit_summary, 0 ); // 0 for system note
 
+		// AI: Automatically qualify lead
+		$ai_score = LeadFlow_AI::score_lead( (array) $lead, $audit_results );
+		LeadFlow_CRM::add_note( $lead_id, "AI Qualification: " . $ai_score, 0 );
+
+		// AI: Generate Outreach Hook
+		$ai_hook = LeadFlow_AI::summarize_audit( $audit_results );
+		LeadFlow_CRM::add_note( $lead_id, "AI Outreach Hook: " . $ai_hook, 0 );
+
 		$wpdb->update( "{$prefix}scrape_queue", array( 'status' => 'Completed' ), array( 'id' => $job_id ) );
+	}
+
+	/**
+	 * Run manual audit.
+	 */
+	public static function run_manual_audit( $lead_id ) {
+		// Just add to queue with high priority (now)
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$wpdb->insert(
+			"{$prefix}scrape_queue",
+			array(
+				'lead_id'      => $lead_id,
+				'status'       => 'Pending',
+				'created_at'   => current_time( 'mysql' ),
+				'scheduled_at' => current_time( 'mysql' ),
+			)
+		);
+
+		// Trigger batch processing immediately
+		self::process_batch();
 	}
 
 	/**
