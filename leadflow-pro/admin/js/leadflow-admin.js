@@ -243,6 +243,7 @@
 				const score = calculateCompleteness(lead);
 				tbody.append(`
 					<tr>
+						<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
 						<td><strong>${lead.business_name}</strong></td>
 						<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
 						<td><a href="${lead.website_url}" target="_blank">${lead.website_url}</a></td>
@@ -261,6 +262,57 @@
 		if ($('#leadTableBody').length) {
 			fetchLeads();
 		}
+
+		// Select All Leads
+		$('#selectAllLeads').on('change', function() {
+			$('.lead-checkbox').prop('checked', $(this).prop('checked'));
+		});
+
+		// Apply Bulk Status
+		$('#applyBulkStatus').on('click', function() {
+			const selectedIds = [];
+			$('.lead-checkbox:checked').each(function() {
+				selectedIds.push($(this).val());
+			});
+			const newStatus = $('#bulkStatusUpdate').val();
+
+			if (selectedIds.length === 0 || !newStatus) return;
+
+			selectedIds.forEach(id => {
+				updateLeadStatus(id, newStatus);
+			});
+			alert('Bulk status update complete!');
+			fetchLeads();
+		});
+
+		// Bulk Delete Leads
+		$('#bulkDeleteLeads').on('click', function() {
+			const selectedIds = [];
+			$('.lead-checkbox:checked').each(function() {
+				selectedIds.push($(this).val());
+			});
+
+			if (selectedIds.length === 0) return;
+			if (!confirm('Permanently delete ' + selectedIds.length + ' leads?')) return;
+
+			let processed = 0;
+			selectedIds.forEach(id => {
+				$.ajax({
+					url: apiUrl + '/leads/' + id,
+					method: 'DELETE',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader('X-WP-Nonce', nonce);
+					},
+					success: function() {
+						processed++;
+						if (processed === selectedIds.length) {
+							alert('Bulk deletion complete!');
+							fetchLeads();
+						}
+					}
+				});
+			});
+		});
 
 		// AI Score Lead
 		$(document).on('click', '.ai-score-btn', function() {

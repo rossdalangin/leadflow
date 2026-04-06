@@ -46,7 +46,7 @@ class LeadFlow_Email {
 			return self::send_via_gmail_api( $to, $subject, $body, $headers );
 		}
 
-		// SMTP sending logic
+		// Dispatch email via WordPress core with configured SMTP settings.
 		$sent = wp_mail( $to, $subject, $body, $headers );
 
 		return $sent ? true : new WP_Error( 'send_failed', 'Failed to send email.' );

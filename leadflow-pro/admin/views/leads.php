@@ -24,9 +24,23 @@
 		</div>
 
 		<div id="leadTableView">
+			<?php
+			global $wpdb;
+			$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}leadflow_leads" );
+			if ( 0 == $count ) :
+			?>
+				<div class="notice notice-info inline" style="margin: 20px 0; padding: 20px; border-radius: 12px; background: #fff; border-left: 4px solid var(--leadflow-primary);">
+					<h3 style="margin-top:0;">🚀 Welcome to LeadFlow Pro!</h3>
+					<p>Your CRM is currently empty. You can start by discovering new leads or import some sample data to see how the system works.</p>
+					<a href="<?php echo admin_url( 'admin.php?page=leadflow-discovery' ); ?>" class="button button-primary">Discover New Leads</a>
+					<a href="<?php echo admin_url( 'admin.php?page=leadflow-leads&leadflow_seed=1' ); ?>" class="button" style="margin-left:10px;">Import Sample Data</a>
+				</div>
+			<?php endif; ?>
+
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
+						<th class="manage-column column-cb check-column"><input type="checkbox" id="selectAllLeads"></th>
 						<th>Business Name</th>
 						<th>Score</th>
 						<th>Website</th>
@@ -40,6 +54,17 @@
 					<!-- Populated by JS -->
 				</tbody>
 			</table>
+			<div class="leadflow-bulk-actions" style="margin-top:20px;">
+				<select id="bulkStatusUpdate">
+					<option value="">Bulk Status Update...</option>
+					<option value="New">New</option>
+					<option value="Contacted">Contacted</option>
+					<option value="Replied">Replied</option>
+					<option value="Qualified">Qualified</option>
+				</select>
+				<button class="button" id="applyBulkStatus">Apply Status</button>
+				<button class="button" id="bulkDeleteLeads" style="color:#d63638; margin-left:10px;">Bulk Delete</button>
+			</div>
 		</div>
 
 		<div id="leadKanbanView" style="display:none;">

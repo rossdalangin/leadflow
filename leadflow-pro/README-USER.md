@@ -65,12 +65,19 @@ All endpoints are prefixed with `/wp-json/leadflow/v1`.
 
 ---
 
-## 5. Monetization & Pro Gates
+## 5. Monetization, Licensing & Upgrading
 
-### License Key Flow
-- Users enter their key in the **License** tab of Settings.
-- The `LeadFlow_License::validate_license()` method calls our remote API to check status.
-- Once active, the `leadflow_license_status` option is set to `active`.
+### How to Generate a License Key
+1. **Purchase:** Visit [LeadFlowPro.com](https://leadflowpro.com) and select a Pro plan.
+2. **Dashboard:** After checkout, log in to your customer dashboard.
+3. **Generate:** Click on "Licenses" and select "Generate New Key." Assign it to your WordPress domain.
+4. **Copy:** Copy the generated key (format: `LF-XXXX-XXXX-XXXX`).
+
+### How to Upgrade to Pro
+1. **Navigate:** In your WordPress admin, go to **LeadFlow Pro -> Settings**.
+2. **License Tab:** Click the **License** tab.
+3. **Activate:** Paste your LF key into the License Key field and click **Save Settings**.
+4. **Validation:** The system will contact our secure API. Once validated, your status will change to "Active (Pro)" and all restricted features (Kanban, Unlimited Leads, Gmail API) will be instantly unlocked.
 
 ### Pro Gate Enforcement
 - All Pro-only code is wrapped in `if ( LeadFlow_License::is_pro() )`.

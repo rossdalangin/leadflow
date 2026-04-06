@@ -11,6 +11,10 @@
 	<div class="discovery-search-box chart-box">
 		<form id="discoverySearchForm">
 			<input type="hidden" id="discoverySource" value="google">
+			<p class="description" style="color: #fff; opacity: 0.9; margin-bottom: 20px;">
+				<span class="dashicons dashicons-info"></span>
+				Select a source above. Google Places is best for local businesses, while LinkedIn and Facebook are great for finding B2B profiles and group members.
+			</p>
 			<div class="search-inputs">
 				<p>
 					<label id="discoveryLabel">Keyword (e.g. Dentist, Plumber)</label><br>

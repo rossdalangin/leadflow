@@ -26,7 +26,11 @@ LeadFlow Pro is built for freelancers and agencies who want to stop manually pro
 - Activate via the WordPress Dashboard.
 - **Sample Data:** To seed your CRM with sample leads for testing, visit: `YOURSITE.com/wp-admin/admin.php?page=leadflow-pro&leadflow_seed=1`.
 
-### Step 2: API Keys
+### Step 2: Licensing & Upgrading
+- **Generate License:** Log in to [LeadFlowPro.com](https://leadflowpro.com), go to 'My Licenses', and click 'Generate Key'. Copy the key (format: `LF-XXXX-XXXX-XXXX`).
+- **Activate Pro:** Go to **LeadFlow Pro -> Settings -> License**, paste your key, and save. This unlocks the Kanban view and unlimited leads.
+
+### Step 3: API Keys & Security
 - **Google Places:** Needed for local business discovery.
 - **AI Providers:** Configure OpenAI GPT-4o or Gemini 1.5 Pro in the AI Settings tab.
 - **Encryption:** All keys are automatically stored with AES-256 CTR encryption for your security.
