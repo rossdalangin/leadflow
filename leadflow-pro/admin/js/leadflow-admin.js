@@ -145,19 +145,20 @@
 					const lead = leads.find(l => l.id == leadId);
 					window.currentLead = lead;
 					if (lead && lead.audit_data) {
-						const audit = JSON.parse(lead.audit_data);
+						const audit = safeJsonParse(lead.audit_data);
+						const socialLinks = safeJsonParse(lead.social_links, {});
 						let html = `
 							<div class="audit-summary">
-								<p><strong>Website:</strong> <a href="${lead.website_url}" target="_blank">${lead.website_url}</a></p>
+								<p><strong>Website:</strong> <a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></p>
 								<ul class="audit-checklist">
 									<li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL Secure' : '❌ No SSL'}</li>
 									<li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile Friendly' : '❌ Not Mobile Responsive'}</li>
 									<li class="${audit.outdated_design ? 'danger' : 'success'}">${audit.outdated_design ? '❌ Outdated Design' : '✅ Modern Design'}</li>
-									<li>⏱️ Load Time: ${audit.load_time}s</li>
+									<li>⏱️ Load Time: ${audit.load_time || 0}s</li>
 								</ul>
 								<p><strong>Social Links:</strong></p>
 								<div class="social-pills">
-									${Object.entries(JSON.parse(lead.social_links)).map(([platform, link]) => `<a href="${link}" target="_blank" class="social-pill ${platform}">${platform}</a>`).join('')}
+									${Object.entries(socialLinks).map(([platform, link]) => `<a href="${escapeHtml(link)}" target="_blank" class="social-pill ${escapeHtml(platform)}">${escapeHtml(platform)}</a>`).join('')}
 								</div>
 							</div>
 						`;
@@ -298,45 +299,53 @@
 			return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 		}
 
+		function safeJsonParse(json, defaultVal = {}) {
+			try {
+				return json ? JSON.parse(json) : defaultVal;
+			} catch (e) {
+				return defaultVal;
+			}
+		}
+
 		function renderLeadTable(leads) {
 			const tbody = $('#leadTableBody');
 			tbody.empty();
 
-			$.get(apiUrl + '/users', function(users) {
-				leads.forEach(lead => {
-					const audit = lead.audit_data ? JSON.parse(lead.audit_data) : {};
-					const score = calculateCompleteness(lead);
-					const row = $(`
-						<tr>
-							<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
-							<td><strong>${escapeHtml(lead.business_name)}</strong></td>
-							<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
-							<td><a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></td>
-							<td>${escapeHtml(lead.email)}</td>
-							<td>
-								<select class="inline-assignee-update" data-id="${lead.id}">
-									<option value="">Unassigned</option>
-									${users.map(u => `<option value="${u.id}" ${lead.assigned_to == u.id ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}
-								</select>
-							</td>
-							<td>
-								<select class="inline-status-update" data-id="${lead.id}">
-									<option value="New" ${lead.status === 'New' ? 'selected' : ''}>New</option>
-									<option value="Contacted" ${lead.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
-									<option value="Replied" ${lead.status === 'Replied' ? 'selected' : ''}>Replied</option>
-									<option value="Qualified" ${lead.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
-								</select>
-							</td>
-							<td>${escapeHtml(lead.updated_at)}</td>
-							<td>
-								<button class="button button-small view-lead" data-id="${lead.id}">View</button>
-								<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
-								<button class="button button-small opt-out-lead" data-email="${escapeHtml(lead.email)}">Opt-out</button>
-							</td>
-						</tr>
-					`);
-					tbody.append(row);
-				});
+			const users = leadflowData.users || [];
+
+			leads.forEach(lead => {
+				const audit = safeJsonParse(lead.audit_data);
+				const score = calculateCompleteness(lead);
+				const row = $(`
+					<tr>
+						<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
+						<td><strong>${escapeHtml(lead.business_name)}</strong></td>
+						<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
+						<td><a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></td>
+						<td>${escapeHtml(lead.email)}</td>
+						<td>
+							<select class="inline-assignee-update" data-id="${lead.id}">
+								<option value="">Unassigned</option>
+								${users.map(u => `<option value="${u.id}" ${lead.assigned_to == u.id ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}
+							</select>
+						</td>
+						<td>
+							<select class="inline-status-update" data-id="${lead.id}">
+								<option value="New" ${lead.status === 'New' ? 'selected' : ''}>New</option>
+								<option value="Contacted" ${lead.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
+								<option value="Replied" ${lead.status === 'Replied' ? 'selected' : ''}>Replied</option>
+								<option value="Qualified" ${lead.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
+							</select>
+						</td>
+						<td>${escapeHtml(lead.updated_at)}</td>
+						<td>
+							<button class="button button-small view-lead" data-id="${lead.id}">View</button>
+							<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
+							<button class="button button-small opt-out-lead" data-email="${escapeHtml(lead.email)}">Opt-out</button>
+						</td>
+					</tr>
+				`);
+				tbody.append(row);
 			});
 		}
 
@@ -379,12 +388,13 @@
 				},
 				success: function(leads) {
 					const lead = leads.find(l => l.id == leadId);
+					if (!lead) return;
 					window.currentLead = lead; // Update global context for AI buttons
-					$('#detailLeadName').text(lead.business_name);
+					$('#detailLeadName').text(escapeHtml(lead.business_name));
 
 					if (lead.audit_data) {
-						const audit = JSON.parse(lead.audit_data);
-						let html = `<div class="audit-summary"><ul class="audit-checklist"><li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL' : '❌ No SSL'}</li><li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile' : '❌ No Mobile'}</li><li>⏱️ Load: ${audit.load_time}s</li></ul></div>`;
+						const audit = safeJsonParse(lead.audit_data);
+						let html = `<div class="audit-summary"><ul class="audit-checklist"><li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL' : '❌ No SSL'}</li><li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile' : '❌ No Mobile'}</li><li>⏱️ Load: ${audit.load_time || 0}s</li></ul></div>`;
 						$('#detailLeadSidebar').html(html);
 					}
 
@@ -534,7 +544,7 @@
 					context: {
 						feature: 'lead_scorer',
 						lead_data: lead,
-						audit_data: lead.audit_data ? JSON.parse(lead.audit_data) : {}
+						audit_data: safeJsonParse(lead.audit_data)
 					}
 				},
 				beforeSend: function(xhr) {
@@ -587,7 +597,7 @@
 					context: {
 						feature: 'email_writer',
 						lead_data: lead,
-						audit_data: lead.audit_data ? JSON.parse(lead.audit_data) : {}
+						audit_data: safeJsonParse(lead.audit_data)
 					}
 				},
 				beforeSend: function(xhr) {
@@ -619,7 +629,7 @@
 				data: {
 					context: {
 						feature: 'audit_insight',
-						audit_results: JSON.parse(lead.audit_data)
+						audit_results: safeJsonParse(lead.audit_data)
 					}
 				},
 				beforeSend: function(xhr) {

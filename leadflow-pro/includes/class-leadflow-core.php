@@ -52,7 +52,19 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_init', $this, 'register_settings' );
 		$this->loader->add_action( 'admin_init', $this, 'handle_manual_actions' );
+		$this->loader->add_action( 'admin_init', $this, 'check_db_version' );
 		$this->loader->add_action( 'admin_notices', $this, 'display_usage_notices' );
+	}
+
+	/**
+	 * Ensure DB tables exist on every admin init.
+	 */
+	public function check_db_version() {
+		if ( ! get_option( 'leadflow_db_version' ) ) {
+			require_once LEADFLOW_PRO_PATH . 'database/class-leadflow-db.php';
+			LeadFlow_DB::create_tables();
+			update_option( 'leadflow_db_version', LEADFLOW_PRO_VERSION );
+		}
 	}
 
 	/**
@@ -247,11 +259,18 @@ class LeadFlow_Core {
 		// Enqueue Chart.js for Analytics
 		wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', array(), '4.4.0', true );
 
+		$users = get_users( array( 'role__in' => array( 'administrator', 'editor' ) ) );
+		$user_list = array();
+		foreach ( $users as $user ) {
+			$user_list[] = array( 'id' => $user->ID, 'name' => $user->display_name );
+		}
+
 		wp_enqueue_script( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/js/leadflow-admin.js', array( 'jquery', 'chart-js' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'leadflowData', array(
 			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
 			'nonce'  => wp_create_nonce( 'wp_rest' ),
-			'isPro'  => LeadFlow_License::is_pro()
+			'isPro'  => LeadFlow_License::is_pro(),
+			'users'  => $user_list
 		) );
 	}
 
