@@ -224,6 +224,9 @@ class LeadFlow_REST_API {
 	}
 
 	public function check_permission() {
+		if ( get_option( 'leadflow_license_key' ) && ! LeadFlow_License::is_pro() ) {
+			return false;
+		}
 		return current_user_can( 'manage_options' );
 	}
 

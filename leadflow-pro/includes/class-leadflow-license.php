@@ -13,58 +13,75 @@ class LeadFlow_License {
 
 	private static $license_option = 'leadflow_license_key';
 	private static $license_status = 'leadflow_license_status';
+	private static $server_url     = 'https://license.leadflowpro.com/wp-json/lfm/v1'; // Default placeholder
 
 	/**
 	 * Check if the current user has access to Pro features.
 	 *
-	 * This single helper ensures that Pro-only logic is consistently applied.
-	 *
-	 * @return bool
+	 * Uses a transient cache to minimize remote requests.
 	 */
 	public static function is_pro() {
-		// For development purposes, let's allow setting a license via an option
-		$status = get_option( self::$license_status );
+		$status = get_transient( 'leadflow_license_cache' );
+
+		if ( false === $status ) {
+			$license_key = get_option( self::$license_option );
+			if ( ! $license_key ) {
+				return false;
+			}
+
+			$status = self::remote_validate( $license_key );
+			set_transient( 'leadflow_license_cache', $status, 12 * HOUR_IN_SECONDS );
+		}
+
 		return 'active' === $status;
 	}
 
 	/**
-	 * Validate license key against a remote API.
-	 *
-	 * @param string $license_key The license key to validate.
-	 * @return array Validation result.
+	 * Activate license key against the remote LeadFlow License Manager.
 	 */
 	public static function validate_license( $license_key ) {
-		// Mock remote API validation
-		$response = wp_remote_post( 'https://api.leadflowpro.com/v1/license/validate', array(
+		$response = wp_remote_post( self::$server_url . '/activate', array(
 			'body' => array(
 				'license_key' => $license_key,
-				'site_url'    => get_site_url(),
+				'domain'      => get_site_url(),
 			),
 			'timeout' => 15,
 		) );
 
 		if ( is_wp_error( $response ) ) {
-			return array( 'success' => false, 'message' => 'Failed to connect to license server.' );
+			return array( 'success' => false, 'message' => 'Connection failed: ' . $response->get_error_message() );
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
-		if ( isset( $body['status'] ) && 'active' === $body['status'] ) {
+		if ( isset( $body['success'] ) && $body['success'] ) {
 			update_option( self::$license_option, $license_key );
 			update_option( self::$license_status, 'active' );
-			return array( 'success' => true, 'message' => 'License activated successfully!' );
+			delete_transient( 'leadflow_license_cache' );
+			return array( 'success' => true, 'message' => $body['message'] );
 		}
 
-		return array( 'success' => false, 'message' => 'Invalid license key.' );
+		return array( 'success' => false, 'message' => isset( $body['message'] ) ? $body['message'] : 'Invalid license key.' );
 	}
 
 	/**
-	 * Activate a demo license for development/testing.
+	 * Internal validation check (periodic).
 	 */
-	public static function activate_demo_license() {
-		update_option( self::$license_option, 'LF-DEMO-PRO-2024' );
-		update_option( self::$license_status, 'active' );
-		return true;
+	private static function remote_validate( $license_key ) {
+		$response = wp_remote_post( self::$server_url . '/validate', array(
+			'body' => array(
+				'license_key' => $license_key,
+				'domain'      => get_site_url(),
+			),
+			'timeout' => 10,
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return 'active'; // Fail-safe: allow functionality if server is briefly down
+		}
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		return ( isset( $body['valid'] ) && $body['valid'] ) ? 'active' : 'inactive';
 	}
 
 	/**
@@ -93,5 +110,12 @@ class LeadFlow_License {
 			default:
 				return false;
 		}
+	}
+
+	/**
+	 * Helper for the "Kill Switch"
+	 */
+	public static function get_status() {
+		return get_option( self::$license_status, 'inactive' );
 	}
 }

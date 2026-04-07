@@ -47,6 +47,7 @@ class LeadFlow_Core {
 	}
 
 	private function define_admin_hooks() {
+		$this->loader->add_action( 'admin_init', $this, 'check_license_kill_switch' );
 		$this->loader->add_action( 'admin_menu', $this, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
@@ -145,6 +146,19 @@ class LeadFlow_Core {
 		add_filter( 'pre_update_option_leadflow_openai_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_gemini_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_google_places_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
+	}
+
+	/**
+	 * Deactivate core features if license is explicitly revoked.
+	 */
+	public function check_license_kill_switch() {
+		$license_key = get_option('leadflow_license_key');
+		if ( $license_key && ! LeadFlow_License::is_pro() ) {
+			// License was revoked or expired
+			add_action( 'admin_notices', function() {
+				echo '<div class="notice notice-error"><p><strong>LeadFlow Pro:</strong> Your license is invalid or has been disabled by the administrator. Features are currently locked.</p></div>';
+			} );
+		}
 	}
 
 	public function add_admin_menu() {
