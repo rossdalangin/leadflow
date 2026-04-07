@@ -2,6 +2,18 @@
 	<h1>LeadFlow License Manager</h1>
 	<p>Generate and manage your customer licenses from here.</p>
 
+	<?php
+	global $wpdb;
+	$total_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}lfm_licenses" );
+	$active_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}lfm_licenses WHERE status = 'active'" );
+	$activated_domains = $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}lfm_licenses WHERE domain IS NOT NULL" );
+	?>
+	<div class="lfm-stats-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+		<div class="card"><h3>Total Licenses</h3><p style="font-size:2rem; font-weight:bold;"><?php echo $total_count; ?></p></div>
+		<div class="card"><h3>Active Subscriptions</h3><p style="font-size:2rem; font-weight:bold; color:green;"><?php echo $active_count; ?></p></div>
+		<div class="card"><h3>Activated Domains</h3><p style="font-size:2rem; font-weight:bold; color:blue;"><?php echo $activated_domains; ?></p></div>
+	</div>
+
 	<div class="card" style="max-width: 400px; margin-bottom: 30px;">
 		<h2>Generate New License</h2>
 		<form method="post" action="">

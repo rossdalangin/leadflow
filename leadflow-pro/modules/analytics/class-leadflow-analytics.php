@@ -54,4 +54,24 @@ class LeadFlow_Analytics {
 
 		return $wpdb->get_results( "SELECT provider, SUM(tokens_used) as total_tokens, COUNT(*) as request_count FROM {$prefix}ai_usage GROUP BY provider", ARRAY_A );
 	}
+
+	/**
+	 * Get latest activity across the plugin.
+	 */
+	public static function get_recent_activity( $limit = 10 ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		// Combine emails and new leads into a single timeline
+		$query = "
+			(SELECT 'email' as type, subject as activity, l.business_name as lead, e.created_at
+			 FROM {$prefix}email_log e
+			 JOIN {$prefix}leads l ON e.lead_id = l.id)
+			UNION
+			(SELECT 'lead' as type, 'New Lead Discovered' as activity, business_name as lead, created_at
+			 FROM {$prefix}leads)
+			ORDER BY created_at DESC LIMIT %d";
+
+		return $wpdb->get_results( $wpdb->prepare( $query, $limit ), ARRAY_A );
+	}
 }

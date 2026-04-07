@@ -442,7 +442,21 @@
 
 					if (lead.audit_data) {
 						const audit = safeJsonParse(lead.audit_data);
-						let html = `<div class="audit-summary"><ul class="audit-checklist"><li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL' : '❌ No SSL'}</li><li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile' : '❌ No Mobile'}</li><li>⏱️ Load: ${audit.load_time || 0}s</li></ul></div>`;
+						let html = `
+							<div class="audit-summary">
+								<div class="audit-score-gauge" style="text-align:center; margin-bottom:20px;">
+									<div style="font-size:3rem;">${audit.has_ssl && audit.is_mobile_responsive ? '✅' : '⚠️'}</div>
+									<strong>Audit Status</strong>
+								</div>
+								<ul class="audit-checklist">
+									<li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL Certificate Found' : '❌ No SSL (Security Risk)'}</li>
+									<li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile Responsive' : '❌ Not Mobile Friendly'}</li>
+									<li class="${audit.has_contact_form ? 'success' : 'danger'}">${audit.has_contact_form ? '✅ Contact Form Detected' : '❌ No Contact Form Found'}</li>
+									<li class="${audit.outdated_design ? 'danger' : 'success'}">${audit.outdated_design ? '❌ Outdated Design (Old Copyright)' : '✅ Modern Design Signals'}</li>
+									<li style="font-weight:bold; border-top:1px solid #eee; padding-top:10px; margin-top:10px;">⏱️ Response Time: ${audit.load_time || 0}s</li>
+								</ul>
+								<p><button class="button button-small manual-audit" data-id="${lead.id}">🔄 Re-Run Audit</button></p>
+							</div>`;
 						$('#detailLeadSidebar').html(html);
 					}
 
@@ -494,13 +508,13 @@
 					campaigns.forEach(c => {
 						tbody.append(`
 							<tr>
-								<td><strong>${c.name}</strong></td>
-								<td>${c.status_filter}</td>
+								<td><strong>${escapeHtml(c.name)}</strong></td>
+								<td>${escapeHtml(c.status_filter)}</td>
 								<td><span class="status-badge ${c.is_active == 1 ? 'status-replied' : 'status-new'}">${c.is_active == 1 ? 'Active' : 'Paused'}</span></td>
-								<td>${c.created_at}</td>
+								<td>${escapeHtml(c.created_at)}</td>
 								<td>
-									<button class="button button-small">Pause</button>
-									<button class="button button-small">Delete</button>
+									<button class="button button-small toggle-campaign" data-id="${c.id}" data-active="${c.is_active}">${c.is_active == 1 ? 'Pause' : 'Activate'}</button>
+									<button class="button button-small delete-campaign" data-id="${c.id}" style="color:#d63638;">Delete</button>
 								</td>
 							</tr>
 						`);
@@ -513,15 +527,38 @@
 			fetchCampaigns();
 		}
 
-		// Campaign Actions (Pause/Delete)
-		$(document).on('click', '.campaign-action', function() {
+		// Campaign Actions (Toggle/Delete)
+		$(document).on('click', '.toggle-campaign', function() {
 			const id = $(this).data('id');
-			const action = $(this).data('action');
+			const isActive = $(this).data('active');
 
-			if (action === 'delete' && !confirm('Delete this campaign?')) return;
+			$.ajax({
+				url: apiUrl + '/campaigns/' + id,
+				method: 'POST',
+				data: { is_active: isActive == 1 ? 0 : 1 },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					fetchCampaigns();
+				}
+			});
+		});
 
-			// In real app, call API. For now, alert.
-			alert('Campaign ' + action + ' triggered for ID ' + id);
+		$(document).on('click', '.delete-campaign', function() {
+			const id = $(this).data('id');
+			if (!confirm('Are you sure you want to PERMANENTLY delete this campaign and all its steps?')) return;
+
+			$.ajax({
+				url: apiUrl + '/campaigns/' + id,
+				method: 'DELETE',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					fetchCampaigns();
+				}
+			});
 		});
 
 		// Select All Leads
@@ -731,6 +768,30 @@
 		if ($('#leadsStatusChart').length) {
 			renderCharts();
 			fetchCampaignStats();
+			fetchRecentActivity();
+		}
+
+		function fetchRecentActivity() {
+			$.ajax({
+				url: apiUrl + '/analytics/activity',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const tbody = $('#recentActivityBody');
+					tbody.empty();
+					data.forEach(act => {
+						tbody.append(`
+							<tr>
+								<td>${escapeHtml(act.activity)}</td>
+								<td><strong>${escapeHtml(act.lead)}</strong></td>
+								<td>${escapeHtml(act.created_at)}</td>
+							</tr>
+						`);
+					});
+				}
+			});
 		}
 
 		function fetchCampaignStats() {
@@ -1046,7 +1107,7 @@
 		});
 
 		// AI Writer
-		$('.ai-writer-btn').on('click', function() {
+		$(document).on('click', '.ai-writer-btn', function() {
 			const btn = $(this);
 			const originalText = btn.text();
 			btn.text('Generating...').prop('disabled', true);
@@ -1172,7 +1233,7 @@
 		});
 
 		// AI Subject Line
-		$('.ai-subject-btn').on('click', function() {
+		$(document).on('click', '.ai-subject-btn', function() {
 			const btn = $(this);
 			const originalText = btn.text();
 			btn.text('Generating...').prop('disabled', true);
@@ -1322,6 +1383,47 @@
 				success: function() {
 					alert('Lead ' + email + ' added to suppression list.');
 					fetchLeads();
+				}
+			});
+		});
+
+		function loadScraperQueue() {
+			$.ajax({
+				url: apiUrl + '/scraper/queue',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const tbody = $('#scraperQueueBody');
+					tbody.empty();
+					if (data.length === 0) {
+						tbody.append('<tr><td colspan="2">Queue is empty.</td></tr>');
+					}
+					data.forEach(q => {
+						tbody.append(`<tr><td>${q.status}</td><td>${q.count}</td></tr>`);
+					});
+				}
+			});
+		}
+
+		if ($('#scraperQueueBody').length) {
+			loadScraperQueue();
+		}
+
+		$('#triggerScraperBtn').on('click', function() {
+			const btn = $(this);
+			btn.text('Processing...').prop('disabled', true);
+			$.ajax({
+				url: apiUrl + '/scraper/queue',
+				method: 'POST',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Batch processing triggered!');
+					btn.text('Process 5 Jobs Now').prop('disabled', false);
+					loadScraperQueue();
 				}
 			});
 		});

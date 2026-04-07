@@ -172,6 +172,13 @@
 					<td><?php echo esc_html( get_option( 'leadflow_db_version', '1.0.0' ) ); ?></td>
 				</tr>
 			</table>
+
+			<h3>Scraper Queue Status</h3>
+			<table class="wp-list-table widefat fixed striped">
+				<thead><tr><th>Status</th><th>Count</th></tr></thead>
+				<tbody id="scraperQueueBody"></tbody>
+			</table>
+			<p><button type="button" class="button" id="triggerScraperBtn">Process 5 Jobs Now</button></p>
 		</div>
 
 		<div id="license" class="settings-section" style="display:none;">

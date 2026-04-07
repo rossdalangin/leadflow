@@ -81,17 +81,8 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 					<th>Time</th>
 				</tr>
 			</thead>
-			<tbody>
-				<tr>
-					<td>Email Opened</td>
-					<td>Acme Corp</td>
-					<td>2 mins ago</td>
-				</tr>
-				<tr>
-					<td>Lead Discovered</td>
-					<td>Global Tech Solutions</td>
-					<td>15 mins ago</td>
-				</tr>
+			<tbody id="recentActivityBody">
+				<!-- Populated by JS -->
 			</tbody>
 		</table>
 	</div>

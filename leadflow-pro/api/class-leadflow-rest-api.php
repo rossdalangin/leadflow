@@ -28,6 +28,40 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/campaigns/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_campaign' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_campaign' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/scraper/queue', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_scraper_queue' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'trigger_scraper_batch' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/analytics/activity', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_activity_feed' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/settings/test-email', array(
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -297,6 +331,15 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( array( 'id' => $lead_id ) );
+	}
+
+	public function get_scraper_queue() {
+		return rest_ensure_response( LeadFlow_Scraper::get_queue_status() );
+	}
+
+	public function trigger_scraper_batch() {
+		LeadFlow_Scraper::process_batch();
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function manual_audit( $request ) {
@@ -593,6 +636,37 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'id' => $campaign_id ) );
 	}
 
+	public function update_campaign( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$params = $request->get_params();
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$data = array();
+		if ( isset( $params['name'] ) ) $data['name'] = sanitize_text_field( $params['name'] );
+		if ( isset( $params['is_active'] ) ) $data['is_active'] = (int) $params['is_active'];
+		if ( isset( $params['status_filter'] ) ) $data['status_filter'] = sanitize_text_field( $params['status_filter'] );
+
+		if ( empty( $data ) ) {
+			return new WP_Error( 'no_data', 'No data to update.', array( 'status' => 400 ) );
+		}
+
+		$wpdb->update( "{$prefix}campaigns", $data, array( 'id' => $id ) );
+
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function delete_campaign( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$wpdb->delete( "{$prefix}campaigns", array( 'id' => $id ) );
+		$wpdb->delete( "{$prefix}campaign_steps", array( 'campaign_id' => $id ) );
+
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
 	public function test_email( $request ) {
 		$to = $request->get_param( 'email' );
 		if ( empty( $to ) ) {
@@ -646,6 +720,10 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_activity_feed() {
+		return rest_ensure_response( LeadFlow_Analytics::get_recent_activity() );
 	}
 
 	public function get_saved_searches() {

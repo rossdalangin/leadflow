@@ -185,6 +185,15 @@ class LeadFlow_Scraper {
 	}
 
 	/**
+	 * Get scraper queue status.
+	 */
+	public static function get_queue_status() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		return $wpdb->get_results( "SELECT status, COUNT(*) as count FROM {$prefix}scrape_queue GROUP BY status", ARRAY_A );
+	}
+
+	/**
 	 * Parse HTML to extract contact info and signals.
 	 */
 	private static function parse_html( $html, $url, $load_time ) {
