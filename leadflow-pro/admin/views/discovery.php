@@ -75,4 +75,14 @@
 			<button type="submit" class="button">Upload and Import</button>
 		</form>
 	</div>
+
+	<div class="lead-magnet-box chart-box" style="margin-top: 30px;">
+		<h3>Lead Magnet Form Generator</h3>
+		<p>Generate a "Free Website Audit" form to embed on your site. Anyone who fills it out will be automatically added to your CRM.</p>
+		<div style="background:#f1f1f1; padding:15px; border-radius:8px; font-family:monospace; margin-bottom:15px;">
+			&lt;div id="leadflow-audit-form"&gt;&lt;/div&gt;<br>
+			&lt;script src="<?php echo LEADFLOW_PRO_URL . 'assets/lead-magnet.js'; ?>"&gt;&lt;/script&gt;
+		</div>
+		<button class="button" onclick="alert('Form configuration UI coming in v1.1')">Configure Form</button>
+	</div>
 </div>

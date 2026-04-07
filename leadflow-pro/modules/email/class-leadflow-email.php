@@ -39,6 +39,12 @@ class LeadFlow_Email {
 		$unsubscribe_url = get_rest_url( null, 'leadflow/v1/track/unsubscribe/' . $tracking_hash );
 		$body .= '<br><br><small><a href="' . $unsubscribe_url . '">Unsubscribe</a></small>';
 
+		// Add Signature
+		$signature = get_option( 'leadflow_email_signature' );
+		if ( ! empty( $signature ) ) {
+			$body .= '<br><br>' . wpautop( $signature );
+		}
+
 		// Click tracking replacement
 		$body = preg_replace_callback( '/<a\s+href=["\'](https?:\/\/[^"\']+)["\']/', function( $matches ) use ( $tracking_hash ) {
 			$original_url = $matches[1];

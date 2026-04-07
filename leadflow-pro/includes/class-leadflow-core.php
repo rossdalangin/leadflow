@@ -140,6 +140,7 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_user' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_pass' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_encryption' );
+		register_setting( 'leadflow-settings-group', 'leadflow_email_signature' );
 
 		// Encryption hooks
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );

@@ -7,6 +7,7 @@
 	<div class="leadflow-tabs" style="margin-top:20px;">
 		<button class="tab-btn active" data-view="campaign-list">Active Campaigns</button>
 		<button class="tab-btn" data-view="sending-queue">Sending Queue</button>
+		<button class="tab-btn" data-view="suppression-list">Suppression List</button>
 	</div>
 
 	<div class="leadflow-campaign-list" id="campaignListView">
@@ -24,6 +25,21 @@
 				<!-- Populated by JS -->
 			</tbody>
 		</table>
+	</div>
+
+	<div class="leadflow-suppression-list" id="suppressionListView" style="display:none;">
+		<div class="chart-box">
+			<h3>Global Suppression List</h3>
+			<p>Emails in this list will never be contacted by any campaign.</p>
+			<table class="wp-list-table widefat fixed striped">
+				<thead><tr><th>Email</th><th>Reason</th><th>Added</th><th>Actions</th></tr></thead>
+				<tbody id="suppressionListBody"></tbody>
+			</table>
+			<div style="margin-top:20px;">
+				<input type="email" id="suppressEmail" placeholder="email@example.com">
+				<button class="button" id="addSuppressionBtn">Add to Suppression List</button>
+			</div>
+		</div>
 	</div>
 
 	<div class="leadflow-sending-queue" id="sendingQueueView" style="display:none;">

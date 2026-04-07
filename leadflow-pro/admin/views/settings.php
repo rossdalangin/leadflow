@@ -73,6 +73,10 @@
 			<h3 class="smtp-only">SMTP Settings</h3>
 			<table class="form-table smtp-only">
 				<tr>
+					<th scope="row">Email Signature</th>
+					<td><textarea name="leadflow_email_signature" rows="4" class="large-text" placeholder="Kind regards,&#10;John Doe&#10;CEO at Acme Corp"><?php echo esc_textarea( get_option( 'leadflow_email_signature' ) ); ?></textarea></td>
+				</tr>
+				<tr>
 					<th scope="row">From Name</th>
 					<td><input type="text" name="leadflow_smtp_from_name" value="<?php echo esc_attr( get_option( 'leadflow_smtp_from_name' ) ); ?>" class="regular-text" placeholder="John Doe"></td>
 				</tr>

@@ -164,6 +164,15 @@ class LeadFlow_DB {
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			KEY status (status)
+		) $charset_collate;
+		CREATE TABLE {$prefix}lead_magnets (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			name varchar(255) NOT NULL,
+			description text,
+			form_config text,
+			success_message text,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -182,6 +191,8 @@ class LeadFlow_DB {
 			array( 'name' => 'High Intent', 'slug' => 'high-intent' ),
 			array( 'name' => 'Needs Website', 'slug' => 'needs-website' ),
 			array( 'name' => 'No SSL', 'slug' => 'no-ssl' ),
+			array( 'name' => 'Slow Load', 'slug' => 'slow-load' ),
+			array( 'name' => 'Outdated', 'slug' => 'outdated' ),
 		);
 
 		foreach ( $tags as $tag ) {

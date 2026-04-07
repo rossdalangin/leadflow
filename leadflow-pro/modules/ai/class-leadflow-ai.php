@@ -113,6 +113,27 @@ class LeadFlow_AI {
 	}
 
 	/**
+	 * AI: Automatically tag lead based on audit results.
+	 */
+	public static function auto_tag_lead( $lead_id, $audit_results ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$tags_to_apply = array();
+		if ( ! $audit_results['has_ssl'] ) $tags_to_apply[] = 'no-ssl';
+		if ( ! $audit_results['is_mobile_responsive'] ) $tags_to_apply[] = 'needs-mobile';
+		if ( isset($audit_results['outdated_design']) && $audit_results['outdated_design'] ) $tags_to_apply[] = 'outdated';
+		if ( $audit_results['load_time'] > 3 ) $tags_to_apply[] = 'slow-load';
+
+		foreach ( $tags_to_apply as $slug ) {
+			$tag_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}lead_tags WHERE slug = %s", $slug ) );
+			if ( $tag_id ) {
+				$wpdb->replace( "{$prefix}lead_tag_relationships", array( 'lead_id' => $lead_id, 'tag_id' => $tag_id ) );
+			}
+		}
+	}
+
+	/**
 	 * AI: Audit insight summary.
 	 */
 	public static function summarize_audit( $audit_results ) {
@@ -121,10 +142,20 @@ class LeadFlow_AI {
 	}
 
 	/**
-	 * AI: Suggest a reply to an inbound message.
+	 * AI: Suggest a reply to an inbound message with thread context.
 	 */
-	public static function suggest_reply( $inbound_text ) {
-		$prompt = "Suggest a professional and friendly reply to this email from a potential lead: \"$inbound_text\"";
+	public static function suggest_reply( $inbound_text, $lead_id = null ) {
+		$thread_context = "";
+		if ( $lead_id ) {
+			global $wpdb;
+			$prefix = $wpdb->prefix . 'leadflow_';
+			$last_messages = $wpdb->get_results( $wpdb->prepare( "SELECT subject, status FROM {$prefix}email_log WHERE lead_id = %d ORDER BY created_at DESC LIMIT 3", $lead_id ) );
+			foreach ( $last_messages as $msg ) {
+				$thread_context .= "Previous interaction: " . $msg->subject . " (Status: " . $msg->status . ")\n";
+			}
+		}
+
+		$prompt = "Based on this thread context:\n$thread_context\nAnd this new inbound message: \"$inbound_text\"\nSuggest a professional and friendly reply that moves the lead towards a discovery call.";
 		return self::complete( $prompt, array( 'feature' => 'reply_suggestion' ) );
 	}
 

@@ -133,6 +133,9 @@ class LeadFlow_Scraper {
 		$ai_hook = LeadFlow_AI::summarize_audit( $audit_results );
 		LeadFlow_CRM::add_note( $lead_id, "AI Outreach Hook: " . $ai_hook, 0 );
 
+		// AI: Auto-tagging
+		LeadFlow_AI::auto_tag_lead( $lead_id, $audit_results );
+
 		$wpdb->update( "{$prefix}scrape_queue", array( 'status' => 'Completed' ), array( 'id' => $job_id ) );
 	}
 

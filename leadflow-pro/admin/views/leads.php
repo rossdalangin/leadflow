@@ -49,6 +49,7 @@
 						<th>Website</th>
 						<th>Email</th>
 						<th>Assigned To</th>
+						<th>Tags</th>
 						<th>Status</th>
 						<th>Last Action</th>
 						<th>Actions</th>
@@ -123,6 +124,11 @@
 						<h3>Proposal Tracking</h3>
 						<p><label>Proposal URL</label><br><input type="url" id="proposalUrl" placeholder="https://..." style="width:100%;"></p>
 						<p><button class="button button-small" id="saveProposalBtn">Save Proposal</button></p>
+					</div>
+					<div class="tag-management" style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+						<h3>Manage Tags</h3>
+						<div id="leadTagsList" style="margin-bottom:10px;"></div>
+						<select id="addTagSelect"><option value="">Add Tag...</option></select>
 					</div>
 				</div>
 			</div>
