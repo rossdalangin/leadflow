@@ -95,51 +95,15 @@ class LeadFlow_Outreach {
 			if ( LeadFlow_Compliance::is_opted_out( $lead->email ) ) {
 				continue;
 			}
-			self::run_sequence_for_lead( $campaign->id, $lead );
-		}
-	}
 
-	/**
-	 * Run/Check sequence for a lead.
-	 */
-	private static function run_sequence_for_lead( $campaign_id, $lead ) {
-		global $wpdb;
-		$prefix = $wpdb->prefix . 'leadflow_';
-
-		// Auto-pause if lead replied globally
-		$replied = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}email_log WHERE lead_id = %d AND status = 'Replied'", $lead->id ) );
-		if ( $replied ) return;
-
-		// Find next step in sequence
-		$last_step = $wpdb->get_row( $wpdb->prepare(
-			"SELECT step_id, created_at FROM {$prefix}email_log WHERE lead_id = %d AND campaign_id = %d ORDER BY created_at DESC LIMIT 1",
-			$lead->id,
-			$campaign_id
-		) );
-
-		if ( ! $last_step ) {
-			// Start sequence with first step
-			$step = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE campaign_id = %d ORDER BY step_order ASC LIMIT 1", $campaign_id ) );
-			if ( $step ) {
-				self::send_step_email( $lead, $step, $campaign_id );
-			}
-		} else {
-			// Find next step after $last_step->step_id
-			$last_step_details = $wpdb->get_row( $wpdb->prepare( "SELECT step_order FROM {$prefix}campaign_steps WHERE id = %d", $last_step->step_id ) );
-			$next_step         = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE campaign_id = %d AND step_order > %d ORDER BY step_order ASC LIMIT 1", $campaign_id, $last_step_details->step_order ) );
-
-			if ( $next_step ) {
-				$delay_reached = ( strtotime( current_time( 'mysql' ) ) - strtotime( $last_step->created_at ) ) >= ( $next_step->delay_days * DAY_IN_SECONDS );
-				if ( $delay_reached ) {
-					if ( 'email' === $next_step->step_type ) {
-						self::send_step_email( $lead, $next_step, $campaign_id );
-					} else {
-						self::create_social_task( $lead, $next_step, $campaign_id );
-					}
-				}
+			// Check if already in queue
+			$in_queue = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}sending_queue WHERE lead_id = %d AND campaign_id = %d", $lead->id, $campaign->id ) );
+			if ( ! $in_queue ) {
+				self::run_sequence_for_lead( $campaign->id, $lead );
 			}
 		}
 	}
+
 
 	/**
 	 * Create a social outreach task for the user.
@@ -164,6 +128,68 @@ class LeadFlow_Outreach {
 				'created_at'  => current_time( 'mysql' ),
 			)
 		);
+	}
+
+	/**
+	 * Process sequence for a lead (Schedule step if needed).
+	 */
+	private static function run_sequence_for_lead( $campaign_id, $lead ) {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		// Auto-pause if lead replied globally
+		$replied = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}email_log WHERE lead_id = %d AND status = 'Replied'", $lead->id ) );
+		if ( $replied ) return;
+
+		// Find last step completed
+		$last_step = $wpdb->get_row( $wpdb->prepare(
+			"SELECT step_id, created_at FROM {$prefix}email_log WHERE lead_id = %d AND campaign_id = %d ORDER BY created_at DESC LIMIT 1",
+			$lead->id,
+			$campaign_id
+		) );
+
+		if ( ! $last_step ) {
+			// Start with first step
+			$step = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE campaign_id = %d ORDER BY step_order ASC LIMIT 1", $campaign_id ) );
+			if ( $step ) {
+				LeadFlow_Queue::add_to_queue( $lead->id, $campaign_id, $step->id, $step->delay_days );
+			}
+		} else {
+			$last_step_details = $wpdb->get_row( $wpdb->prepare( "SELECT step_order FROM {$prefix}campaign_steps WHERE id = %d", $last_step->step_id ) );
+			$next_step = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE campaign_id = %d AND step_order > %d ORDER BY step_order ASC LIMIT 1", $campaign_id, $last_step_details->step_order ) );
+
+			if ( $next_step ) {
+				LeadFlow_Queue::add_to_queue( $lead->id, $campaign_id, $next_step->id, $next_step->delay_days );
+			}
+		}
+	}
+
+	/**
+	 * Process all scheduled items in sending queue.
+	 */
+	public static function process_sending_queue() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$items = $wpdb->get_results( "SELECT * FROM {$prefix}sending_queue WHERE status = 'Scheduled' AND scheduled_at <= NOW() LIMIT 10" );
+
+		foreach ( $items as $item ) {
+			$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}leads WHERE id = %d", $item->lead_id ) );
+			$step = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE id = %d", $item->step_id ) );
+
+			if ( ! $lead || ! $step ) {
+				$wpdb->delete( "{$prefix}sending_queue", array( 'id' => $item->id ) );
+				continue;
+			}
+
+			if ( 'email' === $step->step_type ) {
+				self::send_step_email( $lead, $step, $item->campaign_id );
+			} else {
+				self::create_social_task( $lead, $step, $item->campaign_id );
+			}
+
+			$wpdb->delete( "{$prefix}sending_queue", array( 'id' => $item->id ) );
+		}
 	}
 
 	/**

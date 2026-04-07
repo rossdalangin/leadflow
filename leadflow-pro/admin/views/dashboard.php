@@ -7,6 +7,7 @@ $total_emails = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}email_log" );
 $total_opens = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}email_log WHERE opens_count > 0" );
 $open_rate = $total_emails > 0 ? round( ($total_opens / $total_emails) * 100, 1 ) : 0;
 $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status = 'Qualified'" );
+$roi = LeadFlow_Analytics::get_roi_metrics();
 ?>
 <div class="wrap leadflow-dashboard">
 	<h1 class="wp-heading-inline">LeadFlow Pro Dashboard</h1>
@@ -41,9 +42,16 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 			<p class="kpi-value"><?php echo esc_html( $conversions ); ?></p>
 		</div>
 		<div class="kpi-card">
-			<span class="dashicons dashicons-email-alt2" style="font-size:32px; color:var(--leadflow-primary);"></span>
-			<h3>Best Template</h3>
-			<p class="kpi-value" style="font-size:1.2rem; margin-top:25px;" id="topTemplateName">Loading...</p>
+			<span class="dashicons dashicons-chart-line" style="font-size:32px; color:var(--leadflow-secondary);"></span>
+			<h3>Lead Velocity</h3>
+			<p class="kpi-value" style="color: <?php echo $roi['lead_velocity'] >= 0 ? '#10b981' : '#ef4444'; ?>;">
+				<?php echo ( $roi['lead_velocity'] > 0 ? '+' : '' ) . $roi['lead_velocity']; ?>%
+			</p>
+		</div>
+		<div class="kpi-card">
+			<span class="dashicons dashicons-money-alt" style="font-size:32px; color:var(--leadflow-accent);"></span>
+			<h3>Pipeline Value</h3>
+			<p class="kpi-value">$<?php echo number_format($roi['pipeline_value'], 0); ?></p>
 		</div>
 	</div>
 
@@ -59,6 +67,10 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 		<div class="chart-box">
 			<h3>Leads by Source</h3>
 			<canvas id="leadsSourceChart"></canvas>
+		</div>
+		<div class="chart-box">
+			<h3>Leads by Assignee</h3>
+			<canvas id="leadsAssigneeChart"></canvas>
 		</div>
 	</div>
 
@@ -87,19 +99,38 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 		</div>
 	</div>
 
-	<div class="leadflow-recent-activity">
-		<h3>Recent Activity</h3>
-		<table class="wp-list-table widefat fixed striped">
-			<thead>
-				<tr>
-					<th>Activity</th>
-					<th>Lead</th>
-					<th>Time</th>
-				</tr>
-			</thead>
-			<tbody id="recentActivityBody">
-				<!-- Populated by JS -->
-			</tbody>
-		</table>
+	<div style="display:flex; gap:20px; margin-top:20px;">
+		<div class="leadflow-recent-activity chart-box" style="flex:2;">
+			<h3>Recent Activity</h3>
+			<table class="wp-list-table widefat fixed striped">
+				<thead>
+					<tr>
+						<th>Activity</th>
+						<th>Lead</th>
+						<th>Time</th>
+					</tr>
+				</thead>
+				<tbody id="recentActivityBody">
+					<!-- Populated by JS -->
+				</tbody>
+			</table>
+		</div>
+		<div class="chart-box" style="flex:1;">
+			<h3>Growth Forecast</h3>
+			<div style="text-align:center; padding:20px;">
+				<div style="font-size:2.5rem; font-weight:bold; color:var(--leadflow-primary); margin-bottom:10px;">
+					$<?php echo number_format($roi['pipeline_value'] * 1.5, 0); ?>
+				</div>
+				<p class="description">Estimated next month pipeline based on current velocity.</p>
+				<div style="margin-top:20px; text-align:left; background:#f9f9f9; padding:15px; border-radius:8px;">
+					<p><strong>Top Strategy:</strong><br>
+					<?php echo $roi['lead_velocity'] < 10 ? 'Low velocity. Try a new Discovery keyword.' : 'Velocity is high! Increase AI automation to handle the load.'; ?>
+					</p>
+					<p><strong>ROI Tip:</strong><br>
+					<?php echo $open_rate < 25 ? 'Low open rate detected. Refresh your subject lines with AI.' : 'Strong open rates! Focus on closing techniques.'; ?>
+					</p>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>

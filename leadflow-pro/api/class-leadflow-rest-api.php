@@ -28,6 +28,22 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/outreach/queue', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_outreach_queue' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/outreach/queue/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'cancel_queue_item' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/campaigns/(?P<id>\d+)', array(
 			array(
 				'methods'             => WP_REST_Server::EDITABLE,
@@ -114,6 +130,11 @@ class LeadFlow_REST_API {
 			array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_lead_activity' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'add_lead_note' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
@@ -230,6 +251,11 @@ class LeadFlow_REST_API {
 				'callback'            => array( $this, 'update_lead_tags' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'remove_lead_tag' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
 		) );
 
 		register_rest_route( 'leadflow/v1', '/analytics/overview', array(
@@ -312,7 +338,12 @@ class LeadFlow_REST_API {
 		) );
 	}
 
-	public function check_permission() {
+	public function check_permission( $request ) {
+		// Allow license activation route regardless of current status
+		if ( strpos( $request->get_route(), '/license/activate' ) !== false || strpos( $request->get_route(), '/license/activate-demo' ) !== false ) {
+			return current_user_can( 'manage_options' );
+		}
+
 		if ( get_option( 'leadflow_license_key' ) && ! LeadFlow_License::is_pro() ) {
 			return false;
 		}
@@ -442,9 +473,7 @@ class LeadFlow_REST_API {
 			$data['status'] = 'Proposal Sent';
 		}
 
-		$data['updated_at'] = current_time( 'mysql' );
-
-		$updated = $wpdb->update( "{$prefix}leads", $data, array( 'id' => $id ) );
+		$updated = LeadFlow_CRM::update_lead( $id, $data );
 
 		if ( false === $updated ) {
 			return new WP_Error( 'db_error', 'Failed to update lead.', array( 'status' => 500 ) );
@@ -533,10 +562,12 @@ class LeadFlow_REST_API {
 		$end   = $request->get_param( 'end' );
 
 		return rest_ensure_response( array(
-			'status_counts' => LeadFlow_Analytics::get_leads_by_status(),
-			'source_counts' => LeadFlow_Analytics::get_leads_by_source(),
-			'metrics'       => LeadFlow_Analytics::get_outreach_metrics( $start, $end ),
-			'ai_usage'      => LeadFlow_Analytics::get_ai_usage_stats(),
+			'status_counts'   => LeadFlow_Analytics::get_leads_by_status(),
+			'source_counts'   => LeadFlow_Analytics::get_leads_by_source(),
+			'assignee_counts' => LeadFlow_Analytics::get_leads_by_assignee(),
+			'metrics'         => LeadFlow_Analytics::get_outreach_metrics( $start, $end ),
+			'ai_usage'        => LeadFlow_Analytics::get_ai_usage_stats(),
+			'roi'             => LeadFlow_Analytics::get_roi_metrics(),
 		) );
 	}
 
@@ -572,6 +603,17 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( $tags );
 	}
 
+	public function remove_lead_tag( $request ) {
+		global $wpdb;
+		$lead_id = $request['id'];
+		$tag_id  = $request->get_param( 'tag_id' );
+		$prefix  = $wpdb->prefix . 'leadflow_';
+
+		$wpdb->delete( "{$prefix}lead_tag_relationships", array( 'lead_id' => $lead_id, 'tag_id' => $tag_id ) );
+
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
 	public function update_lead_tags( $request ) {
 		global $wpdb;
 		$lead_id = $request['id'];
@@ -591,6 +633,16 @@ class LeadFlow_REST_API {
 
 	public function export_csv() {
 		return LeadFlow_CRM::export_to_csv();
+	}
+
+	public function add_lead_note( $request ) {
+		$id = $request['id'];
+		$content = sanitize_textarea_field( $request->get_param( 'content' ) );
+		if ( empty( $content ) ) {
+			return new WP_Error( 'missing_content', 'Note content is required.', array( 'status' => 400 ) );
+		}
+		LeadFlow_CRM::add_note( $id, $content );
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function get_lead_activity( $request ) {
@@ -720,6 +772,16 @@ class LeadFlow_REST_API {
 			}
 		}
 
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_outreach_queue() {
+		return rest_ensure_response( LeadFlow_Queue::get_queue() );
+	}
+
+	public function cancel_queue_item( $request ) {
+		$id = $request['id'];
+		LeadFlow_Queue::cancel_item( $id );
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 

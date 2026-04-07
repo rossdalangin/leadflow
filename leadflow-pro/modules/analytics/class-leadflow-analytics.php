@@ -78,6 +78,23 @@ class LeadFlow_Analytics {
 	}
 
 	/**
+	 * Get lead counts by assignee for team performance widget.
+	 */
+	public static function get_leads_by_assignee() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$query = "
+			SELECT u.display_name as name, COUNT(l.id) as count
+			FROM {$wpdb->users} u
+			LEFT JOIN {$prefix}leads l ON u.ID = l.assigned_to
+			GROUP BY u.ID
+			HAVING count > 0";
+
+		return $wpdb->get_results( $query, ARRAY_A );
+	}
+
+	/**
 	 * Get latest activity across the plugin.
 	 */
 	public static function get_recent_activity( $limit = 10 ) {

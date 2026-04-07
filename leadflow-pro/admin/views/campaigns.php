@@ -4,7 +4,12 @@
 	<a href="#" class="page-title-action" id="createCampaignBtn">Create New Campaign</a>
 	<hr class="wp-header-end">
 
-	<div class="leadflow-campaign-list">
+	<div class="leadflow-tabs" style="margin-top:20px;">
+		<button class="tab-btn active" data-view="campaign-list">Active Campaigns</button>
+		<button class="tab-btn" data-view="sending-queue">Sending Queue</button>
+	</div>
+
+	<div class="leadflow-campaign-list" id="campaignListView">
 		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
@@ -16,6 +21,23 @@
 				</tr>
 			</thead>
 			<tbody id="campaignListBody">
+				<!-- Populated by JS -->
+			</tbody>
+		</table>
+	</div>
+
+	<div class="leadflow-sending-queue" id="sendingQueueView" style="display:none;">
+		<table class="wp-list-table widefat fixed striped">
+			<thead>
+				<tr>
+					<th>Scheduled For</th>
+					<th>Lead</th>
+					<th>Campaign</th>
+					<th>Status</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody id="sendingQueueBody">
 				<!-- Populated by JS -->
 			</tbody>
 		</table>

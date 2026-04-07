@@ -38,6 +38,15 @@ class LeadFlow_License_Manager {
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY license_key (license_key)
+		) $charset_collate;
+		CREATE TABLE {$wpdb->prefix}lfm_logs (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			license_key varchar(50),
+			action varchar(50),
+			domain varchar(255),
+			result varchar(255),
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -71,6 +80,17 @@ class LeadFlow_License_Manager {
 		) );
 	}
 
+	public function log_action( $key, $action, $domain, $result ) {
+		global $wpdb;
+		$wpdb->insert( $wpdb->prefix . 'lfm_logs', array(
+			'license_key' => $key,
+			'action' => $action,
+			'domain' => $domain,
+			'result' => $result,
+			'created_at' => current_time( 'mysql' )
+		) );
+	}
+
 	public function api_activate( $request ) {
 		global $wpdb;
 		$key = sanitize_text_field( $request->get_param( 'license_key' ) );
@@ -80,6 +100,7 @@ class LeadFlow_License_Manager {
 		$license = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}lfm_licenses WHERE license_key = %s", $key ) );
 
 		if ( ! $license ) {
+			$this->log_action( $key, 'activate', $domain, 'Invalid Key' );
 			return new WP_Error( 'invalid_key', 'License key not found.', array( 'status' => 403 ) );
 		}
 
@@ -96,6 +117,7 @@ class LeadFlow_License_Manager {
 			array( 'id' => $license->id )
 		);
 
+		$this->log_action( $key, 'activate', $domain, 'Success' );
 		return rest_ensure_response( array( 'success' => true, 'message' => 'License activated for ' . $domain ) );
 	}
 
@@ -108,6 +130,7 @@ class LeadFlow_License_Manager {
 		$license = $wpdb->get_row( $wpdb->prepare( "SELECT status, domain, license_type, expires_at FROM {$wpdb->prefix}lfm_licenses WHERE license_key = %s", $key ) );
 
 		if ( ! $license || 'active' !== $license->status || $license->domain !== $domain ) {
+			$this->log_action( $key, 'validate', $domain, 'Failed' );
 			return rest_ensure_response( array( 'valid' => false ) );
 		}
 

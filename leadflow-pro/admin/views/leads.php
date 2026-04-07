@@ -2,7 +2,7 @@
 	<h1 class="wp-heading-inline">Lead CRM</h1>
 	<p class="description">Manage your leads through the sales funnel. Use the Table view for bulk management or Kanban for pipeline visualization.</p>
 	<a href="#" class="page-title-action" id="addLeadBtn">Add New Lead</a>
-	<a href="<?php echo esc_url( rest_url( 'leadflow/v1/leads/export-csv' ) ); ?>" class="page-title-action" style="margin-left:5px;">Export CSV (Pro)</a>
+	<a href="<?php echo esc_url( rest_url( 'leadflow/v1/leads/export-csv' ) ); ?>?_wpnonce=<?php echo wp_create_nonce('wp_rest'); ?>" class="page-title-action" style="margin-left:5px;">Export CSV (Pro)</a>
 	<hr class="wp-header-end">
 
 	<div class="leadflow-tabs">
@@ -106,7 +106,11 @@
 			<div class="modal-body" style="flex:1; overflow-y:auto; display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
 				<div class="lead-activity-section">
 					<h3>Activity Log & Conversation</h3>
-					<div id="detailLeadThread" class="inbox-thread" style="height:400px; border:1px solid var(--leadflow-border); border-radius:12px;"></div>
+					<div id="detailLeadThread" class="inbox-thread" style="height:350px; border:1px solid var(--leadflow-border); border-radius:12px;"></div>
+					<div class="add-note-box" style="margin-top:20px;">
+						<textarea id="manualNoteText" rows="3" style="width:100%;" placeholder="Add a private note about this lead..."></textarea>
+						<button class="button" id="saveManualNoteBtn">Add Note</button>
+					</div>
 				</div>
 				<div class="lead-info-section">
 					<h3>Audit Insights</h3>

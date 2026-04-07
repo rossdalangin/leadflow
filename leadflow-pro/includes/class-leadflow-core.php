@@ -85,6 +85,7 @@ class LeadFlow_Core {
 	private function define_public_hooks() {
 		$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
 		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
+		$this->loader->add_action( 'leadflow_process_sending_queue', 'LeadFlow_Outreach', 'process_sending_queue' );
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
 		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
 		$this->loader->add_action( 'rest_api_init', $this, 'register_rest_routes' );

@@ -91,6 +91,9 @@ class LeadFlow_CRM {
 		$order           = 'DESC' === strtoupper( $args['order'] ) ? 'DESC' : 'ASC';
 
 		$where = array( '1=1' );
+		if ( ! empty( $args['id'] ) ) {
+			$where[] = $wpdb->prepare( 'id = %d', $args['id'] );
+		}
 		if ( ! empty( $args['status'] ) ) {
 			$where[] = $wpdb->prepare( 'status = %s', $args['status'] );
 		}
@@ -110,19 +113,38 @@ class LeadFlow_CRM {
 	}
 
 	/**
-	 * Update lead status.
+	 * Update lead data.
 	 */
-	public static function update_status( $lead_id, $status ) {
+	public static function update_lead( $lead_id, $data ) {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		$result = $wpdb->update(
-			"{$prefix}leads",
-			array( 'status' => $status, 'updated_at' => current_time( 'mysql' ) ),
-			array( 'id' => $lead_id )
-		);
+		if ( isset( $data['email'] ) ) $data['email'] = sanitize_email( $data['email'] );
+		if ( isset( $data['website_url'] ) ) $data['website_url'] = esc_url_raw( $data['website_url'] );
 
-		return $result;
+		// Re-calculate score if relevant fields changed
+		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}leads WHERE id = %d", $lead_id ), ARRAY_A );
+		if ( $lead ) {
+			$merged = array_merge( $lead, $data );
+			$score = 0;
+			if ( ! empty( $merged['business_name'] ) ) $score += 20;
+			if ( ! empty( $merged['website_url'] ) ) $score += 20;
+			if ( ! empty( $merged['email'] ) ) $score += 30;
+			if ( ! empty( $merged['phone'] ) ) $score += 15;
+			if ( ! empty( $merged['social_links'] ) && '[]' !== $merged['social_links'] ) $score += 15;
+			$data['completeness_score'] = $score;
+		}
+
+		$data['updated_at'] = current_time( 'mysql' );
+
+		return $wpdb->update( "{$prefix}leads", $data, array( 'id' => $lead_id ) );
+	}
+
+	/**
+	 * Update lead status.
+	 */
+	public static function update_status( $lead_id, $status ) {
+		return self::update_lead( $lead_id, array( 'status' => $status ) );
 	}
 
 	/**

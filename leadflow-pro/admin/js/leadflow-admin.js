@@ -155,18 +155,23 @@
 			sidebar.html('<p>Loading audit data...</p>');
 
 			$.ajax({
-				url: apiUrl + '/leads', // Filter by ID in real app
+				url: apiUrl + '/leads',
+				data: { id: leadId }, // Fetch specific lead with tags
 				method: 'GET',
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
 				success: function(leads) {
-					const lead = leads.find(l => l.id == leadId);
+					const lead = Array.isArray(leads) ? leads.find(l => l.id == leadId) : leads;
 					window.currentLead = lead;
 					if (lead && lead.audit_data) {
 						const audit = safeJsonParse(lead.audit_data);
 						const socialLinks = safeJsonParse(lead.social_links, {});
+						const tags = lead.tags || [];
 						let html = `
+							<div class="lead-tags-sidebar" style="margin-bottom:20px;">
+								${tags.map(t => `<span class="status-badge" style="margin-bottom:5px; position:relative; padding-right:20px;">${escapeHtml(t.name)} <span class="remove-tag-icon" data-tag-id="${t.id}" style="position:absolute; right:5px; cursor:pointer; font-weight:bold;">×</span></span>`).join(' ')}
+							</div>
 							<div class="audit-summary">
 								<p><strong>Website:</strong> <a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></p>
 								<ul class="audit-checklist">
@@ -458,14 +463,18 @@
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
 				success: function(leads) {
-					const lead = leads.find(l => l.id == leadId);
+					const lead = Array.isArray(leads) ? leads.find(l => l.id == leadId) : leads;
 					if (!lead) return;
 					window.currentLead = lead; // Update global context for AI buttons
 					$('#detailLeadName').text(escapeHtml(lead.business_name));
 
 					if (lead.audit_data) {
 						const audit = safeJsonParse(lead.audit_data);
+						const tags = lead.tags || [];
 						let html = `
+							<div class="lead-tags-sidebar" style="margin-bottom:20px;">
+								${tags.map(t => `<span class="status-badge" style="margin-bottom:5px; position:relative; padding-right:20px;">${escapeHtml(t.name)} <span class="remove-tag-icon" data-tag-id="${t.id}" style="position:absolute; right:5px; cursor:pointer; font-weight:bold;">×</span></span>`).join(' ')}
+							</div>
 							<div class="audit-summary">
 								<div class="audit-score-gauge" style="text-align:center; margin-bottom:20px;">
 									<div style="font-size:3rem;">${audit.has_ssl && audit.is_mobile_responsive ? '✅' : '⚠️'}</div>
@@ -573,7 +582,59 @@
 
 		if ($('#campaignListBody').length) {
 			fetchCampaigns();
+			fetchSendingQueue();
 		}
+
+		function fetchSendingQueue() {
+			$.ajax({
+				url: apiUrl + '/outreach/queue',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const tbody = $('#sendingQueueBody');
+					tbody.empty();
+					data.forEach(q => {
+						tbody.append(`
+							<tr>
+								<td>${escapeHtml(q.scheduled_at)}</td>
+								<td><strong>${escapeHtml(q.business_name)}</strong></td>
+								<td>${escapeHtml(q.campaign_name)}</td>
+								<td><span class="status-badge status-new">${escapeHtml(q.status)}</span></td>
+								<td>
+									<button class="button button-small cancel-queue-item" data-id="${q.id}" style="color:#d63638;">Cancel</button>
+								</td>
+							</tr>
+						`);
+					});
+				}
+			});
+		}
+
+		$(document).on('click', '.cancel-queue-item', function() {
+			if (!confirm('Cancel this scheduled email?')) return;
+			const id = $(this).data('id');
+			$.ajax({
+				url: apiUrl + '/outreach/queue/' + id,
+				method: 'DELETE',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					fetchSendingQueue();
+				}
+			});
+		});
+
+		$('.leadflow-campaigns .tab-btn').on('click', function() {
+			const view = $(this).data('view');
+			$('.leadflow-campaigns .tab-btn').removeClass('active');
+			$(this).addClass('active');
+			$('#campaignListView, #sendingQueueView').hide();
+			if (view === 'campaign-list') $('#campaignListView').show();
+			else $('#sendingQueueView').show();
+		});
 
 		// Campaign Actions (Toggle/Delete)
 		$(document).on('click', '.toggle-campaign', function() {
@@ -911,13 +972,20 @@
 					const statusValues = data.status_counts.map(s => s.count);
 
 					new Chart(document.getElementById('leadsStatusChart'), {
-						type: 'doughnut',
+						type: 'bar',
 						data: {
 							labels: statusLabels,
 							datasets: [{
+								label: 'Leads',
 								data: statusValues,
-								backgroundColor: ['#2271b1', '#72aee6', '#3582c4', '#0073aa', '#f0b849', '#d63638', '#008a20']
+								backgroundColor: ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#1e293b'],
+								borderRadius: 8
 							}]
+						},
+						options: {
+							indexAxis: 'y',
+							plugins: { legend: { display: false } },
+							scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
 						}
 					});
 
@@ -938,9 +1006,30 @@
 						});
 					}
 
+					if ($('#leadsAssigneeChart').length) {
+						const assigneeLabels = data.assignee_counts.map(s => s.name);
+						const assigneeValues = data.assignee_counts.map(s => s.count);
+
+						new Chart(document.getElementById('leadsAssigneeChart'), {
+							type: 'bar',
+							data: {
+								labels: assigneeLabels,
+								datasets: [{
+									label: 'Leads',
+									data: assigneeValues,
+									backgroundColor: '#ec4899'
+								}]
+							}
+						});
+					}
+
 					// Update KPI values if elements exist
 					if ($('.leadflow-kpi-grid').length) {
 						$('.kpi-card:nth-child(3) .kpi-value').text( (data.metrics.sent > 0 ? Math.round((data.metrics.opened / data.metrics.sent) * 100) : 0) + '%' );
+						if (data.roi) {
+							$('.kpi-card:nth-child(4) .kpi-value').text(data.roi.lead_velocity + '%');
+							$('.kpi-card:nth-child(5) .kpi-value').text('$' + Number(data.roi.pipeline_value).toLocaleString());
+						}
 						$('#topTemplateName').text(data.metrics.top_template || 'None yet');
 					}
 				}
@@ -1539,6 +1628,25 @@
 			alert('Status updated to ' + newStatus);
 		});
 
+		// Remove Tag from Lead
+		$(document).on('click', '.remove-tag-icon', function() {
+			const tagId = $(this).data('tag-id');
+			const leadId = window.currentLead ? window.currentLead.id : null;
+			if (!tagId || !leadId) return;
+
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/tags',
+				method: 'DELETE',
+				data: { tag_id: tagId },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					loadLeadSidebar(leadId);
+				}
+			});
+		});
+
 		// Add Tag to Lead
 		$(document).on('change', '#addTagSelect', function() {
 			const tagId = $(this).val();
@@ -1635,6 +1743,46 @@
 					alert('Batch processing triggered!');
 					btn.text('Process 5 Jobs Now').prop('disabled', false);
 					loadScraperQueue();
+				}
+			});
+		});
+
+		// Save Manual Lead Note
+		$(document).on('click', '#saveManualNoteBtn', function() {
+			const leadId = $('#detailAiTools button').data('lead-id');
+			const content = $('#manualNoteText').val();
+			if (!content || !leadId) return;
+
+			const btn = $(this);
+			btn.prop('disabled', true).text('Saving...');
+
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/activity',
+				method: 'POST',
+				data: { content: content },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					$('#manualNoteText').val('');
+					btn.prop('disabled', false).text('Add Note');
+					// Reload activity thread
+					$.ajax({
+						url: apiUrl + '/leads/' + leadId + '/activity',
+						method: 'GET',
+						beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
+						success: function(data) {
+							const thread = $('#detailLeadThread');
+							thread.empty();
+							const items = [...data.notes, ...data.emails];
+							items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+							items.forEach(item => {
+								const type = item.subject ? 'email' : 'note';
+								const content = item.body || item.content || item.subject;
+								thread.append(`<div class="thread-item ${type}"><div class="thread-meta">${item.created_at}</div><div class="thread-content">${content}</div></div>`);
+							});
+						}
+					});
 				}
 			});
 		});

@@ -153,6 +153,17 @@ class LeadFlow_DB {
 			location varchar(255),
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id)
+		) $charset_collate;
+		CREATE TABLE {$prefix}sending_queue (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			lead_id bigint(20) unsigned NOT NULL,
+			campaign_id bigint(20) unsigned NOT NULL,
+			step_id bigint(20) unsigned NOT NULL,
+			status varchar(20) DEFAULT 'Scheduled',
+			scheduled_at datetime NOT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY status (status)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

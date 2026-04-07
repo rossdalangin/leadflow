@@ -14,6 +14,12 @@
 		<div class="card"><h3>Activated Domains</h3><p style="font-size:2rem; font-weight:bold; color:blue;"><?php echo $activated_domains; ?></p></div>
 	</div>
 
+	<div class="leadflow-tabs" style="display:flex; gap:10px; margin-bottom:20px;">
+		<button class="button tab-btn active" data-target="licenseSection">Licenses</button>
+		<button class="button tab-btn" data-target="logSection">Activity Logs</button>
+	</div>
+
+	<div id="licenseSection" class="tab-content">
 	<div class="card" style="max-width: 400px; margin-bottom: 30px;">
 		<h2>Generate New License</h2>
 		<form method="post" action="">
@@ -97,4 +103,31 @@
 			<?php endforeach; ?>
 		</tbody>
 	</table>
+	</div>
+
+	<div id="logSection" class="tab-content" style="display:none;">
+		<h2>System Logs</h2>
+		<table class="wp-list-table widefat fixed striped">
+			<thead><tr><th>Key</th><th>Action</th><th>Domain</th><th>Result</th><th>Time</th></tr></thead>
+			<tbody>
+				<?php
+				$logs = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}lfm_logs ORDER BY created_at DESC LIMIT 50" );
+				foreach ($logs as $log) {
+					echo "<tr><td><code>" . esc_html($log->license_key) . "</code></td><td>" . esc_html(strtoupper($log->action)) . "</td><td>" . esc_html($log->domain) . "</td><td>" . esc_html($log->result) . "</td><td>" . esc_html($log->created_at) . "</td></tr>";
+				}
+				?>
+			</tbody>
+		</table>
+	</div>
+
+	<script>
+	jQuery(document).ready(function($) {
+		$('.tab-btn').on('click', function() {
+			$('.tab-btn').removeClass('active button-primary');
+			$(this).addClass('active button-primary');
+			$('.tab-content').hide();
+			$('#' + $(this).data('target')).show();
+		});
+	});
+	</script>
 </div>

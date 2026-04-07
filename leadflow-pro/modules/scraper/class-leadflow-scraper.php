@@ -36,7 +36,8 @@ class LeadFlow_Scraper {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		$jobs = $wpdb->get_results( "SELECT * FROM {$prefix}scrape_queue WHERE status = 'Pending' AND scheduled_at <= NOW() LIMIT 5" );
+		// Process Pending or Failed jobs eligible for retry (max 3 retries)
+		$jobs = $wpdb->get_results( "SELECT * FROM {$prefix}scrape_queue WHERE (status = 'Pending' OR (status = 'Failed' AND retry_count < 3)) AND scheduled_at <= NOW() LIMIT 5" );
 
 		$delay = (int) get_option( 'leadflow_crawl_delay', 2 );
 
@@ -77,7 +78,14 @@ class LeadFlow_Scraper {
 		$load_time  = round( microtime( true ) - $start_time, 3 );
 
 		if ( is_wp_error( $response ) ) {
-			$wpdb->update( "{$prefix}scrape_queue", array( 'status' => 'Failed', 'error_log' => $response->get_error_message() ), array( 'id' => $job_id ) );
+			$job = $wpdb->get_row( $wpdb->prepare( "SELECT retry_count FROM {$prefix}scrape_queue WHERE id = %d", $job_id ) );
+			$new_retry = $job->retry_count + 1;
+			$wpdb->update( "{$prefix}scrape_queue", array(
+				'status' => 'Failed',
+				'error_log' => $response->get_error_message(),
+				'retry_count' => $new_retry,
+				'scheduled_at' => date( 'Y-m-d H:i:s', time() + ( 300 * $new_retry ) ) // Backoff
+			), array( 'id' => $job_id ) );
 			return;
 		}
 
@@ -92,14 +100,23 @@ class LeadFlow_Scraper {
 
 		$audit_results = self::parse_html( $html, $url, $load_time );
 
+		// Auto-qualification logic
+		$new_status = $lead->status;
+		$score = LeadFlow_CRM::calculate_completeness_score( $lead_id );
+		if ( $score >= 80 && $audit_results['has_ssl'] && $audit_results['is_mobile_responsive'] ) {
+			$new_status = 'Qualified';
+		}
+
 		// Update lead with enriched data and full audit results
 		$wpdb->update(
 			"{$prefix}leads",
 			array(
-				'email'        => ! empty( $lead->email ) ? $lead->email : $audit_results['email'],
-				'social_links' => wp_json_encode( $audit_results['social_links'] ),
-				'audit_data'   => wp_json_encode( $audit_results ),
-				'updated_at'   => current_time( 'mysql' ),
+				'email'              => ! empty( $lead->email ) ? $lead->email : $audit_results['email'],
+				'social_links'       => wp_json_encode( $audit_results['social_links'] ),
+				'audit_data'         => wp_json_encode( $audit_results ),
+				'status'             => $new_status,
+				'completeness_score' => $score,
+				'updated_at'         => current_time( 'mysql' ),
 			),
 			array( 'id' => $lead_id )
 		);
