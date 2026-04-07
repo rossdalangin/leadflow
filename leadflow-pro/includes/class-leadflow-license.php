@@ -29,7 +29,10 @@ class LeadFlow_License {
 				return false;
 			}
 
-			$status = self::remote_validate( $license_key );
+			$remote = self::remote_validate( $license_key );
+			$status = $remote['status'];
+			update_option( 'leadflow_license_type', $remote['type'] );
+
 			set_transient( 'leadflow_license_cache', $status, 12 * HOUR_IN_SECONDS );
 		}
 
@@ -77,11 +80,14 @@ class LeadFlow_License {
 		) );
 
 		if ( is_wp_error( $response ) ) {
-			return 'active'; // Fail-safe: allow functionality if server is briefly down
+			return array( 'status' => 'active', 'type' => get_option('leadflow_license_type', 'pro') );
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-		return ( isset( $body['valid'] ) && $body['valid'] ) ? 'active' : 'inactive';
+		return array(
+			'status' => ( isset( $body['valid'] ) && $body['valid'] ) ? 'active' : 'inactive',
+			'type'   => isset( $body['license_type'] ) ? $body['license_type'] : 'pro'
+		);
 	}
 
 	/**

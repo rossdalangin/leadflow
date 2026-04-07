@@ -7,6 +7,12 @@
 		<form method="post" action="">
 			<?php wp_nonce_field( 'lfm_generate' ); ?>
 			<p><label>Customer Name</label><br><input type="text" name="customer_name" required class="regular-text"></p>
+			<p><label>License Type</label><br>
+				<select name="license_type">
+					<option value="pro">Pro</option>
+					<option value="agency">Agency (Multi-site)</option>
+				</select>
+			</p>
 			<p><button type="submit" name="lfm_generate_btn" class="button button-primary">Generate & Save</button></p>
 		</form>
 	</div>
@@ -17,6 +23,7 @@
 		$key = 'LF-' . strtoupper( wp_generate_password( 4, false ) ) . '-' . strtoupper( wp_generate_password( 4, false ) ) . '-' . strtoupper( wp_generate_password( 4, false ) );
 		$wpdb->insert( $wpdb->prefix . 'lfm_licenses', array(
 			'license_key' => $key,
+			'license_type' => sanitize_text_field( $_POST['license_type'] ),
 			'customer_name' => sanitize_text_field( $_POST['customer_name'] ),
 			'created_at' => current_time( 'mysql' ),
 			'status' => 'active'
@@ -40,6 +47,7 @@
 			<tr>
 				<th>Key</th>
 				<th>Customer</th>
+				<th>Type</th>
 				<th>Domain</th>
 				<th>Status</th>
 				<th>Activated</th>
@@ -51,6 +59,7 @@
 				<tr>
 					<td><code><?php echo esc_html( $l->license_key ); ?></code></td>
 					<td><?php echo esc_html( $l->customer_name ); ?></td>
+					<td><span class="status-badge"><?php echo strtoupper( $l->license_type ); ?></span></td>
 					<td><?php echo esc_html( $l->domain ?: 'Not yet' ); ?></td>
 					<td>
 						<span class="status-badge <?php echo $l->status; ?>" style="background: <?php echo $l->status === 'active' ? '#dcfce7' : '#fee2e2'; ?>; color: <?php echo $l->status === 'active' ? '#166534' : '#991b1b'; ?>; padding: 4px 8px; border-radius: 4px;">
@@ -62,6 +71,7 @@
 						<a href="?page=lf-licenses&toggle_status=<?php echo $l->id; ?>&status=<?php echo $l->status; ?>" class="button button-small">
 							<?php echo $l->status === 'active' ? 'Disable' : 'Enable'; ?>
 						</a>
+						<a href="?page=lf-licenses&delete_license=<?php echo $l->id; ?>" class="button button-small" onclick="return confirm('Delete this license?');" style="color:#d63638;">Delete</a>
 					</td>
 				</tr>
 			<?php endforeach; ?>

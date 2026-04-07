@@ -25,8 +25,19 @@
 					<input type="text" id="discoveryLocation" placeholder="Enter location..." class="regular-text">
 				</p>
 			</div>
-			<p><button type="submit" class="button button-primary" id="startDiscoveryBtn">Start Lead Discovery</button></p>
+			<p>
+				<button type="submit" class="button button-primary" id="startDiscoveryBtn">Start Lead Discovery</button>
+				<button type="button" class="button" id="saveSearchBtn">Save Search Parameters</button>
+			</p>
 		</form>
+	</div>
+
+	<div id="savedSearchesSection" class="chart-box" style="margin-top: 20px;">
+		<h3>Saved Searches</h3>
+		<table class="wp-list-table widefat fixed striped">
+			<thead><tr><th>Name</th><th>Source</th><th>Keyword</th><th>Location</th><th>Actions</th></tr></thead>
+			<tbody id="savedSearchesBody"></tbody>
+		</table>
 	</div>
 
 	<div id="discoveryResults" style="display:none;">

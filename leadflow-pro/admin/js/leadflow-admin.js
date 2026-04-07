@@ -389,7 +389,7 @@
 							<button class="button button-small view-lead" data-id="${lead.id}">View</button>
 								<button class="button button-small edit-lead-btn" data-id="${lead.id}">Edit</button>
 							<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
-							<button class="button button-small opt-out-lead" data-email="${escapeHtml(lead.email)}">Opt-out</button>
+								<button class="button button-small delete-lead-btn-row" data-id="${lead.id}" style="color:#d63638;">Delete</button>
 						</td>
 					</tr>
 				`);
@@ -611,6 +611,28 @@
 			window.open(apiUrl + '/leads/' + leadId + '/export?_wpnonce=' + nonce);
 		});
 
+		// Individual Delete Lead (from table row)
+		$(document).on('click', '.delete-lead-btn-row', function() {
+			if (!confirm('Are you sure you want to PERMANENTLY delete this lead and all its data?')) return;
+
+			const leadId = $(this).data('id');
+			const btn = $(this);
+			btn.prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId,
+				method: 'DELETE',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					btn.closest('tr').fadeOut(function() {
+						$(this).remove();
+					});
+				}
+			});
+		});
+
 		// Delete Lead (GDPR)
 		$(document).on('click', '.delete-lead-btn', function() {
 			if (!confirm('Are you sure you want to PERMANENTLY delete all data for this lead?')) return;
@@ -780,6 +802,94 @@
 				}
 			});
 		}
+
+		function loadSavedSearches() {
+			$.ajax({
+				url: apiUrl + '/discovery/saved-searches',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					const tbody = $('#savedSearchesBody');
+					tbody.empty();
+					data.forEach(s => {
+						tbody.append(`
+							<tr>
+								<td><strong>${escapeHtml(s.name)}</strong></td>
+								<td>${escapeHtml(s.source)}</td>
+								<td>${escapeHtml(s.keyword)}</td>
+								<td>${escapeHtml(s.location || '-')}</td>
+								<td>
+									<button class="button button-small run-saved-search" data-source="${s.source}" data-keyword="${s.keyword}" data-location="${s.location}">Run</button>
+									<button class="button button-small delete-saved-search" data-id="${s.id}" style="color:#d63638;">Delete</button>
+								</td>
+							</tr>
+						`);
+					});
+				}
+			});
+		}
+
+		if ($('#savedSearchesBody').length) {
+			loadSavedSearches();
+		}
+
+		$('#saveSearchBtn').on('click', function() {
+			const name = prompt('Enter a name for this search:');
+			if (!name) return;
+
+			const data = {
+				name: name,
+				source: $('#discoverySource').val(),
+				keyword: $('#discoveryKeyword').val(),
+				location: $('#discoveryLocation').val()
+			};
+
+			$.ajax({
+				url: apiUrl + '/discovery/saved-searches',
+				method: 'POST',
+				data: data,
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Search parameters saved!');
+					loadSavedSearches();
+				}
+			});
+		});
+
+		$(document).on('click', '.delete-saved-search', function() {
+			const id = $(this).data('id');
+			if (!confirm('Delete this saved search?')) return;
+
+			$.ajax({
+				url: apiUrl + '/discovery/saved-searches/' + id,
+				method: 'DELETE',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					loadSavedSearches();
+				}
+			});
+		});
+
+		$(document).on('click', '.run-saved-search', function() {
+			const source = $(this).data('source');
+			const keyword = $(this).data('keyword');
+			const location = $(this).data('location');
+
+			$('#discoverySource').val(source);
+			$('#discoveryKeyword').val(keyword);
+			$('#discoveryLocation').val(location);
+
+			$('.leadflow-discovery .tab-btn').removeClass('active');
+			$(`.leadflow-discovery .tab-btn[data-source="${source}"]`).addClass('active').trigger('click');
+
+			$('#discoverySearchForm').trigger('submit');
+		});
 
 		// Discovery Search
 		$('#discoverySearchForm').on('submit', function(e) {
@@ -988,10 +1098,77 @@
 					</div>
 					<p><label>Delay (Days)</label><br><input type="number" name="step[${stepCount}][delay]" value="3"></p>
 					<p><label>Message Body</label><br><textarea name="step[${stepCount}][body]" class="step-body" rows="5" style="width:100%;"></textarea></p>
-					<button type="button" class="button ai-writer-btn">✨ AI: Write this for me</button>
+					<div style="display:flex; gap:10px; justify-content: space-between;">
+						<div>
+							<button type="button" class="button ai-writer-btn">✨ AI: Write this for me</button>
+							<button type="button" class="button step-preview-btn">👁️ Preview</button>
+						</div>
+						<div>
+							<button type="button" class="button move-step-up">↑</button>
+							<button type="button" class="button move-step-down">↓</button>
+							<button type="button" class="button remove-step-btn" style="color:#d63638;">Delete Step</button>
+						</div>
+					</div>
 				</div>
 			`;
 			$('#sequenceSteps').append(newStep);
+		});
+
+		// Remove Step
+		$(document).on('click', '.remove-step-btn', function() {
+			if (confirm('Are you sure you want to remove this step?')) {
+				$(this).closest('.step-card').fadeOut(function() {
+					$(this).remove();
+					// Re-index steps
+					$('.step-card').each(function(index) {
+						$(this).find('h4').text('Step ' + (index + 1));
+					});
+				});
+			}
+		});
+
+		// Move Step Up/Down
+		$(document).on('click', '.move-step-up', function() {
+			const card = $(this).closest('.step-card');
+			card.prev('.step-card').before(card);
+			reindexSteps();
+		});
+
+		$(document).on('click', '.move-step-down', function() {
+			const card = $(this).closest('.step-card');
+			card.next('.step-card').after(card);
+			reindexSteps();
+		});
+
+		function reindexSteps() {
+			$('.step-card').each(function(index) {
+				$(this).find('h4').text('Step ' + (index + 1));
+			});
+		}
+
+		// Step Preview
+		$(document).on('click', '.step-preview-btn', function() {
+			const card = $(this).closest('.step-card');
+			const subject = card.find('.step-subject').val() || '';
+			const body = card.find('.step-body').val() || '';
+
+			const sampleData = {
+				'{{first_name}}': 'John',
+				'{{business_name}}': 'Acme Corp',
+				'{{website}}': 'https://acme.com',
+				'{{city}}': 'Chicago',
+				'{{audit_flag}}': 'I noticed your site doesn\'t have SSL...'
+			};
+
+			let previewSubj = subject;
+			let previewBody = body;
+
+			for (const [token, val] of Object.entries(sampleData)) {
+				previewSubj = previewSubj.replaceAll(token, `<strong>${val}</strong>`);
+				previewBody = previewBody.replaceAll(token, `<strong>${val}</strong>`);
+			}
+
+			alert('PREVIEW:\n\nSubject: ' + previewSubj.replace(/<\/?[^>]+(>|$)/g, "") + '\n\n' + previewBody.replace(/<\/?[^>]+(>|$)/g, ""));
 		});
 
 		// AI Subject Line

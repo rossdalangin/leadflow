@@ -29,6 +29,7 @@ class LeadFlow_License_Manager {
 		$sql = "CREATE TABLE $table_name (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			license_key varchar(50) NOT NULL,
+			license_type varchar(20) DEFAULT 'pro',
 			status varchar(20) DEFAULT 'active',
 			domain varchar(255),
 			customer_name varchar(255),
@@ -104,13 +105,16 @@ class LeadFlow_License_Manager {
 		$domain = esc_url_raw( $request->get_param( 'domain' ) );
 		$domain = parse_url( $domain, PHP_URL_HOST );
 
-		$license = $wpdb->get_row( $wpdb->prepare( "SELECT status, domain FROM {$wpdb->prefix}lfm_licenses WHERE license_key = %s", $key ) );
+		$license = $wpdb->get_row( $wpdb->prepare( "SELECT status, domain, license_type FROM {$wpdb->prefix}lfm_licenses WHERE license_key = %s", $key ) );
 
 		if ( ! $license || 'active' !== $license->status || $license->domain !== $domain ) {
 			return rest_ensure_response( array( 'valid' => false ) );
 		}
 
-		return rest_ensure_response( array( 'valid' => true ) );
+		return rest_ensure_response( array(
+			'valid' => true,
+			'license_type' => $license->license_type
+		) );
 	}
 }
 

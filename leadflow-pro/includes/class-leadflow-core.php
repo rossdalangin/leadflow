@@ -162,79 +162,42 @@ class LeadFlow_Core {
 	}
 
 	public function add_admin_menu() {
+		$is_activated = LeadFlow_License::is_pro();
+		$capability = 'manage_options';
+
 		add_menu_page(
 			'LeadFlow Pro',
 			'LeadFlow Pro',
-			'manage_options',
+			$capability,
 			'leadflow-pro',
-			array( $this, 'display_dashboard' ),
+			array( $this, $is_activated ? 'display_dashboard' : 'display_activation' ),
 			'dashicons-chart-line',
 			25
 		);
 
-		add_submenu_page(
-			'leadflow-pro',
-			'Dashboard',
-			'Dashboard',
-			'manage_options',
-			'leadflow-pro',
-			array( $this, 'display_dashboard' )
-		);
-
-		add_submenu_page(
-			'leadflow-pro',
-			'Lead Discovery',
-			'Lead Discovery',
-			'manage_options',
-			'leadflow-discovery',
-			array( $this, 'display_discovery' )
-		);
-
-		add_submenu_page(
-			'leadflow-pro',
-			'Leads',
-			'Leads',
-			'manage_options',
-			'leadflow-leads',
-			array( $this, 'display_leads' )
-		);
-
-		add_submenu_page(
-			'leadflow-pro',
-			'Campaigns',
-			'Campaigns',
-			'manage_options',
-			'leadflow-campaigns',
-			array( $this, 'display_campaigns' )
-		);
-
-		add_submenu_page(
-			'leadflow-pro',
-			'Inbox',
-			'Inbox',
-			'manage_options',
-			'leadflow-inbox',
-			array( $this, 'display_inbox' )
-		);
-
-		add_submenu_page(
-			'leadflow-pro',
-			'Settings',
-			'Settings',
-			'manage_options',
-			'leadflow-settings',
-			array( $this, 'display_settings' )
-		);
+		if ( $is_activated ) {
+			add_submenu_page( 'leadflow-pro', 'Dashboard', 'Dashboard', $capability, 'leadflow-pro', array( $this, 'display_dashboard' ) );
+			add_submenu_page( 'leadflow-pro', 'Lead Discovery', 'Lead Discovery', $capability, 'leadflow-discovery', array( $this, 'display_discovery' ) );
+			add_submenu_page( 'leadflow-pro', 'Leads', 'Leads', $capability, 'leadflow-leads', array( $this, 'display_leads' ) );
+			add_submenu_page( 'leadflow-pro', 'Campaigns', 'Campaigns', $capability, 'leadflow-campaigns', array( $this, 'display_campaigns' ) );
+			add_submenu_page( 'leadflow-pro', 'Inbox', 'Inbox', $capability, 'leadflow-inbox', array( $this, 'display_inbox' ) );
+			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', $capability, 'leadflow-settings', array( $this, 'display_settings' ) );
+		} else {
+			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', $capability, 'leadflow-pro', array( $this, 'display_activation' ) );
+		}
 
 		add_submenu_page(
 			'leadflow-pro',
 			'Upgrade to Pro',
 			'Upgrade to Pro',
-			'manage_options',
+			$capability,
 			'leadflow-upgrade',
 			array( $this, 'display_upgrade' )
 		);
+	}
 
+	public function display_activation() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/activation.php';
 	}
 
 	public function display_dashboard() {

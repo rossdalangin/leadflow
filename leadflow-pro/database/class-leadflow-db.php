@@ -132,6 +132,15 @@ class LeadFlow_DB {
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			KEY provider_date (provider, created_at)
+		) $charset_collate;
+		CREATE TABLE {$prefix}saved_searches (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			name varchar(100) NOT NULL,
+			source varchar(20) NOT NULL,
+			keyword varchar(255) NOT NULL,
+			location varchar(255),
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

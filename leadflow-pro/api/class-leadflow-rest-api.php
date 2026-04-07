@@ -221,6 +221,35 @@ class LeadFlow_REST_API {
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
+
+		register_rest_route( 'leadflow/v1', '/license/activate', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'activate_license' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/discovery/saved-searches', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_saved_searches' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'save_search' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/discovery/saved-searches/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_saved_search' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
 	}
 
 	public function check_permission() {
@@ -606,6 +635,47 @@ class LeadFlow_REST_API {
 		fputcsv( $output, array( 'Globex', 'https://globex.co', 'hr@globex.co', '+1-555-0200', '{}' ) );
 		fclose( $output );
 		exit;
+	}
+
+	public function activate_license( $request ) {
+		$key = sanitize_text_field( $request->get_param( 'license_key' ) );
+		$result = LeadFlow_License::validate_license( $key );
+
+		if ( ! $result['success'] ) {
+			return new WP_Error( 'activation_failed', $result['message'], array( 'status' => 403 ) );
+		}
+
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_saved_searches() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		return rest_ensure_response( $wpdb->get_results( "SELECT * FROM {$prefix}saved_searches ORDER BY created_at DESC" ) );
+	}
+
+	public function save_search( $request ) {
+		global $wpdb;
+		$params = $request->get_params();
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$wpdb->insert( "{$prefix}saved_searches", array(
+			'name'       => sanitize_text_field( $params['name'] ),
+			'source'     => sanitize_text_field( $params['source'] ),
+			'keyword'    => sanitize_text_field( $params['keyword'] ),
+			'location'   => sanitize_text_field( $params['location'] ),
+			'created_at' => current_time( 'mysql' ),
+		) );
+
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function delete_saved_search( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$wpdb->delete( "{$prefix}saved_searches", array( 'id' => $id ) );
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function activate_demo_license() {

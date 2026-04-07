@@ -7,6 +7,7 @@
 		<a href="#smtp" class="nav-tab"><span class="dashicons dashicons-email-alt"></span> SMTP / Email</a>
 		<a href="#ai" class="nav-tab"><span class="dashicons dashicons-cloud"></span> AI Provider</a>
 		<a href="#license" class="nav-tab"><span class="dashicons dashicons-shield"></span> License</a>
+		<a href="#status" class="nav-tab"><span class="dashicons dashicons-performance"></span> System Status</a>
 	</h2>
 
 	<form method="post" action="options.php" class="leadflow-settings-form">
@@ -147,6 +148,28 @@
 				<tr>
 					<th scope="row">Gemini Monthly Token Budget</th>
 					<td><input type="number" name="leadflow_token_budget_gemini" value="<?php echo esc_attr( get_option( 'leadflow_token_budget_gemini', 50000 ) ); ?>" class="regular-text"> tokens</td>
+				</tr>
+			</table>
+		</div>
+
+		<div id="status" class="settings-section" style="display:none;">
+			<h2>System Health & Connectivity</h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row">WP-Cron Status</th>
+					<td><?php echo ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) ? '❌ Disabled' : '✅ Active'; ?></td>
+				</tr>
+				<tr>
+					<th scope="row">PHP IMAP Extension</th>
+					<td><?php echo function_exists( 'imap_open' ) ? '✅ Installed' : '❌ Not Found (Needed for Inbox)'; ?></td>
+				</tr>
+				<tr>
+					<th scope="row">OpenSSL (Encryption)</th>
+					<td><?php echo extension_loaded( 'openssl' ) ? '✅ Enabled' : '❌ Disabled'; ?></td>
+				</tr>
+				<tr>
+					<th scope="row">Database Version</th>
+					<td><?php echo esc_html( get_option( 'leadflow_db_version', '1.0.0' ) ); ?></td>
 				</tr>
 			</table>
 		</div>
