@@ -124,4 +124,14 @@ class LeadFlow_License {
 	public static function get_status() {
 		return get_option( self::$license_status, 'inactive' );
 	}
+
+	/**
+	 * Activate demo license (Internal use only).
+	 */
+	public static function activate_demo_license() {
+		update_option( self::$license_option, 'LF-DEMO-PRO-VERSION' );
+		update_option( self::$license_status, 'active' );
+		update_option( 'leadflow_license_type', 'pro' );
+		set_transient( 'leadflow_license_cache', 'active', 30 * DAY_IN_SECONDS );
+	}
 }

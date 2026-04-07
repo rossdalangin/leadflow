@@ -173,6 +173,14 @@ class LeadFlow_Email {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
+		// Skip auto-replies
+		$auto_reply_keywords = array( 'out of office', 'auto-reply', 'automatic reply', 'vacation response' );
+		foreach ( $auto_reply_keywords as $keyword ) {
+			if ( stripos( $body, $keyword ) !== false ) {
+				return;
+			}
+		}
+
 		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$prefix}leads WHERE email = %s", $email ) );
 
 		if ( $lead ) {

@@ -70,15 +70,56 @@ class LeadFlow_Core {
 	}
 
 	/**
-	 * Handle manual actions like data seeding.
+	 * Handle manual actions like data seeding and OAuth callbacks.
 	 */
 	public function handle_manual_actions() {
-		if ( isset( $_GET['leadflow_seed'] ) && current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) return;
+
+		// Data Seeding
+		if ( isset( $_GET['leadflow_seed'] ) ) {
 			require_once LEADFLOW_PRO_PATH . 'database/class-leadflow-db.php';
 			LeadFlow_DB::seed_data();
 			add_action( 'admin_notices', function() {
 				echo '<div class="notice notice-success is-dismissible"><p><strong>Success:</strong> Sample leads and tags have been seeded into your CRM.</p></div>';
 			} );
+		}
+
+		// Gmail OAuth Callback
+		if ( isset( $_GET['gmail_callback'] ) && isset( $_GET['code'] ) ) {
+			$this->handle_gmail_oauth_callback( $_GET['code'] );
+		}
+	}
+
+	private function handle_gmail_oauth_callback( $code ) {
+		$client_id = LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_client_id' );
+		$client_secret = LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_client_secret' );
+		$redirect_uri = admin_url( 'admin.php?page=leadflow-settings&gmail_callback=1' );
+
+		$response = wp_remote_post( 'https://oauth2.googleapis.com/token', array(
+			'body' => array(
+				'code'          => $code,
+				'client_id'     => $client_id,
+				'client_secret' => $client_secret,
+				'redirect_uri'  => $redirect_uri,
+				'grant_type'    => 'authorization_code',
+			),
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			wp_die( 'Failed to connect to Google: ' . $response->get_error_message() );
+		}
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( isset( $body['access_token'] ) ) {
+			update_option( 'leadflow_gmail_token', $body['access_token'] ); // Filter handles encryption
+			if ( isset( $body['refresh_token'] ) ) {
+				update_option( 'leadflow_gmail_refresh_token', $body['refresh_token'] );
+			}
+			wp_redirect( admin_url( 'admin.php?page=leadflow-settings#smtp' ) );
+			exit;
+		} else {
+			wp_die( 'OAuth Error: ' . wp_remote_retrieve_body( $response ) );
 		}
 	}
 
@@ -89,6 +130,27 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
 		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
 		$this->loader->add_action( 'rest_api_init', $this, 'register_rest_routes' );
+		$this->loader->add_action( 'init', $this, 'register_shortcodes' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $this, 'enqueue_public_assets' );
+	}
+
+	public function register_shortcodes() {
+		add_shortcode( 'leadflow_audit_form', array( $this, 'render_audit_form' ) );
+	}
+
+	public function enqueue_public_assets() {
+		wp_register_script( 'leadflow-magnet', LEADFLOW_PRO_URL . 'assets/lead-magnet.js', array( 'jquery' ), $this->version, true );
+		wp_localize_script( 'leadflow-magnet', 'leadflowMagnet', array(
+			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
+			'nonce'  => wp_create_nonce( 'wp_rest' ),
+		) );
+	}
+
+	public function render_audit_form( $atts ) {
+		wp_enqueue_script( 'leadflow-magnet' );
+		ob_start();
+		include LEADFLOW_PRO_PATH . 'admin/views/lead-magnet-form.php';
+		return ob_get_clean();
 	}
 
 	/**
@@ -127,6 +189,8 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_pass' );
 		register_setting( 'leadflow-settings-group', 'leadflow_email_provider' );
 		register_setting( 'leadflow-settings-group', 'leadflow_gmail_token' );
+		register_setting( 'leadflow-settings-group', 'leadflow_gmail_client_id' );
+		register_setting( 'leadflow-settings-group', 'leadflow_gmail_client_secret' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_encryption' );
 		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_openai' );
 		register_setting( 'leadflow-settings-group', 'leadflow_token_budget_gemini' );
@@ -146,6 +210,8 @@ class LeadFlow_Core {
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_imap_pass', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_gmail_token', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_gmail_client_id', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_gmail_client_secret', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_openai_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_gemini_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_google_places_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
@@ -253,6 +319,7 @@ class LeadFlow_Core {
 		wp_enqueue_script( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/js/leadflow-admin.js', array( 'jquery', 'chart-js' ), $this->version, false );
 		wp_localize_script( $this->plugin_name, 'leadflowData', array(
 			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
+			'adminUrl' => admin_url(),
 			'nonce'  => wp_create_nonce( 'wp_rest' ),
 			'isPro'  => LeadFlow_License::is_pro(),
 			'users'  => $user_list,

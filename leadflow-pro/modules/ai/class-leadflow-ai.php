@@ -124,6 +124,8 @@ class LeadFlow_AI {
 		if ( ! $audit_results['is_mobile_responsive'] ) $tags_to_apply[] = 'needs-mobile';
 		if ( isset($audit_results['outdated_design']) && $audit_results['outdated_design'] ) $tags_to_apply[] = 'outdated';
 		if ( $audit_results['load_time'] > 3 ) $tags_to_apply[] = 'slow-load';
+		if ( $audit_results['cms'] === 'WordPress' ) $tags_to_apply[] = 'wordpress';
+		if ( $audit_results['is_ecommerce'] ) $tags_to_apply[] = 'ecommerce';
 
 		foreach ( $tags_to_apply as $slug ) {
 			$tag_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}lead_tags WHERE slug = %s", $slug ) );

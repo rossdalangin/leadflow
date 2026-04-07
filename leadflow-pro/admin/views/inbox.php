@@ -51,8 +51,13 @@
 			</div>
 
 			<div class="inbox-reply" id="inboxReply" style="display:none;">
+				<div id="aiDraftBox" style="display:none; background:#f0f7ff; border:1px solid #c2e0ff; padding:15px; border-radius:8px; margin-bottom:15px;">
+					<strong style="color:#005cbf;">✨ AI Drafted Reply:</strong>
+					<p id="aiDraftContent" style="font-style:italic; color:#444; margin:10px 0;"></p>
+					<button class="button button-small" id="useAiDraftBtn">Use this draft</button>
+				</div>
 				<div class="reply-toolbar">
-					<button class="button button-small ai-reply-btn" title="AI: Suggest Reply">✨ AI: Suggest Reply</button>
+					<button class="button button-small ai-reply-btn" title="AI: Suggest Reply">✨ AI: Re-Draft</button>
 					<button class="button button-small ai-write-personalized-btn" title="AI: Write Personalized Email">✨ AI: Personalized Email</button>
 				</div>
 				<textarea id="replyText" rows="4" placeholder="Write your reply..."></textarea>

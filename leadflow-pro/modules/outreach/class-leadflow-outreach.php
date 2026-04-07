@@ -196,8 +196,26 @@ class LeadFlow_Outreach {
 	 * Send step email and log it.
 	 */
 	private static function send_step_email( $lead, $step, $campaign_id ) {
-		$personalized_body = self::personalize_email( $step->body, $lead );
-		$personalized_subj = self::personalize_email( $step->subject, $lead );
+		$template_id = $step->template_id;
+		$subject = $step->subject;
+		$body = $step->body;
+
+		// A/B Testing Logic: Rotate templates if template_ids are present
+		if ( ! empty( $step->template_ids ) ) {
+			$ids = explode( ',', $step->template_ids );
+			// Simple rotation based on lead ID
+			$index = $lead->id % count( $ids );
+			$template_id = (int) $ids[ $index ];
+
+			$template = LeadFlow_Templates::get_template( $template_id );
+			if ( $template ) {
+				$subject = $template->subject;
+				$body = $template->body;
+			}
+		}
+
+		$personalized_body = self::personalize_email( $body, $lead );
+		$personalized_subj = self::personalize_email( $subject, $lead );
 
 		$sent = LeadFlow_Email::send( $lead->email, $personalized_subj, $personalized_body );
 
@@ -205,7 +223,7 @@ class LeadFlow_Outreach {
 			global $wpdb;
 			$prefix = $wpdb->prefix . 'leadflow_';
 
-			// Pull tracking hash from content (hacky but reliable for now)
+			// Pull tracking hash from content
 			preg_match( '/\/track\/open\/([a-zA-Z0-9]+)/', $personalized_body, $matches );
 			$tracking_hash = isset( $matches[1] ) ? $matches[1] : '';
 
@@ -215,7 +233,7 @@ class LeadFlow_Outreach {
 					'lead_id'       => $lead->id,
 					'campaign_id'   => $campaign_id,
 					'step_id'       => $step->id,
-					'template_id'   => $step->template_id,
+					'template_id'   => $template_id,
 					'tracking_hash' => $tracking_hash,
 					'subject'       => $personalized_subj,
 					'status'        => 'Sent',

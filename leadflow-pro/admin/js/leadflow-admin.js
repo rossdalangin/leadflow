@@ -148,6 +148,44 @@
 
 			loadThread(leadId);
 			loadLeadSidebar(leadId);
+			triggerAiDraft(leadId);
+		});
+
+		function triggerAiDraft(leadId) {
+			const draftBox = $('#aiDraftBox');
+			const draftContent = $('#aiDraftContent');
+
+			draftBox.hide();
+
+			// Give the thread a moment to load
+			setTimeout(() => {
+				let lastInbound = $('#inboxThread .thread-item.email').last().find('.thread-content').text();
+				if (!lastInbound) return;
+
+				$.ajax({
+					url: apiUrl + '/ai/complete',
+					method: 'POST',
+					data: {
+						context: {
+							feature: 'reply_suggestion',
+							lead_id: leadId,
+							inbound_text: lastInbound
+						}
+					},
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader('X-WP-Nonce', nonce);
+					},
+					success: function(response) {
+						draftContent.text(response.result);
+						draftBox.fadeIn();
+					}
+				});
+			}, 1000);
+		}
+
+		$(document).on('click', '#useAiDraftBtn', function() {
+			$('#replyText').val($('#aiDraftContent').text());
+			$('#aiDraftBox').fadeOut();
 		});
 
 		function loadLeadSidebar(leadId) {
@@ -1852,6 +1890,34 @@
 					btn.text('✨ Activate Demo Pro License').prop('disabled', false);
 				}
 			});
+		});
+
+		// Gmail Revoke
+		$('#revokeGmail').on('click', function() {
+			if (!confirm('Are you sure you want to revoke the Gmail connection?')) return;
+			$.ajax({
+				url: apiUrl + '/settings/revoke-gmail',
+				method: 'POST',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Gmail connection revoked.');
+					location.reload();
+				}
+			});
+		});
+
+		// Gmail Auth
+		$('#authGmail, #reauthGmail').on('click', function() {
+			const clientId = $('input[name="leadflow_gmail_client_id"]').val();
+			if (!clientId) {
+				alert('Please enter a Gmail Client ID first and save settings.');
+				return;
+			}
+			const redirectUri = encodeURIComponent(leadflowData.adminUrl + 'admin.php?page=leadflow-settings&gmail_callback=1');
+			const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly');
+			window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
 		});
 
 		// Test AI Connection

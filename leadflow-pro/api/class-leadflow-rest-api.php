@@ -28,6 +28,22 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/analytics/report', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'export_analytics_report' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/settings/revoke-gmail', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'revoke_gmail' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/outreach/queue', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -631,6 +647,31 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 
+	public function export_analytics_report() {
+		if ( ! LeadFlow_License::is_pro() ) {
+			return new WP_Error( 'pro_required', 'Reports are a Pro feature.', array( 'status' => 403 ) );
+		}
+
+		header( 'Content-Type: text/csv' );
+		header( 'Content-Disposition: attachment; filename="leadflow_report_' . date( 'Y-m-d' ) . '.csv"' );
+
+		$output = fopen( 'php://output', 'w' );
+		fputcsv( $output, array( 'Metric', 'Value' ) );
+
+		$roi = LeadFlow_Analytics::get_roi_metrics();
+		$metrics = LeadFlow_Analytics::get_outreach_metrics();
+
+		fputcsv( $output, array( 'Conversion Rate', $roi['conversion_rate'] . '%' ) );
+		fputcsv( $output, array( 'Pipeline Value', '$' . $roi['pipeline_value'] ) );
+		fputcsv( $output, array( 'Lead Velocity', $roi['lead_velocity'] . '%' ) );
+		fputcsv( $output, array( 'Emails Sent', $metrics['sent'] ) );
+		fputcsv( $output, array( 'Open Rate', ( $metrics['sent'] > 0 ? round( ( $metrics['opened'] / $metrics['sent'] ) * 100, 2 ) : 0 ) . '%' ) );
+		fputcsv( $output, array( 'Best Template', $metrics['top_template'] ) );
+
+		fclose( $output );
+		exit;
+	}
+
 	public function export_csv() {
 		return LeadFlow_CRM::export_to_csv();
 	}
@@ -793,6 +834,12 @@ class LeadFlow_REST_API {
 		$wpdb->delete( "{$prefix}campaigns", array( 'id' => $id ) );
 		$wpdb->delete( "{$prefix}campaign_steps", array( 'campaign_id' => $id ) );
 
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function revoke_gmail() {
+		delete_option( 'leadflow_gmail_token' );
+		delete_option( 'leadflow_gmail_refresh_token' );
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 

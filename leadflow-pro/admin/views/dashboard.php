@@ -15,6 +15,7 @@ $roi = LeadFlow_Analytics::get_roi_metrics();
 	<div class="dashboard-filters" style="float:right; margin-top:10px;">
 		<input type="date" id="statsDateStart"> to <input type="date" id="statsDateEnd">
 		<button class="button" id="refreshStats">Refresh</button>
+		<a href="<?php echo esc_url( rest_url( 'leadflow/v1/analytics/report' ) ); ?>?_wpnonce=<?php echo wp_create_nonce('wp_rest'); ?>" class="button button-primary">Download ROI Report</a>
 	</div>
 	<hr class="wp-header-end">
 

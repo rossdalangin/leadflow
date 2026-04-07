@@ -85,6 +85,7 @@ class LeadFlow_DB {
 			template_id bigint(20) unsigned DEFAULT NULL,
 			subject varchar(255) NOT NULL,
 			body longtext NOT NULL,
+			template_ids text, -- comma-separated list for A/B testing
 			step_type varchar(20) DEFAULT 'email',
 			PRIMARY KEY  (id),
 			KEY campaign_id (campaign_id)
@@ -193,6 +194,8 @@ class LeadFlow_DB {
 			array( 'name' => 'No SSL', 'slug' => 'no-ssl' ),
 			array( 'name' => 'Slow Load', 'slug' => 'slow-load' ),
 			array( 'name' => 'Outdated', 'slug' => 'outdated' ),
+			array( 'name' => 'WordPress', 'slug' => 'wordpress' ),
+			array( 'name' => 'eCommerce', 'slug' => 'ecommerce' ),
 		);
 
 		foreach ( $tags as $tag ) {

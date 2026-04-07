@@ -224,8 +224,29 @@ class LeadFlow_Scraper {
 			'has_contact_form'      => false,
 			'is_mobile_responsive'  => false,
 			'outdated_design'       => false,
+			'cms'                   => 'unknown',
+			'is_ecommerce'          => false,
+			'tracking_pixels'       => array(),
 			'load_time'             => $load_time,
 		);
+
+		// CMS Detection
+		if ( stripos( $html, 'wp-content' ) !== false || stripos( $html, 'wp-includes' ) !== false ) {
+			$results['cms'] = 'WordPress';
+		}
+
+		// eCommerce Detection
+		if ( stripos( $html, 'woocommerce' ) !== false || stripos( $html, 'cart' ) !== false || stripos( $html, 'checkout' ) !== false ) {
+			$results['is_ecommerce'] = true;
+		}
+
+		// Tracking Pixels
+		if ( stripos( $html, 'googletagmanager.com' ) !== false || stripos( $html, 'google-analytics.com' ) !== false ) {
+			$results['tracking_pixels'][] = 'Google Analytics';
+		}
+		if ( stripos( $html, 'facebook.net/en_US/fbevents.js' ) !== false ) {
+			$results['tracking_pixels'][] = 'Facebook Pixel';
+		}
 
 		// Extract emails using regex + mailto
 		if ( preg_match( '/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}/', $html, $matches ) ) {

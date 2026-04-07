@@ -65,8 +65,31 @@
 					</td>
 				</tr>
 				<tr class="gmail-only" style="display:none;">
-					<th scope="row">Gmail API Token</th>
-					<td><input type="password" name="leadflow_gmail_token" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_token' ) ); ?>" class="regular-text"></td>
+					<th scope="row">Gmail Client ID</th>
+					<td><input type="text" name="leadflow_gmail_client_id" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_client_id' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr class="gmail-only" style="display:none;">
+					<th scope="row">Gmail Client Secret</th>
+					<td><input type="password" name="leadflow_gmail_client_secret" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_client_secret' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr class="gmail-only" style="display:none;">
+					<th scope="row">Authorized Redirect URI</th>
+					<td>
+						<code><?php echo esc_url( admin_url( 'admin.php?page=leadflow-settings&gmail_callback=1' ) ); ?></code>
+						<p class="description">Copy this into your Google Cloud Console redirect URIs.</p>
+					</td>
+				</tr>
+				<tr class="gmail-only" style="display:none;">
+					<th scope="row">Authentication</th>
+					<td>
+						<?php if ( LeadFlow_Security::get_decrypted_option( 'leadflow_gmail_token' ) ) : ?>
+							<span class="status-badge status-replied">Authenticated</span>
+							<button type="button" class="button" id="reauthGmail">Re-authenticate</button>
+							<button type="button" class="button" id="revokeGmail" style="color:#d63638;">Revoke Connection</button>
+						<?php else : ?>
+							<button type="button" class="button button-primary" id="authGmail">Connect Gmail Account</button>
+						<?php endif; ?>
+					</td>
 				</tr>
 			</table>
 
