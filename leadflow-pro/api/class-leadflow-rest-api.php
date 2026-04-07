@@ -284,6 +284,32 @@ class LeadFlow_REST_API {
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
 		) );
+
+		register_rest_route( 'leadflow/v1', '/templates', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_templates' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'create_template' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/templates/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_template' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_template' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
 	}
 
 	public function check_permission() {
@@ -301,7 +327,7 @@ class LeadFlow_REST_API {
 
 		foreach ( $leads as &$lead ) {
 			$lead->tags = $wpdb->get_results( $wpdb->prepare(
-				"SELECT t.name FROM {$prefix}lead_tags t JOIN {$prefix}lead_tag_relationships r ON t.id = r.tag_id WHERE r.lead_id = %d",
+				"SELECT t.id, t.name FROM {$prefix}lead_tags t JOIN {$prefix}lead_tag_relationships r ON t.id = r.tag_id WHERE r.lead_id = %d",
 				$lead->id
 			) );
 		}
@@ -508,6 +534,7 @@ class LeadFlow_REST_API {
 
 		return rest_ensure_response( array(
 			'status_counts' => LeadFlow_Analytics::get_leads_by_status(),
+			'source_counts' => LeadFlow_Analytics::get_leads_by_source(),
 			'metrics'       => LeadFlow_Analytics::get_outreach_metrics( $start, $end ),
 			'ai_usage'      => LeadFlow_Analytics::get_ai_usage_stats(),
 		) );
@@ -650,11 +677,12 @@ class LeadFlow_REST_API {
 		if ( isset( $params['steps'] ) && is_array( $params['steps'] ) ) {
 			foreach ( $params['steps'] as $index => $step ) {
 				LeadFlow_Outreach::add_step( $campaign_id, array(
-					'order'   => $index + 1,
-					'delay'   => $step['delay'],
-					'subject' => isset( $step['subject'] ) ? $step['subject'] : '',
-					'body'    => $step['body'],
-					'type'    => $step['type'],
+					'order'       => $index + 1,
+					'delay'       => $step['delay'],
+					'template_id' => isset( $step['template_id'] ) ? $step['template_id'] : null,
+					'subject'     => isset( $step['subject'] ) ? $step['subject'] : '',
+					'body'        => $step['body'],
+					'type'        => $step['type'],
 				) );
 			}
 		}
@@ -682,11 +710,12 @@ class LeadFlow_REST_API {
 			$wpdb->delete( "{$prefix}campaign_steps", array( 'campaign_id' => $id ) );
 			foreach ( $params['steps'] as $index => $step ) {
 				LeadFlow_Outreach::add_step( $id, array(
-					'order'   => $index + 1,
-					'delay'   => $step['delay'],
-					'subject' => isset( $step['subject'] ) ? $step['subject'] : '',
-					'body'    => $step['body'],
-					'type'    => $step['type'],
+					'order'       => $index + 1,
+					'delay'       => $step['delay'],
+					'template_id' => isset( $step['template_id'] ) ? $step['template_id'] : null,
+					'subject'     => isset( $step['subject'] ) ? $step['subject'] : '',
+					'body'        => $step['body'],
+					'type'        => $step['type'],
 				) );
 			}
 		}
@@ -791,6 +820,29 @@ class LeadFlow_REST_API {
 		$id = $request['id'];
 		$prefix = $wpdb->prefix . 'leadflow_';
 		$wpdb->delete( "{$prefix}saved_searches", array( 'id' => $id ) );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_templates() {
+		return rest_ensure_response( LeadFlow_Templates::get_templates() );
+	}
+
+	public function create_template( $request ) {
+		$params = $request->get_params();
+		$id = LeadFlow_Templates::create_template( $params );
+		return rest_ensure_response( array( 'id' => $id ) );
+	}
+
+	public function update_template( $request ) {
+		$id = $request['id'];
+		$params = $request->get_params();
+		LeadFlow_Templates::update_template( $id, $params );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function delete_template( $request ) {
+		$id = $request['id'];
+		LeadFlow_Templates::delete_template( $id );
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 

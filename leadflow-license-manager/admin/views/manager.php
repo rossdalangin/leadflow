@@ -45,11 +45,15 @@
 		echo '<div class="notice notice-success"><p>Generated: <code>' . $key . '</code></p></div>';
 	}
 
-	if ( isset( $_GET['toggle_status'] ) ) {
+	if ( isset( $_GET['toggle_status'] ) && check_admin_referer( 'toggle_license_' . $_GET['toggle_status'] ) ) {
 		$wpdb->update( $wpdb->prefix . 'lfm_licenses',
 			array( 'status' => $_GET['status'] === 'active' ? 'inactive' : 'active' ),
 			array( 'id' => $_GET['toggle_status'] )
 		);
+	}
+
+	if ( isset( $_GET['delete_license'] ) && check_admin_referer( 'delete_license_' . $_GET['delete_license'] ) ) {
+		$wpdb->delete( $wpdb->prefix . 'lfm_licenses', array( 'id' => $_GET['delete_license'] ) );
 	}
 
 	$licenses = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}lfm_licenses ORDER BY created_at DESC" );
@@ -84,10 +88,10 @@
 					<td><?php echo esc_html( $l->expires_at ?: 'Never' ); ?></td>
 					<td><?php echo esc_html( $l->activated_at ?: '-' ); ?></td>
 					<td>
-						<a href="?page=lf-licenses&toggle_status=<?php echo $l->id; ?>&status=<?php echo $l->status; ?>" class="button button-small">
+						<a href="<?php echo wp_nonce_url( "?page=lf-licenses&toggle_status={$l->id}&status={$l->status}", 'toggle_license_' . $l->id ); ?>" class="button button-small">
 							<?php echo $l->status === 'active' ? 'Disable' : 'Enable'; ?>
 						</a>
-						<a href="?page=lf-licenses&delete_license=<?php echo $l->id; ?>" class="button button-small" onclick="return confirm('Delete this license?');" style="color:#d63638;">Delete</a>
+						<a href="<?php echo wp_nonce_url( "?page=lf-licenses&delete_license={$l->id}", 'delete_license_' . $l->id ); ?>" class="button button-small" onclick="return confirm('Delete this license?');" style="color:#d63638;">Delete</a>
 					</td>
 				</tr>
 			<?php endforeach; ?>

@@ -36,6 +36,7 @@ class LeadFlow_Core {
 		require_once LEADFLOW_PRO_PATH . 'modules/scraper/class-leadflow-scraper.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-outreach.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-email.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-templates.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/compliance/class-leadflow-compliance.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/analytics/class-leadflow-analytics.php';
 
@@ -181,6 +182,7 @@ class LeadFlow_Core {
 			add_submenu_page( 'leadflow-pro', 'Leads', 'Leads', $capability, 'leadflow-leads', array( $this, 'display_leads' ) );
 			add_submenu_page( 'leadflow-pro', 'Campaigns', 'Campaigns', $capability, 'leadflow-campaigns', array( $this, 'display_campaigns' ) );
 			add_submenu_page( 'leadflow-pro', 'Inbox', 'Inbox', $capability, 'leadflow-inbox', array( $this, 'display_inbox' ) );
+		add_submenu_page( 'leadflow-pro', 'Email Templates', 'Templates', $capability, 'leadflow-templates', array( $this, 'display_templates' ) );
 			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', $capability, 'leadflow-settings', array( $this, 'display_settings' ) );
 		} else {
 			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', $capability, 'leadflow-pro', array( $this, 'display_activation' ) );
@@ -218,6 +220,10 @@ class LeadFlow_Core {
 
 	public function display_inbox() {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/inbox.php';
+	}
+
+	public function display_templates() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/templates.php';
 	}
 
 	public function display_settings() {

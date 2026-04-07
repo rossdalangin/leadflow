@@ -53,6 +53,7 @@ class LeadFlow_Outreach {
 				'campaign_id' => $campaign_id,
 				'step_order'  => $step_data['order'],
 				'delay_days'  => $step_data['delay'],
+				'template_id' => isset( $step_data['template_id'] ) ? $step_data['template_id'] : null,
 				'subject'     => isset( $step_data['subject'] ) ? $step_data['subject'] : '',
 				'body'        => $step_data['body'],
 				'step_type'   => isset( $step_data['type'] ) ? $step_data['type'] : 'email', // email, linkedin, facebook
@@ -104,6 +105,10 @@ class LeadFlow_Outreach {
 	private static function run_sequence_for_lead( $campaign_id, $lead ) {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
+
+		// Auto-pause if lead replied globally
+		$replied = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}email_log WHERE lead_id = %d AND status = 'Replied'", $lead->id ) );
+		if ( $replied ) return;
 
 		// Find next step in sequence
 		$last_step = $wpdb->get_row( $wpdb->prepare(
@@ -184,6 +189,7 @@ class LeadFlow_Outreach {
 					'lead_id'       => $lead->id,
 					'campaign_id'   => $campaign_id,
 					'step_id'       => $step->id,
+					'template_id'   => $step->template_id,
 					'tracking_hash' => $tracking_hash,
 					'subject'       => $personalized_subj,
 					'status'        => 'Sent',

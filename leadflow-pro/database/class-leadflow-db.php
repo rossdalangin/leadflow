@@ -37,6 +37,7 @@ class LeadFlow_DB {
 			assigned_to bigint(20) unsigned,
 			audit_data longtext,
 			is_pro_only tinyint(1) DEFAULT 0,
+			completeness_score tinyint(3) unsigned DEFAULT 0,
 			proposal_url varchar(255),
 			consent_at datetime,
 			created_at datetime NOT NULL,
@@ -81,6 +82,7 @@ class LeadFlow_DB {
 			campaign_id bigint(20) unsigned NOT NULL,
 			step_order int(10) unsigned NOT NULL,
 			delay_days int(10) unsigned DEFAULT 0,
+			template_id bigint(20) unsigned DEFAULT NULL,
 			subject varchar(255) NOT NULL,
 			body longtext NOT NULL,
 			step_type varchar(20) DEFAULT 'email',
@@ -92,6 +94,7 @@ class LeadFlow_DB {
 			lead_id bigint(20) unsigned NOT NULL,
 			campaign_id bigint(20) unsigned,
 			step_id bigint(20) unsigned,
+			template_id bigint(20) unsigned DEFAULT NULL,
 			tracking_hash varchar(64),
 			subject varchar(255),
 			status varchar(20) DEFAULT 'Sent',
@@ -133,6 +136,14 @@ class LeadFlow_DB {
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			KEY provider_date (provider, created_at)
+		) $charset_collate;
+		CREATE TABLE {$prefix}email_templates (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			name varchar(100) NOT NULL,
+			subject varchar(255) NOT NULL,
+			body longtext NOT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id)
 		) $charset_collate;
 		CREATE TABLE {$prefix}saved_searches (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -183,9 +194,18 @@ class LeadFlow_DB {
 			$wpdb->insert( "{$prefix}leads", array_merge( $lead, array(
 				'lead_source'   => 'Sample Data',
 				'social_links'  => wp_json_encode( array( 'facebook' => 'https://facebook.com/sample', 'linkedin' => 'https://linkedin.com/company/sample' ) ),
+				'completeness_score' => 60,
 				'created_at'    => current_time( 'mysql' ),
 				'updated_at'    => current_time( 'mysql' ),
 			) ) );
 		}
+
+		// Seed templates
+		$wpdb->insert( "{$prefix}email_templates", array(
+			'name' => 'Initial Outreach (SSL Hook)',
+			'subject' => 'Quick question about {{business_name}} website',
+			'body' => 'Hi {{first_name}},\n\n{{audit_flag}}\n\nI specialize in fixing these issues for local businesses in {{city}}. Would you be open to a quick chat?\n\nBest,\nAdmin',
+			'created_at' => current_time( 'mysql' )
+		) );
 	}
 }

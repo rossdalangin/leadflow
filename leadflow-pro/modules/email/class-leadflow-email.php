@@ -176,6 +176,18 @@ class LeadFlow_Email {
 			$sentiment = LeadFlow_AI::analyze_sentiment( $body );
 			LeadFlow_CRM::add_note( $lead->id, "Inbound Reply (Sentiment: $sentiment): " . $body );
 
+			// Auto-tagging based on sentiment
+			$tag_slug = '';
+			if ( stripos( $sentiment, 'Positive' ) !== false ) $tag_slug = 'high-intent';
+			elseif ( stripos( $sentiment, 'Unsubscribe' ) !== false ) $tag_slug = 'opt-out';
+
+			if ( $tag_slug ) {
+				$tag_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}lead_tags WHERE slug = %s", $tag_slug ) );
+				if ( $tag_id ) {
+					$wpdb->replace( "{$prefix}lead_tag_relationships", array( 'lead_id' => $lead->id, 'tag_id' => $tag_id ) );
+				}
+			}
+
 			// Auto-detect unsubscribe intent
 			if ( LeadFlow_Compliance::detect_unsubscribe_intent( $body ) ) {
 				LeadFlow_Compliance::add_opt_out( $email, 'Detected in reply' );

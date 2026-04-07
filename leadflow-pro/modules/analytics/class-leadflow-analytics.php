@@ -21,6 +21,15 @@ class LeadFlow_Analytics {
 	}
 
 	/**
+	 * Get lead counts by source.
+	 */
+	public static function get_leads_by_source() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		return $wpdb->get_results( "SELECT lead_source as source, COUNT(*) as count FROM {$prefix}leads GROUP BY lead_source", ARRAY_A );
+	}
+
+	/**
 	 * Get outreach metrics (sent, opened, clicked, replied).
 	 */
 	public static function get_outreach_metrics( $start_date = null, $end_date = null ) {
@@ -42,7 +51,20 @@ class LeadFlow_Analytics {
 			'opened'  => (int) $opened,
 			'clicked' => (int) $clicked,
 			'replies' => (int) $replies,
+			'top_template' => self::get_top_performing_template()
 		);
+	}
+
+	public static function get_top_performing_template() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		return $wpdb->get_var( "
+			SELECT t.name
+			FROM {$prefix}email_templates t
+			JOIN {$prefix}email_log e ON t.id = e.template_id
+			GROUP BY e.template_id
+			ORDER BY (SUM(CASE WHEN e.opens_count > 0 THEN 1 ELSE 0 END) / COUNT(*)) DESC
+			LIMIT 1" ) ?: 'None yet';
 	}
 
 	/**

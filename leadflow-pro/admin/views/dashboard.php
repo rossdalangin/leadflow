@@ -40,6 +40,11 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 			<h3>Conversions</h3>
 			<p class="kpi-value"><?php echo esc_html( $conversions ); ?></p>
 		</div>
+		<div class="kpi-card">
+			<span class="dashicons dashicons-email-alt2" style="font-size:32px; color:var(--leadflow-primary);"></span>
+			<h3>Best Template</h3>
+			<p class="kpi-value" style="font-size:1.2rem; margin-top:25px;" id="topTemplateName">Loading...</p>
+		</div>
 	</div>
 
 	<div class="leadflow-charts-container">
@@ -50,6 +55,10 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 		<div class="chart-box">
 			<h3>Outreach Performance</h3>
 			<canvas id="outreachChart"></canvas>
+		</div>
+		<div class="chart-box">
+			<h3>Leads by Source</h3>
+			<canvas id="leadsSourceChart"></canvas>
 		</div>
 	</div>
 

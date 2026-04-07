@@ -42,6 +42,15 @@ class LeadFlow_CRM {
 		$data['email']       = sanitize_email( $data['email'] );
 		$data['website_url'] = esc_url_raw( $data['website_url'] );
 
+		// Calculate score
+		$score = 0;
+		if ( ! empty( $data['business_name'] ) ) $score += 20;
+		if ( ! empty( $data['website_url'] ) ) $score += 20;
+		if ( ! empty( $data['email'] ) ) $score += 30;
+		if ( ! empty( $data['phone'] ) ) $score += 15;
+		if ( ! empty( $data['social_links'] ) && '[]' !== $data['social_links'] ) $score += 15;
+		$data['completeness_score'] = $score;
+
 		$result = $wpdb->insert( "{$prefix}leads", $data );
 
 		if ( ! $result ) {
@@ -77,7 +86,7 @@ class LeadFlow_CRM {
 		$args = wp_parse_args( $args, $defaults );
 
 		// Whitelist for SQL Injection prevention
-		$allowed_orderby = array( 'id', 'business_name', 'email', 'status', 'created_at', 'updated_at' );
+		$allowed_orderby = array( 'id', 'business_name', 'email', 'status', 'created_at', 'updated_at', 'completeness_score' );
 		$orderby         = in_array( $args['orderby'], $allowed_orderby, true ) ? $args['orderby'] : 'created_at';
 		$order           = 'DESC' === strtoupper( $args['order'] ) ? 'DESC' : 'ASC';
 

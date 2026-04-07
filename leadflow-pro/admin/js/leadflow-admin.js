@@ -381,7 +381,7 @@
 
 			leads.forEach(lead => {
 				const audit = safeJsonParse(lead.audit_data);
-				const score = calculateCompleteness(lead);
+				const score = lead.completeness_score || 0;
 					const tagsHtml = (lead.tags || []).map(t => `<span class="status-badge" style="font-size:0.65rem; margin-right:4px;">${escapeHtml(t.name)}</span>`).join('');
 				const row = $(`
 					<tr>
@@ -921,9 +921,27 @@
 						}
 					});
 
+					if ($('#leadsSourceChart').length) {
+						const sourceLabels = data.source_counts.map(s => s.source);
+						const sourceValues = data.source_counts.map(s => s.count);
+
+						new Chart(document.getElementById('leadsSourceChart'), {
+							type: 'bar',
+							data: {
+								labels: sourceLabels,
+								datasets: [{
+									label: 'Leads',
+									data: sourceValues,
+									backgroundColor: '#6366f1'
+								}]
+							}
+						});
+					}
+
 					// Update KPI values if elements exist
 					if ($('.leadflow-kpi-grid').length) {
 						$('.kpi-card:nth-child(3) .kpi-value').text( (data.metrics.sent > 0 ? Math.round((data.metrics.opened / data.metrics.sent) * 100) : 0) + '%' );
+						$('#topTemplateName').text(data.metrics.top_template || 'None yet');
 					}
 				}
 			});
@@ -1175,6 +1193,7 @@
 				steps.push({
 					order: index + 1,
 					type: $(this).find('.step-type').val(),
+					template_id: $(this).find('.template-selector').val() || null,
 					subject: $(this).find('.step-subject').val(),
 					body: $(this).find('.step-body').val(),
 					delay: $(this).find('input[type="number"]').val()
@@ -1209,6 +1228,11 @@
 			const stepCount = count || $('.step-card').length + 1;
 			const newStep = `
 				<div class="step-card">
+					<div style="float:right;">
+						<select class="template-selector" style="font-size:0.75rem;">
+							<option value="">Load Template...</option>
+						</select>
+					</div>
 					<h4>Step ${stepCount}</h4>
 					<p><label>Step Type</label><br>
 						<select name="step[${stepCount}][type]" class="step-type">
@@ -1237,6 +1261,7 @@
 				</div>
 			`;
 			$('#sequenceSteps').append(newStep);
+			loadTemplateOptions();
 		}
 
 		// Add Lead Modal
@@ -1357,6 +1382,28 @@
 			const card = $(this).closest('.step-card');
 			card.prev('.step-card').before(card);
 			reindexSteps();
+		});
+
+		// Load templates into selectors
+		function loadTemplateOptions() {
+			$.get(apiUrl + '/templates', function(templates) {
+				const selectors = $('.template-selector');
+				selectors.each(function() {
+					const sel = $(this);
+					if (sel.find('option').length > 1) return;
+					templates.forEach(t => {
+						sel.append(`<option value="${t.id}" data-subject="${escapeHtml(t.subject)}" data-body="${escapeHtml(t.body)}">${escapeHtml(t.name)}</option>`);
+					});
+				});
+			});
+		}
+
+		$(document).on('change', '.template-selector', function() {
+			const opt = $(this).find('option:selected');
+			if (!opt.val()) return;
+			const card = $(this).closest('.step-card');
+			card.find('.step-subject').val(opt.data('subject'));
+			card.find('.step-body').val(opt.data('body'));
 		});
 
 		$(document).on('click', '.move-step-down', function() {

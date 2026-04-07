@@ -42,8 +42,8 @@ class LeadFlow_Scraper {
 
 		foreach ( $jobs as $job ) {
 			self::run_audit( $job->lead_id, $job->id );
-			// Per-domain rate limiting
-			sleep( $delay );
+			// Per-domain rate limiting (Avoid sleep in high-frequency cron if possible, but keeping for simple batching)
+			if ( count($jobs) > 1 ) sleep( $delay );
 		}
 	}
 
