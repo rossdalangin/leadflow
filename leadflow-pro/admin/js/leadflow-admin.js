@@ -6,6 +6,12 @@
 		const nonce = leadflowData.nonce;
 		const isPro = leadflowData.isPro;
 
+		function showUpgradeModal(featureName) {
+			const modal = $('#upgradeNudgeModal');
+			modal.find('.feature-name').text(featureName);
+			modal.fadeIn();
+		}
+
 		// Tab Switching Logic
 		$('.nav-tab-wrapper a').on('click', function(e) {
 			e.preventDefault();
@@ -32,7 +38,7 @@
 		$('.leadflow-tabs .tab-btn').on('click', function() {
 			const view = $(this).data('view');
 			if (view === 'kanban' && !isPro) {
-				alert('Kanban view is a Pro feature.');
+				showUpgradeModal('Kanban Pipeline View');
 				return;
 			}
 			$('.tab-btn').removeClass('active');
@@ -63,10 +69,10 @@
 		// Fetch Leads for Table
 		function fetchLeads() {
 			$.ajax({
-				url: apiUrl + '/leads',
-				method: 'GET',
+				url: apiUrl + "/leads",
+				method: "GET",
 				beforeSend: function(xhr) {
-					xhr.setRequestHeader('X-WP-Nonce', nonce);
+					xhr.setRequestHeader("X-WP-Nonce", nonce);
 				},
 				success: function(data) {
 					renderLeadTable(data);
@@ -241,6 +247,7 @@
 							</div>
 						`);
 					});
+
 				}
 			});
 		}
@@ -303,6 +310,10 @@
 
 		// AI Suggest Reply
 		$(document).on('click', '.ai-reply-btn', function() {
+			if (!isPro) {
+				showUpgradeModal('AI Reply Suggestions');
+				return;
+			}
 			const btn = $(this);
 			const leadId = $('.inbox-item.active').data('lead-id') || (window.currentLead ? window.currentLead.id : null);
 			if (!leadId) return;
@@ -911,6 +922,10 @@
 
 		// AI Write Personalized Email
 		$(document).on('click', '.ai-write-personalized-btn', function() {
+			if (!isPro) {
+				showUpgradeModal('AI Personalized Email Writer');
+				return;
+			}
 			const btn = $(this);
 			const lead = window.currentLead;
 
@@ -1125,6 +1140,15 @@
 						});
 					}
 
+					// Queue Pulse Stats
+					const qStats = data.daily_pulse ? data.daily_pulse.queue_stats : null;
+					if (qStats) {
+						$('#queuePulseStats').html(`
+							Emails in Queue: <strong>${qStats.outreach}</strong><br>
+							Pending Audits: <strong>${qStats.scraper}</strong>
+						`);
+					}
+
 					// Update KPI values if elements exist
 					if ($('.leadflow-kpi-grid').length) {
 						$('.kpi-card:nth-child(3) .kpi-value').text( (data.metrics.sent > 0 ? Math.round((data.metrics.opened / data.metrics.sent) * 100) : 0) + '%' );
@@ -1135,13 +1159,37 @@
 						$('#topTemplateName').text(data.metrics.top_template || 'None yet');
 					}
 
+					// A/B Insights
+					const abBody = $('#abInsightsBody');
+					if (abBody.length) {
+						abBody.empty();
+						const abData = data.ab_insights || [];
+						if (abData.length === 0) {
+							abBody.append('<tr><td colspan="4">No A/B tests active yet.</td></tr>');
+						} else {
+							abData.forEach(ab => {
+								const openPct = Math.round((ab.opened / ab.sent) * 100);
+								const replyPct = Math.round((ab.replied / ab.sent) * 100);
+								abBody.append(`
+									<tr>
+										<td><strong>${escapeHtml(ab.template_name)}</strong></td>
+										<td>${ab.sent}</td>
+										<td>${openPct}%</td>
+										<td>${replyPct}%</td>
+									</tr>
+								`);
+							});
+						}
+					}
+
 					// Pulse Table
 					const pulseBody = $('#pulseTableBody');
 					pulseBody.empty();
-					if (data.daily_pulse.length === 0) {
+					const pulseLeads = data.daily_pulse.leads || [];
+					if (pulseLeads.length === 0) {
 						pulseBody.append('<tr><td colspan="4">No leads need immediate attention. Great job!</td></tr>');
 					}
-					data.daily_pulse.forEach(p => {
+					pulseLeads.forEach(p => {
 						pulseBody.append(`
 							<tr>
 								<td><strong>${escapeHtml(p.business_name)}</strong></td>
@@ -1511,6 +1559,10 @@
 
 		// AI Writer
 		$(document).on('click', '.ai-writer-btn', function() {
+			if (!isPro) {
+				showUpgradeModal('AI Campaign Copywriter');
+				return;
+			}
 			const btn = $(this);
 			const originalText = btn.text();
 			btn.text('Generating...').prop('disabled', true);

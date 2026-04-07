@@ -49,6 +49,7 @@ class LeadFlow_Core {
 
 	private function define_admin_hooks() {
 		$this->loader->add_action( 'admin_init', $this, 'check_license_kill_switch' );
+		$this->loader->add_action( 'admin_footer', $this, 'display_upgrade_modal' );
 		$this->loader->add_action( 'admin_menu', $this, 'add_admin_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this, 'enqueue_scripts' );
@@ -242,6 +243,10 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-magnet-group', 'leadflow_magnet_success' );
 		register_setting( 'leadflow-magnet-group', 'leadflow_magnet_redirect' );
 
+		// White-label settings
+		register_setting( 'leadflow-settings-group', 'leadflow_custom_name' );
+		register_setting( 'leadflow-settings-group', 'leadflow_custom_color' );
+
 		// Encryption hooks
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_imap_pass', array( 'LeadFlow_Security', 'encrypt' ) );
@@ -266,13 +271,19 @@ class LeadFlow_Core {
 		}
 	}
 
+	public function display_upgrade_modal() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/upgrade-modal.php';
+	}
+
 	public function add_admin_menu() {
 		$is_activated = LeadFlow_License::is_pro();
-		$capability = 'manage_options';
+		$capability = 'manage_options'; // Restrict main menu to admins by default
+
+		$plugin_name = get_option( 'leadflow_custom_name', 'LeadFlow Pro' );
 
 		add_menu_page(
-			'LeadFlow Pro',
-			'LeadFlow Pro',
+			$plugin_name,
+			$plugin_name,
 			$capability,
 			'leadflow-pro',
 			array( $this, $is_activated ? 'display_dashboard' : 'display_activation' ),
@@ -281,13 +292,13 @@ class LeadFlow_Core {
 		);
 
 		if ( $is_activated ) {
-			add_submenu_page( 'leadflow-pro', 'Dashboard', 'Dashboard', $capability, 'leadflow-pro', array( $this, 'display_dashboard' ) );
-			add_submenu_page( 'leadflow-pro', 'Lead Discovery', 'Lead Discovery', $capability, 'leadflow-discovery', array( $this, 'display_discovery' ) );
-			add_submenu_page( 'leadflow-pro', 'Leads', 'Leads', $capability, 'leadflow-leads', array( $this, 'display_leads' ) );
-			add_submenu_page( 'leadflow-pro', 'Campaigns', 'Campaigns', $capability, 'leadflow-campaigns', array( $this, 'display_campaigns' ) );
-			add_submenu_page( 'leadflow-pro', 'Inbox', 'Inbox', $capability, 'leadflow-inbox', array( $this, 'display_inbox' ) );
-		add_submenu_page( 'leadflow-pro', 'Email Templates', 'Templates', $capability, 'leadflow-templates', array( $this, 'display_templates' ) );
-			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', $capability, 'leadflow-settings', array( $this, 'display_settings' ) );
+			add_submenu_page( 'leadflow-pro', 'Dashboard', 'Dashboard', 'edit_posts', 'leadflow-pro', array( $this, 'display_dashboard' ) );
+			add_submenu_page( 'leadflow-pro', 'Lead Discovery', 'Lead Discovery', 'edit_posts', 'leadflow-discovery', array( $this, 'display_discovery' ) );
+			add_submenu_page( 'leadflow-pro', 'Leads', 'Leads', 'edit_posts', 'leadflow-leads', array( $this, 'display_leads' ) );
+			add_submenu_page( 'leadflow-pro', 'Campaigns', 'Campaigns', 'edit_posts', 'leadflow-campaigns', array( $this, 'display_campaigns' ) );
+			add_submenu_page( 'leadflow-pro', 'Inbox', 'Inbox', 'edit_posts', 'leadflow-inbox', array( $this, 'display_inbox' ) );
+			add_submenu_page( 'leadflow-pro', 'Email Templates', 'Templates', 'edit_posts', 'leadflow-templates', array( $this, 'display_templates' ) );
+			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', 'manage_options', 'leadflow-settings', array( $this, 'display_settings' ) );
 		} else {
 			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', $capability, 'leadflow-pro', array( $this, 'display_activation' ) );
 		}
@@ -340,6 +351,10 @@ class LeadFlow_Core {
 
 	public function enqueue_styles() {
 		wp_enqueue_style( $this->plugin_name, LEADFLOW_PRO_URL . 'admin/css/leadflow-admin.css', array(), $this->version, 'all' );
+
+		$custom_color = get_option('leadflow_custom_color', '#6366f1');
+		$custom_css = ":root { --leadflow-primary: $custom_color; }";
+		wp_add_inline_style( $this->plugin_name, $custom_css );
 	}
 
 	public function enqueue_scripts() {

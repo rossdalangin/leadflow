@@ -7,6 +7,7 @@
 		<a href="#smtp" class="nav-tab"><span class="dashicons dashicons-email-alt"></span> SMTP / Email</a>
 		<a href="#ai" class="nav-tab"><span class="dashicons dashicons-cloud"></span> AI Provider</a>
 		<a href="#license" class="nav-tab"><span class="dashicons dashicons-shield"></span> License</a>
+		<a href="#whitelabel" class="nav-tab"><span class="dashicons dashicons-admin-appearance"></span> White-label</a>
 		<a href="#webhooks" class="nav-tab"><span class="dashicons dashicons-rest-api"></span> Webhooks</a>
 		<a href="#status" class="nav-tab"><span class="dashicons dashicons-performance"></span> System Status</a>
 	</h2>
@@ -190,6 +191,21 @@
 				<tr>
 					<th scope="row">Gemini Monthly Token Budget</th>
 					<td><input type="number" name="leadflow_token_budget_gemini" value="<?php echo esc_attr( get_option( 'leadflow_token_budget_gemini', 50000 ) ); ?>" class="regular-text"> tokens</td>
+				</tr>
+			</table>
+		</div>
+
+		<div id="whitelabel" class="settings-section" style="display:none;">
+			<h2>Agency White-labeling (Pro)</h2>
+			<p class="description">Rebrand the plugin interface for your clients. Changes will apply to the main menu and dashboard titles.</p>
+			<table class="form-table">
+				<tr>
+					<th scope="row">Custom Plugin Name</th>
+					<td><input type="text" name="leadflow_custom_name" value="<?php echo esc_attr( get_option( 'leadflow_custom_name', 'LeadFlow Pro' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">Custom Brand Color</th>
+					<td><input type="color" name="leadflow_custom_color" value="<?php echo esc_attr( get_option( 'leadflow_custom_color', '#6366f1' ) ); ?>"></td>
 				</tr>
 			</table>
 		</div>

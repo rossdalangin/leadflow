@@ -373,15 +373,28 @@ class LeadFlow_REST_API {
 			return current_user_can( 'manage_options' );
 		}
 
+		// If license exists but is invalid, block all other data access
 		if ( get_option( 'leadflow_license_key' ) && ! LeadFlow_License::is_pro() ) {
 			return false;
 		}
-		return current_user_can( 'manage_options' );
+
+		// Multi-user capability check: require manage_options for settings, edit_posts for CRM
+		if ( strpos( $request->get_route(), '/settings' ) !== false ) {
+			return current_user_can( 'manage_options' );
+		}
+
+		return current_user_can( 'edit_posts' );
 	}
 
 	public function get_leads( $request ) {
 		global $wpdb;
 		$params = $request->get_params();
+
+		// Team Access Logic: Editors/Authors only see their assigned leads
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$params['assigned_to'] = get_current_user_id();
+		}
+
 		$leads  = LeadFlow_CRM::get_leads( $params );
 		$prefix = $wpdb->prefix . 'leadflow_';
 
@@ -598,6 +611,7 @@ class LeadFlow_REST_API {
 			'ai_usage'        => LeadFlow_Analytics::get_ai_usage_stats(),
 			'roi'             => LeadFlow_Analytics::get_roi_metrics(),
 			'daily_pulse'     => LeadFlow_Analytics::get_daily_pulse(),
+			'ab_insights'     => LeadFlow_Analytics::get_ab_test_insights(),
 		) );
 	}
 

@@ -20,7 +20,19 @@ class LeadFlow_Analytics {
 
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
-		$results = $wpdb->get_results( "SELECT status, COUNT(*) as count FROM {$prefix}leads GROUP BY status", ARRAY_A );
+
+		// Map existing leads to all possible statuses to ensure chart consistency
+		$statuses = array( 'New', 'Contacted', 'Replied', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost' );
+		$results = array();
+
+		$counts = $wpdb->get_results( "SELECT status, COUNT(*) as count FROM {$prefix}leads GROUP BY status", OBJECT_K );
+
+		foreach ( $statuses as $status ) {
+			$results[] = array(
+				'status' => $status,
+				'count'  => isset( $counts[ $status ] ) ? (int) $counts[ $status ]->count : 0
+			);
+		}
 
 		set_transient( 'leadflow_leads_by_status', $results, HOUR_IN_SECONDS );
 		return $results;
@@ -74,6 +86,27 @@ class LeadFlow_Analytics {
 	}
 
 	/**
+	 * Get template performance comparison for A/B testing insights.
+	 */
+	public static function get_ab_test_insights() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		return $wpdb->get_results( "
+			SELECT
+				t.name as template_name,
+				COUNT(e.id) as sent,
+				SUM(CASE WHEN e.opens_count > 0 THEN 1 ELSE 0 END) as opened,
+				SUM(CASE WHEN e.clicks_count > 0 THEN 1 ELSE 0 END) as clicked,
+				SUM(CASE WHEN e.status = 'Replied' THEN 1 ELSE 0 END) as replied
+			FROM {$prefix}email_templates t
+			JOIN {$prefix}email_log e ON t.id = e.template_id
+			GROUP BY t.id
+			HAVING sent > 0
+			ORDER BY (replied / sent) DESC", ARRAY_A );
+	}
+
+	/**
 	 * Get AI usage stats per provider.
 	 */
 	public static function get_ai_usage_stats() {
@@ -123,7 +156,13 @@ class LeadFlow_Analytics {
 			WHERE q.status = 'Failed'
 			LIMIT 5", ARRAY_A );
 
-		return array_merge( $replied_no_followup, $failed_scrapes );
+		return array(
+			'leads' => array_merge( $replied_no_followup, $failed_scrapes ),
+			'queue_stats' => array(
+				'outreach' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}sending_queue WHERE status = 'Scheduled'" ),
+				'scraper'  => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}scrape_queue WHERE status = 'Pending'" )
+			)
+		);
 	}
 
 	/**
