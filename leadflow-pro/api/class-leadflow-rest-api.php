@@ -294,8 +294,18 @@ class LeadFlow_REST_API {
 	}
 
 	public function get_leads( $request ) {
+		global $wpdb;
 		$params = $request->get_params();
 		$leads  = LeadFlow_CRM::get_leads( $params );
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		foreach ( $leads as &$lead ) {
+			$lead->tags = $wpdb->get_results( $wpdb->prepare(
+				"SELECT t.name FROM {$prefix}lead_tags t JOIN {$prefix}lead_tag_relationships r ON t.id = r.tag_id WHERE r.lead_id = %d",
+				$lead->id
+			) );
+		}
+
 		return rest_ensure_response( $leads );
 	}
 
@@ -388,6 +398,7 @@ class LeadFlow_REST_API {
 			'status'        => 'sanitize_text_field',
 			'assigned_to'   => 'absint',
 			'social_links'  => 'wp_kses_post', // JSON string
+			'proposal_url'  => 'esc_url_raw',
 		);
 
 		foreach ( $fields as $field => $sanitizer ) {
@@ -398,6 +409,11 @@ class LeadFlow_REST_API {
 
 		if ( empty( $data ) ) {
 			return new WP_Error( 'no_data', 'No data provided to update.', array( 'status' => 400 ) );
+		}
+
+		// Status automation: If proposal URL is added, mark as Proposal Sent
+		if ( ! empty( $data['proposal_url'] ) ) {
+			$data['status'] = 'Proposal Sent';
 		}
 
 		$data['updated_at'] = current_time( 'mysql' );
@@ -601,9 +617,19 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( $leads );
 	}
 
-	public function get_campaigns() {
+	public function get_campaigns( $request ) {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
+		$id = $request->get_param('id');
+
+		if ( $id ) {
+			$campaign = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaigns WHERE id = %d", $id ) );
+			if ( $campaign ) {
+				$campaign->steps = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE campaign_id = %d ORDER BY step_order ASC", $id ) );
+			}
+			return rest_ensure_response( $campaign );
+		}
+
 		$campaigns = $wpdb->get_results( "SELECT * FROM {$prefix}campaigns" );
 		return rest_ensure_response( $campaigns );
 	}
@@ -647,11 +673,23 @@ class LeadFlow_REST_API {
 		if ( isset( $params['is_active'] ) ) $data['is_active'] = (int) $params['is_active'];
 		if ( isset( $params['status_filter'] ) ) $data['status_filter'] = sanitize_text_field( $params['status_filter'] );
 
-		if ( empty( $data ) ) {
-			return new WP_Error( 'no_data', 'No data to update.', array( 'status' => 400 ) );
+		if ( ! empty( $data ) ) {
+			$wpdb->update( "{$prefix}campaigns", $data, array( 'id' => $id ) );
 		}
 
-		$wpdb->update( "{$prefix}campaigns", $data, array( 'id' => $id ) );
+		if ( isset( $params['steps'] ) && is_array( $params['steps'] ) ) {
+			// Wipe and rebuild steps for simplicity in this version
+			$wpdb->delete( "{$prefix}campaign_steps", array( 'campaign_id' => $id ) );
+			foreach ( $params['steps'] as $index => $step ) {
+				LeadFlow_Outreach::add_step( $id, array(
+					'order'   => $index + 1,
+					'delay'   => $step['delay'],
+					'subject' => isset( $step['subject'] ) ? $step['subject'] : '',
+					'body'    => $step['body'],
+					'type'    => $step['type'],
+				) );
+			}
+		}
 
 		return rest_ensure_response( array( 'success' => true ) );
 	}

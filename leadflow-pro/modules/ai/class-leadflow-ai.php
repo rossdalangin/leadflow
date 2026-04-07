@@ -127,4 +127,13 @@ class LeadFlow_AI {
 		$prompt = "Suggest a professional and friendly reply to this email from a potential lead: \"$inbound_text\"";
 		return self::complete( $prompt, array( 'feature' => 'reply_suggestion' ) );
 	}
+
+	/**
+	 * Test connection to AI providers.
+	 */
+	public static function test_connectivity( $provider ) {
+		$prompt = "Ping";
+		$result = self::complete( $prompt, array( 'provider' => $provider, 'feature' => 'test_connection' ) );
+		return ( stripos( $result, 'Error' ) === false && stripos( $result, 'reached' ) === false );
+	}
 }

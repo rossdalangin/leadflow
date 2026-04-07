@@ -171,6 +171,18 @@
 					<th scope="row">Database Version</th>
 					<td><?php echo esc_html( get_option( 'leadflow_db_version', '1.0.0' ) ); ?></td>
 				</tr>
+				<tr>
+					<th scope="row">OpenAI Connectivity</th>
+					<td><?php echo LeadFlow_AI::test_connectivity('openai') ? '✅ Connected' : '❌ Failed (Check API Key)'; ?></td>
+				</tr>
+				<tr>
+					<th scope="row">Gemini Connectivity</th>
+					<td><?php echo LeadFlow_AI::test_connectivity('gemini') ? '✅ Connected' : '❌ Failed (Check API Key)'; ?></td>
+				</tr>
+				<tr>
+					<th scope="row">Google Places API</th>
+					<td><?php echo LeadFlow_Discovery::test_google_connectivity() ? '✅ Connected' : '❌ Failed (Check API Key)'; ?></td>
+				</tr>
 			</table>
 
 			<h3>Scraper Queue Status</h3>

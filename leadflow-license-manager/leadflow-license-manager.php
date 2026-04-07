@@ -105,10 +105,15 @@ class LeadFlow_License_Manager {
 		$domain = esc_url_raw( $request->get_param( 'domain' ) );
 		$domain = parse_url( $domain, PHP_URL_HOST );
 
-		$license = $wpdb->get_row( $wpdb->prepare( "SELECT status, domain, license_type FROM {$wpdb->prefix}lfm_licenses WHERE license_key = %s", $key ) );
+		$license = $wpdb->get_row( $wpdb->prepare( "SELECT status, domain, license_type, expires_at FROM {$wpdb->prefix}lfm_licenses WHERE license_key = %s", $key ) );
 
 		if ( ! $license || 'active' !== $license->status || $license->domain !== $domain ) {
 			return rest_ensure_response( array( 'valid' => false ) );
+		}
+
+		// Expiration check
+		if ( ! empty( $license->expires_at ) && strtotime( $license->expires_at ) < time() ) {
+			return rest_ensure_response( array( 'valid' => false, 'message' => 'License has expired.' ) );
 		}
 
 		return rest_ensure_response( array(

@@ -199,4 +199,19 @@ class LeadFlow_Discovery {
 		fclose( $handle );
 		return $count;
 	}
+
+	/**
+	 * Test connectivity to Google Places API.
+	 */
+	public static function test_google_connectivity() {
+		$api_key = LeadFlow_Security::get_decrypted_option( self::$google_places_api_option );
+		if ( ! $api_key ) return false;
+
+		$url = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=ping&key=$api_key";
+		$response = wp_remote_get( $url );
+
+		if ( is_wp_error( $response ) ) return false;
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		return ( 'OK' === $body['status'] || 'ZERO_RESULTS' === $body['status'] );
+	}
 }

@@ -37,6 +37,7 @@ class LeadFlow_DB {
 			assigned_to bigint(20) unsigned,
 			audit_data longtext,
 			is_pro_only tinyint(1) DEFAULT 0,
+			proposal_url varchar(255),
 			consent_at datetime,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,

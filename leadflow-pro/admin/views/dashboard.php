@@ -71,6 +71,13 @@ $conversions = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status
 		</table>
 	</div>
 
+	<div id="dashboardAiUsage" class="chart-box" style="margin-top: 20px;">
+		<h3>Monthly AI Token Usage</h3>
+		<div id="aiUsageBars">
+			<!-- Populated by JS -->
+		</div>
+	</div>
+
 	<div class="leadflow-recent-activity">
 		<h3>Recent Activity</h3>
 		<table class="wp-list-table widefat fixed striped">

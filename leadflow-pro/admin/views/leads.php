@@ -18,6 +18,9 @@
 				<option value="Contacted">Contacted</option>
 				<option value="Replied">Replied</option>
 				<option value="Qualified">Qualified</option>
+				<option value="Proposal Sent">Proposal Sent</option>
+				<option value="Closed Won">Closed Won</option>
+				<option value="Closed Lost">Closed Lost</option>
 			</select>
 			<input type="text" id="leadSearch" placeholder="Search leads...">
 			<button class="button" id="applyFilters">Apply Filters</button>
@@ -62,8 +65,12 @@
 					<option value="Contacted">Contacted</option>
 					<option value="Replied">Replied</option>
 					<option value="Qualified">Qualified</option>
+					<option value="Proposal Sent">Proposal Sent</option>
+					<option value="Closed Won">Closed Won</option>
+					<option value="Closed Lost">Closed Lost</option>
 				</select>
 				<button class="button" id="applyBulkStatus">Apply Status</button>
+				<button class="button" id="bulkAuditLeads" style="margin-left:10px;">Bulk Audit</button>
 				<button class="button" id="bulkDeleteLeads" style="color:#d63638; margin-left:10px;">Bulk Delete</button>
 			</div>
 		</div>
@@ -75,6 +82,9 @@
 					<div class="kanban-column" data-status="Contacted"><h3>Contacted</h3><div class="kanban-items"></div></div>
 					<div class="kanban-column" data-status="Replied"><h3>Replied</h3><div class="kanban-items"></div></div>
 					<div class="kanban-column" data-status="Qualified"><h3>Qualified</h3><div class="kanban-items"></div></div>
+					<div class="kanban-column" data-status="Proposal Sent"><h3>Proposal Sent</h3><div class="kanban-items"></div></div>
+					<div class="kanban-column" data-status="Closed Won"><h3>Closed Won</h3><div class="kanban-items"></div></div>
+					<div class="kanban-column" data-status="Closed Lost"><h3>Closed Lost</h3><div class="kanban-items"></div></div>
 				</div>
 			<?php else : ?>
 				<div class="leadflow-upsell-overlay">
@@ -104,6 +114,11 @@
 					<div id="detailAiTools" style="margin-top:20px;">
 						<button class="button button-small ai-score-btn">✨ AI: Score</button>
 						<button class="button button-small ai-summarize-btn">✨ AI: Hook</button>
+					</div>
+					<div class="proposal-tracking" style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+						<h3>Proposal Tracking</h3>
+						<p><label>Proposal URL</label><br><input type="url" id="proposalUrl" placeholder="https://..." style="width:100%;"></p>
+						<p><button class="button button-small" id="saveProposalBtn">Save Proposal</button></p>
 					</div>
 				</div>
 			</div>

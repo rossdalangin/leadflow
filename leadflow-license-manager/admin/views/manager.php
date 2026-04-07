@@ -25,6 +25,7 @@
 					<option value="agency">Agency (Multi-site)</option>
 				</select>
 			</p>
+			<p><label>Expiration Date (Optional)</label><br><input type="date" name="expires_at" class="regular-text"></p>
 			<p><button type="submit" name="lfm_generate_btn" class="button button-primary">Generate & Save</button></p>
 		</form>
 	</div>
@@ -37,6 +38,7 @@
 			'license_key' => $key,
 			'license_type' => sanitize_text_field( $_POST['license_type'] ),
 			'customer_name' => sanitize_text_field( $_POST['customer_name'] ),
+			'expires_at' => ! empty( $_POST['expires_at'] ) ? sanitize_text_field( $_POST['expires_at'] ) : null,
 			'created_at' => current_time( 'mysql' ),
 			'status' => 'active'
 		) );
@@ -62,6 +64,7 @@
 				<th>Type</th>
 				<th>Domain</th>
 				<th>Status</th>
+				<th>Expires</th>
 				<th>Activated</th>
 				<th>Actions</th>
 			</tr>
@@ -78,6 +81,7 @@
 							<?php echo ucfirst( $l->status ); ?>
 						</span>
 					</td>
+					<td><?php echo esc_html( $l->expires_at ?: 'Never' ); ?></td>
 					<td><?php echo esc_html( $l->activated_at ?: '-' ); ?></td>
 					<td>
 						<a href="?page=lf-licenses&toggle_status=<?php echo $l->id; ?>&status=<?php echo $l->status; ?>" class="button button-small">

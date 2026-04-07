@@ -69,6 +69,25 @@
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
 				success: function(data) {
+					// Render AI Usage Bars
+					const usageContainer = $('#aiUsageBars');
+					usageContainer.empty();
+					data.ai_usage.forEach(u => {
+						const budget = leadflowData.budgets[u.provider] || 50000;
+						const percent = Math.min((u.total_tokens / budget) * 100, 100);
+						usageContainer.append(`
+							<div style="margin-bottom:15px;">
+								<div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:5px;">
+									<span>${u.provider.toUpperCase()}</span>
+									<span>${Number(u.total_tokens).toLocaleString()} / ${Number(budget).toLocaleString()} tokens</span>
+								</div>
+								<div style="background:#eee; height:10px; border-radius:5px; overflow:hidden;">
+									<div style="background:var(--leadflow-primary); width:${percent}%; height:100%;"></div>
+								</div>
+							</div>
+						`);
+					});
+
 					renderLeadTable(data);
 				}
 			});
@@ -158,7 +177,7 @@
 								</ul>
 								<p><strong>Social Links:</strong></p>
 								<div class="social-pills">
-									${Object.entries(socialLinks).map(([platform, link]) => `<a href="${escapeHtml(link)}" target="_blank" class="social-pill ${escapeHtml(platform)}">${escapeHtml(platform)}</a>`).join('')}
+							${Object.entries(socialLinks).map(([platform, link]) => `<a href="${escapeHtml(link)}" target="_blank" class="social-pill ${escapeHtml(platform.replace('.com', ''))}">${escapeHtml(platform.replace('.com', ''))}</a>`).join('')}
 								</div>
 							</div>
 						`;
@@ -363,10 +382,11 @@
 			leads.forEach(lead => {
 				const audit = safeJsonParse(lead.audit_data);
 				const score = calculateCompleteness(lead);
+					const tagsHtml = (lead.tags || []).map(t => `<span class="status-badge" style="font-size:0.65rem; margin-right:4px;">${escapeHtml(t.name)}</span>`).join('');
 				const row = $(`
 					<tr>
 						<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
-						<td><strong>${escapeHtml(lead.business_name)}</strong></td>
+							<td><strong>${escapeHtml(lead.business_name)}</strong><br>${tagsHtml}</td>
 						<td><span class="score-pill score-${getScoreColor(score)}">${score}%</span></td>
 						<td><a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></td>
 						<td>${escapeHtml(lead.email)}</td>
@@ -382,6 +402,9 @@
 								<option value="Contacted" ${lead.status === 'Contacted' ? 'selected' : ''}>Contacted</option>
 								<option value="Replied" ${lead.status === 'Replied' ? 'selected' : ''}>Replied</option>
 								<option value="Qualified" ${lead.status === 'Qualified' ? 'selected' : ''}>Qualified</option>
+								<option value="Proposal Sent" ${lead.status === 'Proposal Sent' ? 'selected' : ''}>Proposal Sent</option>
+								<option value="Closed Won" ${lead.status === 'Closed Won' ? 'selected' : ''}>Closed Won</option>
+								<option value="Closed Lost" ${lead.status === 'Closed Lost' ? 'selected' : ''}>Closed Lost</option>
 							</select>
 						</td>
 						<td>${escapeHtml(lead.updated_at)}</td>
@@ -461,6 +484,30 @@
 					}
 
 					$('#detailAiTools button').data('lead-id', leadId);
+					$('#proposalUrl').val(lead.proposal_url || '');
+					$('#saveProposalBtn').data('id', leadId);
+				}
+			});
+		});
+
+		// Save Proposal URL
+		$(document).on('click', '#saveProposalBtn', function() {
+			const id = $(this).data('id');
+			const url = $('#proposalUrl').val();
+			const btn = $(this);
+
+			btn.prop('disabled', true).text('Saving...');
+
+			$.ajax({
+				url: apiUrl + '/leads/' + id,
+				method: 'POST',
+				data: { proposal_url: url },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Proposal URL saved!');
+					btn.prop('disabled', false).text('Save Proposal');
 				}
 			});
 		});
@@ -514,6 +561,7 @@
 								<td>${escapeHtml(c.created_at)}</td>
 								<td>
 									<button class="button button-small toggle-campaign" data-id="${c.id}" data-active="${c.is_active}">${c.is_active == 1 ? 'Pause' : 'Activate'}</button>
+									<button class="button button-small edit-campaign-btn" data-id="${c.id}">Edit</button>
 									<button class="button button-small delete-campaign" data-id="${c.id}" style="color:#d63638;">Delete</button>
 								</td>
 							</tr>
@@ -581,6 +629,37 @@
 			});
 			alert('Bulk status update complete!');
 			fetchLeads();
+		});
+
+		// Bulk Audit Leads
+		$('#bulkAuditLeads').on('click', function() {
+			const selectedIds = [];
+			$('.lead-checkbox:checked').each(function() {
+				selectedIds.push($(this).val());
+			});
+
+			if (selectedIds.length === 0) return;
+
+			const btn = $(this);
+			btn.text('Queueing...').prop('disabled', true);
+
+			let processed = 0;
+			selectedIds.forEach(id => {
+				$.ajax({
+					url: apiUrl + '/leads/' + id + '/audit',
+					method: 'POST',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader('X-WP-Nonce', nonce);
+					},
+					success: function() {
+						processed++;
+						if (processed === selectedIds.length) {
+							alert('Bulk audit queued for ' + selectedIds.length + ' leads!');
+							btn.text('Bulk Audit').prop('disabled', false);
+						}
+					}
+				});
+			});
 		});
 
 		// Bulk Delete Leads
@@ -1007,6 +1086,27 @@
 			window.currentDiscoveryResults = leads;
 		}
 
+		// Export Discovery Results to CSV
+		$('#exportDiscoveryResults').on('click', function() {
+			const leads = window.currentDiscoveryResults;
+			if (!leads || leads.length === 0) return;
+
+			let csv = 'Business Name,Website,Phone,Source\n';
+			leads.forEach(l => {
+				csv += `"${l.business_name}","${l.website_url}","${l.phone}","${l.lead_source}"\n`;
+			});
+
+			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+			const link = document.createElement('a');
+			const url = URL.createObjectURL(blob);
+			link.setAttribute('href', url);
+			link.setAttribute('download', 'leadflow_discovery_export.csv');
+			link.style.visibility = 'hidden';
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+		});
+
 		// Import Lead from Discovery
 		$(document).on('click', '.import-lead', function() {
 			const index = $(this).data('index');
@@ -1033,19 +1133,47 @@
 			});
 		}
 
-		// Create Campaign
+		// Create/Edit Campaign
 		$('#createCampaignBtn').on('click', function(e) {
 			e.preventDefault();
+			$('#campaignId').val('');
+			$('#campaignBuilderForm')[0].reset();
 			$('#sequenceSteps').empty();
 			$('#addStepBtn').trigger('click'); // Add first step
 			$('#campaignBuilderModal').fadeIn();
 		});
 
+		$(document).on('click', '.edit-campaign-btn', function() {
+			const id = $(this).data('id');
+			$.ajax({
+				url: apiUrl + '/campaigns',
+				method: 'GET',
+				data: { id: id },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(c) {
+					$('#campaignId').val(c.id);
+					$('#campaignName').val(c.name);
+					$('#campaignStatusFilter').val(c.status_filter);
+					$('#sequenceSteps').empty();
+
+					(c.steps || []).forEach((step, index) => {
+						addStepToBuilder(step, index + 1);
+					});
+
+					$('#campaignBuilderModal').fadeIn();
+				}
+			});
+		});
+
 		$('#campaignBuilderForm').on('submit', function(e) {
 			e.preventDefault();
+			const campaignId = $('#campaignId').val();
 			const steps = [];
-			$('.step-card').each(function() {
+			$('.step-card').each(function(index) {
 				steps.push({
+					order: index + 1,
 					type: $(this).find('.step-type').val(),
 					subject: $(this).find('.step-subject').val(),
 					body: $(this).find('.step-body').val(),
@@ -1054,13 +1182,15 @@
 			});
 
 			const data = {
-				name: $(this).find('input[name="name"]').val(),
-				status_filter: $(this).find('select[name="status_filter"]').val(),
+				name: $('#campaignName').val(),
+				status_filter: $('#campaignStatusFilter').val(),
 				steps: steps
 			};
 
+			const url = campaignId ? apiUrl + '/campaigns/' + campaignId : apiUrl + '/campaigns';
+
 			$.ajax({
-				url: apiUrl + '/campaigns',
+				url: url,
 				method: 'POST',
 				data: JSON.stringify(data),
 				contentType: 'application/json',
@@ -1069,11 +1199,45 @@
 				},
 				success: function() {
 					$('#campaignBuilderModal').fadeOut();
-					alert('Campaign created and activated!');
+					alert(campaignId ? 'Campaign updated!' : 'Campaign created and activated!');
 					location.reload();
 				}
 			});
 		});
+
+		function addStepToBuilder(data = {}, count = null) {
+			const stepCount = count || $('.step-card').length + 1;
+			const newStep = `
+				<div class="step-card">
+					<h4>Step ${stepCount}</h4>
+					<p><label>Step Type</label><br>
+						<select name="step[${stepCount}][type]" class="step-type">
+							<option value="email" ${data.step_type === 'email' ? 'selected' : ''}>Email</option>
+							<option value="linkedin" ${data.step_type === 'linkedin' ? 'selected' : ''}>LinkedIn Connection/Message</option>
+							<option value="facebook" ${data.step_type === 'facebook' ? 'selected' : ''}>Facebook Group Outreach</option>
+						</select>
+					</p>
+					<div class="email-fields" style="${data.step_type !== 'email' && data.step_type ? 'display:none;' : ''}">
+						<p><label>Subject</label><br><input type="text" name="step[${stepCount}][subject]" class="step-subject" value="${data.subject || 'Follow up ' + stepCount}"></p>
+						<button type="button" class="button ai-subject-btn">✨ AI: Generate Subject</button>
+					</div>
+					<p><label>Delay (Days)</label><br><input type="number" name="step[${stepCount}][delay]" value="${data.delay_days || 3}"></p>
+					<p><label>Message Body</label><br><textarea name="step[${stepCount}][body]" class="step-body" rows="5" style="width:100%;">${data.body || ''}</textarea></p>
+					<div style="display:flex; gap:10px; justify-content: space-between;">
+						<div>
+							<button type="button" class="button ai-writer-btn">✨ AI: Write this for me</button>
+							<button type="button" class="button step-preview-btn">👁️ Preview</button>
+						</div>
+						<div>
+							<button type="button" class="button move-step-up">↑</button>
+							<button type="button" class="button move-step-down">↓</button>
+							<button type="button" class="button remove-step-btn" style="color:#d63638;">Delete Step</button>
+						</div>
+					</div>
+				</div>
+			`;
+			$('#sequenceSteps').append(newStep);
+		}
 
 		// Add Lead Modal
 		$('#addLeadBtn').on('click', function(e) {

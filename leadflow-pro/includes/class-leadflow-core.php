@@ -247,7 +247,11 @@ class LeadFlow_Core {
 			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
 			'nonce'  => wp_create_nonce( 'wp_rest' ),
 			'isPro'  => LeadFlow_License::is_pro(),
-			'users'  => $user_list
+			'users'  => $user_list,
+			'budgets' => array(
+				'openai' => (int) get_option( 'leadflow_token_budget_openai', 50000 ),
+				'gemini' => (int) get_option( 'leadflow_token_budget_gemini', 50000 ),
+			)
 		) );
 	}
 

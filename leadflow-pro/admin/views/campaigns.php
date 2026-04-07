@@ -26,12 +26,15 @@
 		<div class="modal-content campaign-builder">
 			<h2>Campaign Builder</h2>
 			<form id="campaignBuilderForm">
-				<p><label>Campaign Name</label><br><input type="text" name="name" required></p>
+				<input type="hidden" name="id" id="campaignId">
+				<p><label>Campaign Name</label><br><input type="text" name="name" id="campaignName" required></p>
 				<p><label>Status Filter (Leads to include)</label><br>
-					<select name="status_filter">
+					<select name="status_filter" id="campaignStatusFilter">
 						<option value="New">New</option>
 						<option value="Contacted">Contacted</option>
 						<option value="Replied">Replied</option>
+						<option value="Qualified">Qualified</option>
+						<option value="Proposal Sent">Proposal Sent</option>
 					</select>
 				</p>
 				<hr>
