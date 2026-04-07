@@ -109,13 +109,23 @@ class LeadFlow_Outreach {
 
 
 	/**
-	 * Create a social outreach task for the user.
+	 * Create a manual outreach task for the user.
 	 */
-	private static function create_social_task( $lead, $step, $campaign_id ) {
-		$message = self::personalize_email( $step->body, $lead );
-		$task_desc = "Social Outreach Task (" . ucfirst( $step->step_type ) . "):\n$message";
+	private static function create_manual_task( $lead, $step, $campaign_id ) {
+		$message = self::personalize_content( $step->body, $lead );
+		$task_type = $step->step_type;
+		$task_desc = "Campaign Manual Action [" . strtoupper( $task_type ) . "]:\n$message";
 
-		LeadFlow_CRM::add_note( $lead->id, $task_desc, 0 );
+		LeadFlow_CRM::add_task( array(
+			'lead_id'     => $lead->id,
+			'assigned_to' => $lead->assigned_to ? $lead->assigned_to : get_current_user_id(),
+			'task_type'   => $task_type,
+			'description' => $task_desc,
+			'due_date'    => current_time( 'mysql' ),
+			'status'      => 'pending'
+		) );
+
+		LeadFlow_CRM::add_note( $lead->id, "Task Created: " . $task_desc, 0 );
 		LeadFlow_CRM::update_status( $lead->id, 'Contacted' );
 
 		global $wpdb;
@@ -126,8 +136,8 @@ class LeadFlow_Outreach {
 				'lead_id'     => $lead->id,
 				'campaign_id' => $campaign_id,
 				'step_id'     => $step->id,
-				'subject'     => 'Social: ' . ucfirst( $step->step_type ),
-				'status'      => 'Sent',
+				'subject'     => 'Manual: ' . ucfirst( $task_type ),
+				'status'      => 'Sent', // Mark as sent/completed in log so sequence continues
 				'created_at'  => current_time( 'mysql' ),
 			)
 		);
@@ -201,7 +211,7 @@ class LeadFlow_Outreach {
 			if ( 'email' === $step->step_type ) {
 				self::send_step_email( $lead, $step, $item->campaign_id );
 			} else {
-				self::create_social_task( $lead, $step, $item->campaign_id );
+				self::create_manual_task( $lead, $step, $item->campaign_id );
 			}
 
 			$wpdb->delete( "{$prefix}sending_queue", array( 'id' => $item->id ) );
@@ -230,8 +240,8 @@ class LeadFlow_Outreach {
 			}
 		}
 
-		$personalized_body = self::personalize_email( $body, $lead );
-		$personalized_subj = self::personalize_email( $subject, $lead );
+		$personalized_body = self::personalize_content( $body, $lead );
+		$personalized_subj = self::personalize_content( $subject, $lead );
 
 		$sent = LeadFlow_Email::send( $lead->email, $personalized_subj, $personalized_body );
 
@@ -262,9 +272,9 @@ class LeadFlow_Outreach {
 	}
 
 	/**
-	 * Personalize email content with tokens.
+	 * Personalize content with tokens.
 	 */
-	private static function personalize_email( $content, $lead ) {
+	private static function personalize_content( $content, $lead ) {
 		$audit_data = ! empty( $lead->audit_data ) ? JSON_decode( $lead->audit_data, true ) : array();
 
 		$audit_hook = '';

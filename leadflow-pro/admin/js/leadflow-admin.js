@@ -561,7 +561,73 @@
 
 					// Update Timeline UI
 					updateTimelineUI(lead);
+					// Load Tasks
+					loadLeadTasks(leadId);
 				}
+			});
+		});
+
+		function loadLeadTasks(leadId) {
+			const list = $('#leadTasksList');
+			list.html('<p>Loading tasks...</p>');
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/tasks',
+				method: 'GET',
+				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
+				success: function(tasks) {
+					list.empty();
+					if (tasks.length === 0) list.append('<p>No tasks for this lead.</p>');
+					tasks.forEach(t => {
+						list.append(`
+							<div class="task-item" style="display:flex; justify-content:space-between; padding:8px; background:#f9f9f9; border-radius:4px; margin-bottom:5px; ${t.status === 'completed' ? 'opacity:0.5;' : ''}">
+								<span><input type="checkbox" class="toggle-task" data-id="${t.id}" ${t.status === 'completed' ? 'checked' : ''}> ${escapeHtml(t.description)} <small>(${t.due_date})</small></span>
+								<button class="delete-task" data-id="${t.id}" style="border:none; background:transparent; cursor:pointer; color:#d63638;">×</button>
+							</div>
+						`);
+					});
+				}
+			});
+		}
+
+		$(document).on('click', '#addTaskBtn', function() {
+			const leadId = window.currentLead.id;
+			const desc = $('#newTaskDesc').val();
+			const date = $('#newTaskDate').val();
+			if (!desc || !leadId) return;
+
+			$.ajax({
+				url: apiUrl + '/leads/' + leadId + '/tasks',
+				method: 'POST',
+				data: { description: desc, due_date: date },
+				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
+				success: function() {
+					$('#newTaskDesc').val('');
+					$('#newTaskDate').val('');
+					loadLeadTasks(leadId);
+				}
+			});
+		});
+
+		$(document).on('change', '.toggle-task', function() {
+			const id = $(this).data('id');
+			const status = $(this).is(':checked') ? 'completed' : 'pending';
+			$.ajax({
+				url: apiUrl + '/tasks/' + id,
+				method: 'POST',
+				data: { status: status },
+				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
+				success: function() { loadLeadTasks(window.currentLead.id); }
+			});
+		});
+
+		$(document).on('click', '.delete-task', function() {
+			const id = $(this).data('id');
+			if (!confirm('Delete this task?')) return;
+			$.ajax({
+				url: apiUrl + '/tasks/' + id,
+				method: 'DELETE',
+				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
+				success: function() { loadLeadTasks(window.currentLead.id); }
 			});
 		});
 
@@ -1145,7 +1211,8 @@
 					if (qStats) {
 						$('#queuePulseStats').html(`
 							Emails in Queue: <strong>${qStats.outreach}</strong><br>
-							Pending Audits: <strong>${qStats.scraper}</strong>
+							Pending Audits: <strong>${qStats.scraper}</strong><br>
+							Pending Tasks: <strong>${qStats.tasks || 0}</strong>
 						`);
 					}
 
@@ -1499,8 +1566,11 @@
 					<p><label>Step Type</label><br>
 						<select name="step[${stepCount}][type]" class="step-type">
 							<option value="email" ${data.step_type === 'email' ? 'selected' : ''}>Email</option>
-							<option value="linkedin" ${data.step_type === 'linkedin' ? 'selected' : ''}>LinkedIn Connection/Message</option>
-							<option value="facebook" ${data.step_type === 'facebook' ? 'selected' : ''}>Facebook Group Outreach</option>
+							<option value="linkedin" ${data.step_type === 'linkedin' ? 'selected' : ''}>LinkedIn Connection</option>
+							<option value="linkedin_msg" ${data.step_type === 'linkedin_msg' ? 'selected' : ''}>LinkedIn Message</option>
+							<option value="facebook" ${data.step_type === 'facebook' ? 'selected' : ''}>Facebook Outreach</option>
+							<option value="call" ${data.step_type === 'call' ? 'selected' : ''}>Phone Call</option>
+							<option value="custom" ${data.step_type === 'custom' ? 'selected' : ''}>Custom Manual Action</option>
 						</select>
 					</p>
 					<div class="email-fields" style="${data.step_type !== 'email' && data.step_type ? 'display:none;' : ''}">
@@ -1604,8 +1674,11 @@
 					<p><label>Step Type</label><br>
 						<select name="step[${stepCount}][type]" class="step-type">
 							<option value="email">Email</option>
-							<option value="linkedin">LinkedIn Connection/Message</option>
-							<option value="facebook">Facebook Group Outreach</option>
+							<option value="linkedin">LinkedIn Connection</option>
+							<option value="linkedin_msg">LinkedIn Message</option>
+							<option value="facebook">Facebook Outreach</option>
+							<option value="call">Phone Call</option>
+							<option value="custom">Custom Manual Action</option>
 						</select>
 					</p>
 					<div class="email-fields">

@@ -27,20 +27,43 @@ class LeadFlow_AI_Gemini {
 			return 'Gemini API key not configured.';
 		}
 
-		$response = wp_remote_post( 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' . $api_key, array(
-			'headers' => array(
-				'Content-Type' => 'application/json',
-			),
-			'body' => wp_json_encode( array(
-				'contents' => array(
-					array( 'parts' => array( array( 'text' => $prompt ) ) ),
+		$max_retries = 2;
+		$retry_count = 0;
+		$response    = null;
+
+		while ( $retry_count <= $max_retries ) {
+			$response = wp_remote_post( 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' . $api_key, array(
+				'headers' => array(
+					'Content-Type' => 'application/json',
 				),
-				'generationConfig' => array(
-					'temperature' => 0.7,
-				),
-			) ),
-			'timeout' => 30,
-		) );
+				'body' => wp_json_encode( array(
+					'contents' => array(
+						array( 'parts' => array( array( 'text' => $prompt ) ) ),
+					),
+					'generationConfig' => array(
+						'temperature' => 0.7,
+					),
+				) ),
+				'timeout' => 30,
+			) );
+
+			if ( ! is_wp_error( $response ) ) {
+				$status_code = wp_remote_retrieve_response_code( $response );
+				if ( $status_code === 200 ) {
+					break;
+				}
+				// Retry on 429 (Rate Limit) or 5xx (Server Error)
+				if ( $status_code !== 429 && $status_code < 500 ) {
+					break;
+				}
+			}
+
+			if ( $retry_count < $max_retries ) {
+				$delay = pow( 2, $retry_count ); // 1s, 2s delay
+				sleep( $delay );
+			}
+			$retry_count++;
+		}
 
 		if ( is_wp_error( $response ) ) {
 			return 'Gemini API request failed: ' . $response->get_error_message();

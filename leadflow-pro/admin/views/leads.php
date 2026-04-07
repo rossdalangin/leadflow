@@ -149,6 +149,13 @@
 						<div id="leadTagsList" style="margin-bottom:10px;"></div>
 						<select id="addTagSelect"><option value="">Add Tag...</option></select>
 					</div>
+					<div class="task-management" style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+						<h3>Tasks</h3>
+						<div id="leadTasksList" style="margin-bottom:15px;"></div>
+						<p><input type="text" id="newTaskDesc" placeholder="New task..." style="width:100%; margin-bottom:5px;"></p>
+						<p><input type="date" id="newTaskDate" style="width:100%; margin-bottom:5px;"></p>
+						<button class="button button-small" id="addTaskBtn">Add Task</button>
+					</div>
 				</div>
 			</div>
 		</div>

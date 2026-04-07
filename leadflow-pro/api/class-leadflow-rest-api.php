@@ -28,6 +28,32 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/tasks', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_lead_tasks' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'add_lead_task' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/tasks/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_task' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_task' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/inbox', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -702,6 +728,30 @@ class LeadFlow_REST_API {
 
 	public function export_csv() {
 		return LeadFlow_CRM::export_to_csv();
+	}
+
+	public function get_lead_tasks( $request ) {
+		return rest_ensure_response( LeadFlow_CRM::get_tasks( $request['id'] ) );
+	}
+
+	public function add_lead_task( $request ) {
+		$id = LeadFlow_CRM::add_task( array(
+			'lead_id'     => $request['id'],
+			'description' => sanitize_text_field( $request->get_param( 'description' ) ),
+			'due_date'    => sanitize_text_field( $request->get_param( 'due_date' ) ),
+			'assigned_to' => get_current_user_id()
+		) );
+		return rest_ensure_response( array( 'id' => $id ) );
+	}
+
+	public function update_task( $request ) {
+		LeadFlow_CRM::update_task_status( $request['id'], sanitize_text_field( $request->get_param( 'status' ) ) );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function delete_task( $request ) {
+		LeadFlow_CRM::delete_task( $request['id'] );
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function add_lead_note( $request ) {

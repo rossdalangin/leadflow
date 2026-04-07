@@ -156,11 +156,20 @@ class LeadFlow_Analytics {
 			WHERE q.status = 'Failed'
 			LIMIT 5", ARRAY_A );
 
+		// Pending tasks
+		$pending_tasks = $wpdb->get_results( "
+			SELECT l.id, l.business_name, l.status, CONCAT('Pending task: ', t.description) as reason
+			FROM {$prefix}leads l
+			JOIN {$prefix}tasks t ON l.id = t.lead_id
+			WHERE t.status = 'pending' AND t.due_date <= NOW()
+			LIMIT 5", ARRAY_A );
+
 		return array(
-			'leads' => array_merge( $replied_no_followup, $failed_scrapes ),
+			'leads' => array_merge( $replied_no_followup, $failed_scrapes, $pending_tasks ),
 			'queue_stats' => array(
 				'outreach' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}sending_queue WHERE status = 'Scheduled'" ),
-				'scraper'  => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}scrape_queue WHERE status = 'Pending'" )
+				'scraper'  => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}scrape_queue WHERE status = 'Pending'" ),
+				'tasks'    => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}tasks WHERE status = 'pending'" )
 			)
 		);
 	}
@@ -172,11 +181,15 @@ class LeadFlow_Analytics {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		// Combine emails and new leads into a single timeline
+		// Combine emails, tasks, and new leads into a single timeline
 		$query = "
 			(SELECT 'email' as type, subject as activity, l.business_name as lead, e.created_at
 			 FROM {$prefix}email_log e
 			 JOIN {$prefix}leads l ON e.lead_id = l.id)
+			UNION
+			(SELECT 'task' as type, CONCAT('Task Created: ', t.description) as activity, l.business_name as lead, t.created_at
+			 FROM {$prefix}tasks t
+			 JOIN {$prefix}leads l ON t.lead_id = l.id)
 			UNION
 			(SELECT 'lead' as type, 'New Lead Discovered' as activity, business_name as lead, created_at
 			 FROM {$prefix}leads)

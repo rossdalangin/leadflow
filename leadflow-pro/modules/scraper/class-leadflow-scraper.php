@@ -119,6 +119,11 @@ class LeadFlow_Scraper {
 			)
 		);
 
+		// Store key technical signals in indexed Meta table
+		if ( isset($audit_results['cms']) ) LeadFlow_Meta::update( $lead_id, 'cms', $audit_results['cms'] );
+		if ( isset($audit_results['page_builder']) ) LeadFlow_Meta::update( $lead_id, 'page_builder', $audit_results['page_builder'] );
+		if ( isset($audit_results['is_ecommerce']) ) LeadFlow_Meta::update( $lead_id, 'is_ecommerce', $audit_results['is_ecommerce'] ? 'yes' : 'no' );
+
 		// Log audit as a note
 		$audit_summary = "Website Audit Completed:\n- SSL: " . ( $audit_results['has_ssl'] ? 'Yes' : 'No' ) . "\n- Mobile: " . ( $audit_results['is_mobile_responsive'] ? 'Yes' : 'No' ) . "\n- Performance: " . $audit_results['load_time'] . "s\n- Outdated Design: " . (isset($audit_results['outdated_design']) && $audit_results['outdated_design'] ? 'Yes' : 'No');
 		LeadFlow_CRM::add_note( $lead_id, $audit_summary, 0 ); // 0 for system note

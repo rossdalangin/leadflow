@@ -27,20 +27,43 @@ class LeadFlow_AI_OpenAI {
 			return 'OpenAI API key not configured.';
 		}
 
-		$response = wp_remote_post( 'https://api.openai.com/v1/chat/completions', array(
-			'headers' => array(
-				'Content-Type'  => 'application/json',
-				'Authorization' => 'Bearer ' . $api_key,
-			),
-			'body' => wp_json_encode( array(
-				'model'    => 'gpt-4o',
-				'messages' => array(
-					array( 'role' => 'user', 'content' => $prompt ),
+		$max_retries = 2;
+		$retry_count = 0;
+		$response    = null;
+
+		while ( $retry_count <= $max_retries ) {
+			$response = wp_remote_post( 'https://api.openai.com/v1/chat/completions', array(
+				'headers' => array(
+					'Content-Type'  => 'application/json',
+					'Authorization' => 'Bearer ' . $api_key,
 				),
-				'temperature' => 0.7,
-			) ),
-			'timeout' => 30,
-		) );
+				'body' => wp_json_encode( array(
+					'model'    => 'gpt-4o',
+					'messages' => array(
+						array( 'role' => 'user', 'content' => $prompt ),
+					),
+					'temperature' => 0.7,
+				) ),
+				'timeout' => 30,
+			) );
+
+			if ( ! is_wp_error( $response ) ) {
+				$status_code = wp_remote_retrieve_response_code( $response );
+				if ( $status_code === 200 ) {
+					break;
+				}
+				// Retry on 429 (Rate Limit) or 5xx (Server Error)
+				if ( $status_code !== 429 && $status_code < 500 ) {
+					break;
+				}
+			}
+
+			if ( $retry_count < $max_retries ) {
+				$delay = pow( 2, $retry_count ); // 1s, 2s delay
+				sleep( $delay );
+			}
+			$retry_count++;
+		}
 
 		if ( is_wp_error( $response ) ) {
 			return 'OpenAI API request failed: ' . $response->get_error_message();

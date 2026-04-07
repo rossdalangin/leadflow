@@ -229,6 +229,30 @@ class LeadFlow_CRM {
 	/**
 	 * Export leads to CSV (Pro only).
 	 */
+	/**
+	 * Task Management.
+	 */
+	public static function get_tasks( $lead_id ) {
+		global $wpdb;
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}leadflow_tasks WHERE lead_id = %d ORDER BY due_date ASC", $lead_id ) );
+	}
+
+	public static function add_task( $data ) {
+		global $wpdb;
+		$data['created_at'] = current_time( 'mysql' );
+		return $wpdb->insert( $wpdb->prefix . 'leadflow_tasks', $data );
+	}
+
+	public static function update_task_status( $task_id, $status ) {
+		global $wpdb;
+		return $wpdb->update( $wpdb->prefix . 'leadflow_tasks', array( 'status' => $status ), array( 'id' => $task_id ) );
+	}
+
+	public static function delete_task( $task_id ) {
+		global $wpdb;
+		return $wpdb->delete( $wpdb->prefix . 'leadflow_tasks', array( 'id' => $task_id ) );
+	}
+
 	public static function export_to_csv() {
 		if ( ! LeadFlow_License::is_pro() ) {
 			return new WP_Error( 'pro_required', 'CSV export is a Pro feature.' );

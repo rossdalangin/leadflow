@@ -27,6 +27,7 @@ class LeadFlow_Core {
 	private function load_dependencies() {
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-loader.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-security.php';
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-meta.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-license.php';
 		require_once LEADFLOW_PRO_PATH . 'database/class-leadflow-db.php';
 		require_once LEADFLOW_PRO_PATH . 'api/class-leadflow-rest-api.php';
@@ -277,7 +278,7 @@ class LeadFlow_Core {
 
 	public function add_admin_menu() {
 		$is_activated = LeadFlow_License::is_pro();
-		$capability = 'manage_options'; // Restrict main menu to admins by default
+		$capability = 'edit_posts'; // Allow editors to see the menu for CRM/Discovery
 
 		$plugin_name = get_option( 'leadflow_custom_name', 'LeadFlow Pro' );
 
@@ -300,14 +301,14 @@ class LeadFlow_Core {
 			add_submenu_page( 'leadflow-pro', 'Email Templates', 'Templates', 'edit_posts', 'leadflow-templates', array( $this, 'display_templates' ) );
 			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', 'manage_options', 'leadflow-settings', array( $this, 'display_settings' ) );
 		} else {
-			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', $capability, 'leadflow-pro', array( $this, 'display_activation' ) );
+			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', 'manage_options', 'leadflow-pro', array( $this, 'display_activation' ) );
 		}
 
 		add_submenu_page(
 			'leadflow-pro',
 			'Upgrade to Pro',
 			'Upgrade to Pro',
-			$capability,
+			'manage_options',
 			'leadflow-upgrade',
 			array( $this, 'display_upgrade' )
 		);

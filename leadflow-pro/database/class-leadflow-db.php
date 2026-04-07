@@ -177,6 +177,28 @@ class LeadFlow_DB {
 			success_message text,
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id)
+		) $charset_collate;
+		CREATE TABLE {$prefix}tasks (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			lead_id bigint(20) unsigned NOT NULL,
+			assigned_to bigint(20) unsigned,
+			task_type varchar(50) DEFAULT 'follow-up',
+			description text,
+			due_date datetime,
+			status varchar(20) DEFAULT 'pending',
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY lead_id (lead_id),
+			KEY status (status)
+		) $charset_collate;
+		CREATE TABLE {$prefix}lead_meta (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			lead_id bigint(20) unsigned NOT NULL,
+			meta_key varchar(255),
+			meta_value longtext,
+			PRIMARY KEY  (id),
+			KEY lead_id (lead_id),
+			KEY meta_key (meta_key)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

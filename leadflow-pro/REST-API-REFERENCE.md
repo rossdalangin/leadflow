@@ -13,32 +13,85 @@ Fetch leads with filtering.
   - `offset`: Pagination offset
 
 ### `POST /leads`
-Create a new lead.
-- **Body:**
-  - `business_name` (required): string
-  - `email`: string
-  - `website_url`: string
-  - `first_name`: string
+Create a new lead. Also triggers background audit if website URL is provided.
 
 ### `POST /leads/(?P<id>\d+)`
-Update an existing lead.
+Update an existing lead record. Automatically updates Lead Score.
 
-## Outreach Module
+### `GET /leads/(?P<id>\d+)/activity`
+Get combined activity log (emails + notes) for a lead.
+
+### `POST /leads/(?P<id>\d+)/activity`
+Add a manual note to a lead.
+
+### `GET /leads/(?P<id>\d+)/tasks`
+Get all tasks assigned to a specific lead.
+
+### `POST /leads/(?P<id>\d+)/tasks`
+Create a new manual task for a lead.
+
+### `POST /tasks/(?P<id>\d+)`
+Update task status (pending/completed).
+
+### `DELETE /tasks/(?P<id>\d+)`
+Permanently delete a task.
+
+### `GET /tags`
+Fetch all available lead tags.
+
+### `POST /leads/(?P<id>\d+)/tags`
+Update tags associated with a lead.
+
+## Outreach & Templates Module
+## Outreach & Templates Module
 
 ### `GET /campaigns`
 List all outreach campaigns.
 
 ### `POST /campaigns`
-Create a campaign with sequence steps.
+Create or update a campaign with sequence steps.
 - **Body:**
   - `name`: string
   - `status_filter`: string
   - `start_hour`: int (0-23)
   - `end_hour`: int (0-23)
   - `skip_weekends`: int (0,1)
-  - `steps`: array of step objects
+  - `steps`: array of step objects (type: email, linkedin, call, etc.)
 
-## Settings Module
+### `GET /outreach/queue`
+Fetch the current background sending queue.
+
+### `GET /templates`
+Fetch all reusable email templates.
+
+### `POST /templates`
+Create a new email template.
+
+## Discovery Module
+
+### `GET /discovery/search`
+Run a Google Places search for leads.
+- **Parameters:** `keyword`, `location`
+
+### `GET /discovery/social`
+Run a LinkedIn/Facebook search for leads.
+- **Parameters:** `keyword`, `source`
+
+### `POST /discovery/import-csv`
+Bulk import leads from a CSV file.
+
+### `GET /discovery/saved-searches`
+Fetch all persisted search parameters.
+
+## Inbox Module
+
+### `GET /inbox`
+Fetch all leads who have replied, sorted by latest activity.
+
+### `POST /inbox/reply`
+Send an outbound reply to a lead and log it.
+
+## Settings & License Module
 
 ### `POST /settings/test-email`
 Send a test email to verify SMTP/Gmail config.
