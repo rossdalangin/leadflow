@@ -7,6 +7,7 @@
 		<a href="#smtp" class="nav-tab"><span class="dashicons dashicons-email-alt"></span> SMTP / Email</a>
 		<a href="#ai" class="nav-tab"><span class="dashicons dashicons-cloud"></span> AI Provider</a>
 		<a href="#license" class="nav-tab"><span class="dashicons dashicons-shield"></span> License</a>
+		<a href="#webhooks" class="nav-tab"><span class="dashicons dashicons-rest-api"></span> Webhooks</a>
 		<a href="#status" class="nav-tab"><span class="dashicons dashicons-performance"></span> System Status</a>
 	</h2>
 
@@ -175,6 +176,20 @@
 				<tr>
 					<th scope="row">Gemini Monthly Token Budget</th>
 					<td><input type="number" name="leadflow_token_budget_gemini" value="<?php echo esc_attr( get_option( 'leadflow_token_budget_gemini', 50000 ) ); ?>" class="regular-text"> tokens</td>
+				</tr>
+			</table>
+		</div>
+
+		<div id="webhooks" class="settings-section" style="display:none;">
+			<h2>Webhook Integrations (Pro)</h2>
+			<p class="description">Connect LeadFlow Pro to external tools like Zapier or Make.com. Trigger actions when leads change status.</p>
+			<table class="form-table">
+				<tr>
+					<th scope="row">Qualified Lead Webhook URL</th>
+					<td>
+						<input type="url" name="leadflow_webhook_qualified" value="<?php echo esc_url( get_option( 'leadflow_webhook_qualified' ) ); ?>" class="regular-text" placeholder="https://hooks.zapier.com/...">
+						<p class="description">Triggers when a lead is automatically or manually marked as 'Qualified'.</p>
+					</td>
 				</tr>
 			</table>
 		</div>

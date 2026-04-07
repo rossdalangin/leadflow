@@ -106,6 +106,25 @@
 			</div>
 			<div class="modal-body" style="flex:1; overflow-y:auto; display:grid; grid-template-columns: 2fr 1fr; gap:30px;">
 				<div class="lead-activity-section">
+					<div id="leadTimeline" class="lead-timeline" style="display:flex; justify-content:space-between; margin-bottom:30px; padding:0 20px; position:relative;">
+						<div class="timeline-line" style="position:absolute; top:15px; left:40px; right:40px; height:2px; background:#e2e8f0; z-index:1;"></div>
+						<div class="timeline-step" data-step="New" style="z-index:2; text-align:center;">
+							<div class="step-icon" style="width:32px; height:32px; border-radius:50%; background:#fff; border:2px solid #cbd5e1; margin:0 auto 5px; line-height:28px;">🆕</div>
+							<span style="font-size:0.7rem; font-weight:600;">Discovered</span>
+						</div>
+						<div class="timeline-step" data-step="Audited" style="z-index:2; text-align:center;">
+							<div class="step-icon" style="width:32px; height:32px; border-radius:50%; background:#fff; border:2px solid #cbd5e1; margin:0 auto 5px; line-height:28px;">🔍</div>
+							<span style="font-size:0.7rem; font-weight:600;">Audited</span>
+						</div>
+						<div class="timeline-step" data-step="Contacted" style="z-index:2; text-align:center;">
+							<div class="step-icon" style="width:32px; height:32px; border-radius:50%; background:#fff; border:2px solid #cbd5e1; margin:0 auto 5px; line-height:28px;">📧</div>
+							<span style="font-size:0.7rem; font-weight:600;">Contacted</span>
+						</div>
+						<div class="timeline-step" data-step="Qualified" style="z-index:2; text-align:center;">
+							<div class="step-icon" style="width:32px; height:32px; border-radius:50%; background:#fff; border:2px solid #cbd5e1; margin:0 auto 5px; line-height:28px;">✅</div>
+							<span style="font-size:0.7rem; font-weight:600;">Qualified</span>
+						</div>
+					</div>
 					<h3>Activity Log & Conversation</h3>
 					<div id="detailLeadThread" class="inbox-thread" style="height:350px; border:1px solid var(--leadflow-border); border-radius:12px;"></div>
 					<div class="add-note-box" style="margin-top:20px;">

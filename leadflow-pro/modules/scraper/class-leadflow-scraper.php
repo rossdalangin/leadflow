@@ -108,17 +108,15 @@ class LeadFlow_Scraper {
 		}
 
 		// Update lead with enriched data and full audit results
-		$wpdb->update(
-			"{$prefix}leads",
+		LeadFlow_CRM::update_lead(
+			$lead_id,
 			array(
 				'email'              => ! empty( $lead->email ) ? $lead->email : $audit_results['email'],
 				'social_links'       => wp_json_encode( $audit_results['social_links'] ),
 				'audit_data'         => wp_json_encode( $audit_results ),
 				'status'             => $new_status,
 				'completeness_score' => $score,
-				'updated_at'         => current_time( 'mysql' ),
-			),
-			array( 'id' => $lead_id )
+			)
 		);
 
 		// Log audit as a note
@@ -246,6 +244,20 @@ class LeadFlow_Scraper {
 		}
 		if ( stripos( $html, 'facebook.net/en_US/fbevents.js' ) !== false ) {
 			$results['tracking_pixels'][] = 'Facebook Pixel';
+		}
+
+		// Page Builder Detection
+		if ( stripos( $html, 'elementor-' ) !== false ) {
+			$results['page_builder'] = 'Elementor';
+		} elseif ( stripos( $html, 'et-core-area' ) !== false || stripos( $html, 'divi-style' ) !== false ) {
+			$results['page_builder'] = 'Divi';
+		}
+
+		// SEO Plugin Detection
+		if ( stripos( $html, 'yoast seo' ) !== false ) {
+			$results['seo_plugin'] = 'Yoast SEO';
+		} elseif ( stripos( $html, 'rank math' ) !== false ) {
+			$results['seo_plugin'] = 'Rank Math';
 		}
 
 		// Extract emails using regex + mailto

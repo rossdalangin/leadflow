@@ -66,6 +66,11 @@
 			<form id="campaignBuilderForm">
 				<input type="hidden" name="id" id="campaignId">
 				<p><label>Campaign Name</label><br><input type="text" name="name" id="campaignName" required></p>
+				<div style="display:flex; gap:20px;">
+					<p><label>Start Hour (0-23)</label><br><input type="number" name="start_hour" id="campaignStartHour" min="0" max="23" value="9"></p>
+					<p><label>End Hour (0-23)</label><br><input type="number" name="end_hour" id="campaignEndHour" min="0" max="23" value="17"></p>
+					<p><label><br><input type="checkbox" name="skip_weekends" id="campaignSkipWeekends" checked value="1"> Skip Weekends</label></p>
+				</div>
 				<p><label>Status Filter (Leads to include)</label><br>
 					<select name="status_filter" id="campaignStatusFilter">
 						<option value="New">New</option>

@@ -137,7 +137,13 @@ class LeadFlow_CRM {
 
 		$data['updated_at'] = current_time( 'mysql' );
 
-		return $wpdb->update( "{$prefix}leads", $data, array( 'id' => $lead_id ) );
+		$result = $wpdb->update( "{$prefix}leads", $data, array( 'id' => $lead_id ) );
+
+		if ( $result && isset( $data['status'] ) && 'Qualified' === $data['status'] ) {
+			self::trigger_webhook( $lead_id, 'qualified' );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -145,6 +151,26 @@ class LeadFlow_CRM {
 	 */
 	public static function update_status( $lead_id, $status ) {
 		return self::update_lead( $lead_id, array( 'status' => $status ) );
+	}
+
+	/**
+	 * Trigger external webhook.
+	 */
+	private static function trigger_webhook( $lead_id, $event ) {
+		$url = get_option( "leadflow_webhook_$event" );
+		if ( ! $url || ! LeadFlow_License::is_pro() ) return;
+
+		global $wpdb;
+		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}leadflow_leads WHERE id = %d", $lead_id ), ARRAY_A );
+
+		wp_remote_post( $url, array(
+			'body' => array(
+				'event' => $event,
+				'lead'  => $lead,
+				'site'  => get_site_url(),
+				'timestamp' => current_time('timestamp')
+			)
+		) );
 	}
 
 	/**

@@ -74,6 +74,9 @@ class LeadFlow_DB {
 			goal text,
 			status_filter varchar(30),
 			is_active tinyint(1) DEFAULT 0,
+			start_hour tinyint(2) DEFAULT 9,
+			end_hour tinyint(2) DEFAULT 17,
+			skip_weekends tinyint(1) DEFAULT 1,
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id)
 		) $charset_collate;
@@ -196,6 +199,9 @@ class LeadFlow_DB {
 			array( 'name' => 'Outdated', 'slug' => 'outdated' ),
 			array( 'name' => 'WordPress', 'slug' => 'wordpress' ),
 			array( 'name' => 'eCommerce', 'slug' => 'ecommerce' ),
+			array( 'name' => 'Elementor', 'slug' => 'elementor' ),
+			array( 'name' => 'Divi', 'slug' => 'divi' ),
+			array( 'name' => 'No SEO', 'slug' => 'no-seo' ),
 		);
 
 		foreach ( $tags as $tag ) {

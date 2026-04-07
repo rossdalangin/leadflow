@@ -126,6 +126,8 @@ class LeadFlow_AI {
 		if ( $audit_results['load_time'] > 3 ) $tags_to_apply[] = 'slow-load';
 		if ( $audit_results['cms'] === 'WordPress' ) $tags_to_apply[] = 'wordpress';
 		if ( $audit_results['is_ecommerce'] ) $tags_to_apply[] = 'ecommerce';
+		if ( isset($audit_results['page_builder']) ) $tags_to_apply[] = strtolower($audit_results['page_builder']);
+		if ( ! isset($audit_results['seo_plugin']) && $audit_results['cms'] === 'WordPress' ) $tags_to_apply[] = 'no-seo';
 
 		foreach ( $tags_to_apply as $slug ) {
 			$tag_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}lead_tags WHERE slug = %s", $slug ) );

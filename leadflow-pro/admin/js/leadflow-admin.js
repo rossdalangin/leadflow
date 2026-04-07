@@ -533,9 +533,38 @@
 					$('#detailAiTools button').data('lead-id', leadId);
 					$('#proposalUrl').val(lead.proposal_url || '');
 					$('#saveProposalBtn').data('id', leadId);
+
+					// Update Timeline UI
+					updateTimelineUI(lead);
 				}
 			});
 		});
+
+		function updateTimelineUI(lead) {
+			const statusOrder = ['New', 'Audited', 'Contacted', 'Qualified', 'Replied', 'Proposal Sent', 'Closed Won'];
+			const currentStatusIndex = statusOrder.indexOf(lead.status);
+
+			// Custom logic for 'Audited' step since it's a metadata flag not just status
+			const isAudited = lead.audit_data && lead.audit_data !== '{}';
+
+			$('.timeline-step').each(function() {
+				const step = $(this).data('step');
+				const stepIcon = $(this).find('.step-icon');
+
+				let isActive = false;
+				if (step === 'Audited') {
+					isActive = isAudited;
+				} else {
+					isActive = statusOrder.indexOf(step) <= currentStatusIndex;
+				}
+
+				if (isActive) {
+					stepIcon.css({ background: 'var(--leadflow-primary)', borderColor: 'var(--leadflow-primary)', color: '#fff' });
+				} else {
+					stepIcon.css({ background: '#fff', borderColor: '#cbd5e1', color: 'inherit' });
+				}
+			});
+		}
 
 		// Save Proposal URL
 		$(document).on('click', '#saveProposalBtn', function() {
@@ -1301,6 +1330,9 @@
 					$('#campaignId').val(c.id);
 					$('#campaignName').val(c.name);
 					$('#campaignStatusFilter').val(c.status_filter);
+					$('#campaignStartHour').val(c.start_hour || 9);
+					$('#campaignEndHour').val(c.end_hour || 17);
+					$('#campaignSkipWeekends').prop('checked', c.skip_weekends == 1);
 					$('#sequenceSteps').empty();
 
 					(c.steps || []).forEach((step, index) => {
@@ -1330,6 +1362,9 @@
 			const data = {
 				name: $('#campaignName').val(),
 				status_filter: $('#campaignStatusFilter').val(),
+				start_hour: $('#campaignStartHour').val(),
+				end_hour: $('#campaignEndHour').val(),
+				skip_weekends: $('#campaignSkipWeekends').is(':checked') ? 1 : 0,
 				steps: steps
 			};
 

@@ -128,6 +128,7 @@ class LeadFlow_Core {
 		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
 		$this->loader->add_action( 'leadflow_process_sending_queue', 'LeadFlow_Outreach', 'process_sending_queue' );
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
+		$this->loader->add_action( 'leadflow_check_usage', $this, 'check_ai_usage_alerts' );
 		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
 		$this->loader->add_action( 'rest_api_init', $this, 'register_rest_routes' );
 		$this->loader->add_action( 'init', $this, 'register_shortcodes' );
@@ -156,6 +157,29 @@ class LeadFlow_Core {
 	/**
 	 * Register all REST API routes on rest_api_init.
 	 */
+	public function check_ai_usage_alerts() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		foreach ( array( 'openai', 'gemini' ) as $provider ) {
+			$budget = (int) get_option( "leadflow_token_budget_$provider", 50000 );
+			$used = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage WHERE provider = %s", $provider ) );
+
+			if ( $used >= $budget ) {
+				$this->send_usage_email( $provider, '100%' );
+			} elseif ( $used >= ( $budget * 0.8 ) ) {
+				$this->send_usage_email( $provider, '80%' );
+			}
+		}
+	}
+
+	private function send_usage_email( $provider, $percent ) {
+		$admin_email = get_option( 'admin_email' );
+		$subject = "LeadFlow Pro: AI Usage Alert ($percent)";
+		$message = "Your $provider AI token usage has reached $percent of your monthly budget. Please consider upgrading or increasing your budget in the plugin settings.";
+		wp_mail( $admin_email, $subject, $message );
+	}
+
 	public function register_rest_routes() {
 		$api = new LeadFlow_REST_API();
 		$api->register_routes();
@@ -205,6 +229,7 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_pass' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_encryption' );
 		register_setting( 'leadflow-settings-group', 'leadflow_email_signature' );
+		register_setting( 'leadflow-settings-group', 'leadflow_webhook_qualified' );
 
 		// Encryption hooks
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );

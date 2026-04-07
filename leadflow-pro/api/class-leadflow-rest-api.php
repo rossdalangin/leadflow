@@ -360,6 +360,11 @@ class LeadFlow_REST_API {
 			return current_user_can( 'manage_options' );
 		}
 
+		// Allow testing connections and viewing basic logs even if license is inactive
+		if ( strpos( $request->get_route(), '/settings/test-email' ) !== false || strpos( $request->get_route(), '/ai/complete' ) !== false ) {
+			return current_user_can( 'manage_options' );
+		}
+
 		if ( get_option( 'leadflow_license_key' ) && ! LeadFlow_License::is_pro() ) {
 			return false;
 		}
@@ -761,6 +766,9 @@ class LeadFlow_REST_API {
 			'name'          => $params['name'],
 			'goal'          => isset( $params['goal'] ) ? $params['goal'] : '',
 			'status_filter' => $params['status_filter'],
+			'start_hour'    => isset( $params['start_hour'] ) ? (int) $params['start_hour'] : 9,
+			'end_hour'      => isset( $params['end_hour'] ) ? (int) $params['end_hour'] : 17,
+			'skip_weekends' => isset( $params['skip_weekends'] ) ? (int) $params['skip_weekends'] : 1,
 		) );
 
 		if ( is_wp_error( $campaign_id ) ) {
@@ -793,6 +801,9 @@ class LeadFlow_REST_API {
 		if ( isset( $params['name'] ) ) $data['name'] = sanitize_text_field( $params['name'] );
 		if ( isset( $params['is_active'] ) ) $data['is_active'] = (int) $params['is_active'];
 		if ( isset( $params['status_filter'] ) ) $data['status_filter'] = sanitize_text_field( $params['status_filter'] );
+		if ( isset( $params['start_hour'] ) ) $data['start_hour'] = (int) $params['start_hour'];
+		if ( isset( $params['end_hour'] ) ) $data['end_hour'] = (int) $params['end_hour'];
+		if ( isset( $params['skip_weekends'] ) ) $data['skip_weekends'] = (int) $params['skip_weekends'];
 
 		if ( ! empty( $data ) ) {
 			$wpdb->update( "{$prefix}campaigns", $data, array( 'id' => $id ) );

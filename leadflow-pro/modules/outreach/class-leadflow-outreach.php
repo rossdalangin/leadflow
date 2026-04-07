@@ -28,6 +28,9 @@ class LeadFlow_Outreach {
 				'name'          => $data['name'],
 				'goal'          => $data['goal'],
 				'status_filter' => $data['status_filter'],
+				'start_hour'    => isset($data['start_hour']) ? $data['start_hour'] : 9,
+				'end_hour'      => isset($data['end_hour']) ? $data['end_hour'] : 17,
+				'skip_weekends' => isset($data['skip_weekends']) ? $data['skip_weekends'] : 1,
 				'is_active'     => 1,
 				'created_at'    => current_time( 'mysql' ),
 			)
@@ -171,9 +174,22 @@ class LeadFlow_Outreach {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		$items = $wpdb->get_results( "SELECT * FROM {$prefix}sending_queue WHERE status = 'Scheduled' AND scheduled_at <= NOW() LIMIT 10" );
+		$current_hour = (int) current_time( 'H' );
+		$is_weekend   = in_array( current_time( 'w' ), array( 0, 6 ) );
+
+		$items = $wpdb->get_results( "SELECT * FROM {$prefix}sending_queue WHERE status = 'Scheduled' AND scheduled_at <= NOW() LIMIT 20" );
 
 		foreach ( $items as $item ) {
+			$campaign = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaigns WHERE id = %d", $item->campaign_id ) );
+
+			if ( $campaign ) {
+				// Respect weekends
+				if ( $campaign->skip_weekends && $is_weekend ) continue;
+
+				// Respect business hours
+				if ( $current_hour < $campaign->start_hour || $current_hour >= $campaign->end_hour ) continue;
+			}
+
 			$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}leads WHERE id = %d", $item->lead_id ) );
 			$step = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE id = %d", $item->step_id ) );
 
@@ -267,6 +283,9 @@ class LeadFlow_Outreach {
 			'{{email}}'         => $lead->email,
 			'{{city}}'          => isset( $audit_data['city'] ) ? $audit_data['city'] : '',
 			'{{audit_flag}}'    => $audit_hook,
+			'{{cms}}'           => isset( $audit_data['cms'] ) ? $audit_data['cms'] : 'your CMS',
+			'{{page_builder}}'  => isset( $audit_data['page_builder'] ) ? $audit_data['page_builder'] : 'your page builder',
+			'{{seo_plugin}}'    => isset( $audit_data['seo_plugin'] ) ? $audit_data['seo_plugin'] : 'an SEO plugin',
 		);
 
 		return strtr( $content, $tokens );

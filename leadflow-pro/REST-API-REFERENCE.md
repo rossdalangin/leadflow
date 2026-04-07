@@ -33,7 +33,26 @@ Create a campaign with sequence steps.
 - **Body:**
   - `name`: string
   - `status_filter`: string
+  - `start_hour`: int (0-23)
+  - `end_hour`: int (0-23)
+  - `skip_weekends`: int (0,1)
   - `steps`: array of step objects
+
+## Settings Module
+
+### `POST /settings/test-email`
+Send a test email to verify SMTP/Gmail config.
+
+### `POST /settings/revoke-gmail`
+Disconnect Gmail API account.
+
+## Analytics Module
+
+### `GET /analytics/overview`
+Get high-level KPIs and chart data.
+
+### `GET /analytics/report`
+Download a full CSV ROI report.
 
 ## AI Module
 
