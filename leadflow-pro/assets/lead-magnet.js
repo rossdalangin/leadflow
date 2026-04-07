@@ -24,9 +24,13 @@
 					xhr.setRequestHeader('X-WP-Nonce', leadflowMagnet.nonce);
 				},
 				success: function() {
-					form.fadeOut(function() {
-						success.fadeIn();
-					});
+					if (leadflowMagnet.redirectUrl) {
+						window.location.href = leadflowMagnet.redirectUrl;
+					} else {
+						form.fadeOut(function() {
+							success.fadeIn();
+						});
+					}
 				},
 				error: function(err) {
 					alert('Error: ' + (err.responseJSON ? err.responseJSON.message : 'Something went wrong.'));

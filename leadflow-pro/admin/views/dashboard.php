@@ -100,6 +100,16 @@ $roi = LeadFlow_Analytics::get_roi_metrics();
 		</div>
 	</div>
 
+	<div id="dailyPulse" class="chart-box" style="margin-top:20px; border-left:4px solid var(--leadflow-secondary);">
+		<h3>Daily Pulse: Leads Needing Attention</h3>
+		<table class="wp-list-table widefat fixed striped">
+			<thead><tr><th>Lead</th><th>Status</th><th>Reason</th><th>Action</th></tr></thead>
+			<tbody id="pulseTableBody">
+				<!-- Populated by JS -->
+			</tbody>
+		</table>
+	</div>
+
 	<div style="display:flex; gap:20px; margin-top:20px;">
 		<div class="leadflow-recent-activity chart-box" style="flex:2;">
 			<h3>Recent Activity</h3>

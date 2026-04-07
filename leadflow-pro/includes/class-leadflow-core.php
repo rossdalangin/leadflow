@@ -144,6 +144,7 @@ class LeadFlow_Core {
 		wp_localize_script( 'leadflow-magnet', 'leadflowMagnet', array(
 			'apiUrl' => get_rest_url( null, 'leadflow/v1' ),
 			'nonce'  => wp_create_nonce( 'wp_rest' ),
+			'redirectUrl' => get_option( 'leadflow_magnet_redirect' ),
 		) );
 	}
 
@@ -230,6 +231,16 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_encryption' );
 		register_setting( 'leadflow-settings-group', 'leadflow_email_signature' );
 		register_setting( 'leadflow-settings-group', 'leadflow_webhook_qualified' );
+		register_setting( 'leadflow-settings-group', 'leadflow_weight_name' );
+		register_setting( 'leadflow-settings-group', 'leadflow_weight_url' );
+		register_setting( 'leadflow-settings-group', 'leadflow_weight_email' );
+		register_setting( 'leadflow-settings-group', 'leadflow_weight_phone' );
+		register_setting( 'leadflow-settings-group', 'leadflow_weight_social' );
+		register_setting( 'leadflow-settings-group', 'leadflow_auto_archive_negative' );
+
+		// Lead Magnet Settings
+		register_setting( 'leadflow-magnet-group', 'leadflow_magnet_success' );
+		register_setting( 'leadflow-magnet-group', 'leadflow_magnet_redirect' );
 
 		// Encryption hooks
 		add_filter( 'pre_update_option_leadflow_smtp_pass', array( 'LeadFlow_Security', 'encrypt' ) );

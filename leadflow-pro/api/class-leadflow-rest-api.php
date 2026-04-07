@@ -28,6 +28,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/inbox', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_inbox' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/analytics/report', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -589,6 +597,7 @@ class LeadFlow_REST_API {
 			'metrics'         => LeadFlow_Analytics::get_outreach_metrics( $start, $end ),
 			'ai_usage'        => LeadFlow_Analytics::get_ai_usage_stats(),
 			'roi'             => LeadFlow_Analytics::get_roi_metrics(),
+			'daily_pulse'     => LeadFlow_Analytics::get_daily_pulse(),
 		) );
 	}
 
@@ -969,6 +978,22 @@ class LeadFlow_REST_API {
 	public function activate_demo_license() {
 		LeadFlow_License::activate_demo_license();
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_inbox() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		// Get leads who have replied, ordered by latest activity
+		$query = "
+			SELECT l.id, l.business_name, MAX(e.created_at) as last_reply
+			FROM {$prefix}leads l
+			JOIN {$prefix}email_log e ON l.id = e.lead_id
+			WHERE l.status = 'Replied'
+			GROUP BY l.id
+			ORDER BY last_reply DESC";
+
+		return rest_ensure_response( $wpdb->get_results( $query ) );
 	}
 
 	public function send_reply( $request ) {

@@ -33,12 +33,26 @@
 					<th scope="row">Scraping Logic</th>
 					<td>
 						<label><input type="checkbox" name="leadflow_robots_check" value="1" <?php checked( 1, get_option( 'leadflow_robots_check' ), true ); ?>> Respect robots.txt</label><br>
-						<label><input type="checkbox" name="leadflow_no_ssl_audit" value="1" <?php checked( 1, get_option( 'leadflow_no_ssl_audit' ), true ); ?>> Check for SSL certificate</label>
+						<label><input type="checkbox" name="leadflow_no_ssl_audit" value="1" <?php checked( 1, get_option( 'leadflow_no_ssl_audit' ), true ); ?>> Check for SSL certificate</label><br>
+						<label><input type="checkbox" name="leadflow_auto_archive_negative" value="1" <?php checked( 1, get_option( 'leadflow_auto_archive_negative', 1 ), true ); ?>> Auto-move negative sentiment replies to Closed Lost</label>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row">Scraping Ethics (Crawl Delay)</th>
 					<td><input type="number" name="leadflow_crawl_delay" value="<?php echo esc_attr( get_option( 'leadflow_crawl_delay', 2 ) ); ?>" class="small-text"> seconds</td>
+				</tr>
+				<tr>
+					<th scope="row">Lead Scoring Weights</th>
+					<td>
+						<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-width:400px;">
+							<label>Business Name Weight</label><input type="number" name="leadflow_weight_name" value="<?php echo esc_attr( get_option( 'leadflow_weight_name', 20 ) ); ?>" class="small-text">
+							<label>Website Weight</label><input type="number" name="leadflow_weight_url" value="<?php echo esc_attr( get_option( 'leadflow_weight_url', 20 ) ); ?>" class="small-text">
+							<label>Email Weight</label><input type="number" name="leadflow_weight_email" value="<?php echo esc_attr( get_option( 'leadflow_weight_email', 30 ) ); ?>" class="small-text">
+							<label>Phone Weight</label><input type="number" name="leadflow_weight_phone" value="<?php echo esc_attr( get_option( 'leadflow_weight_phone', 15 ) ); ?>" class="small-text">
+							<label>Social Weight</label><input type="number" name="leadflow_weight_social" value="<?php echo esc_attr( get_option( 'leadflow_weight_social', 15 ) ); ?>" class="small-text">
+						</div>
+						<p class="description">Total should ideally equal 100 for percentage-based scoring.</p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row">LinkedIn API (Client ID)</th>

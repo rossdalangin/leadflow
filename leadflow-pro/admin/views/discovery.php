@@ -83,6 +83,17 @@
 			&lt;div id="leadflow-audit-form"&gt;&lt;/div&gt;<br>
 			&lt;script src="<?php echo LEADFLOW_PRO_URL . 'assets/lead-magnet.js'; ?>"&gt;&lt;/script&gt;
 		</div>
-		<button class="button" onclick="alert('Form configuration UI coming in v1.1')">Configure Form</button>
+		<button class="button" onclick="jQuery('#leadMagnetSettings').slideToggle()">Configure Form</button>
+
+		<div id="leadMagnetSettings" style="display:none; margin-top:20px; background:#fff; padding:20px; border:1px solid #ddd; border-radius:8px;">
+			<form method="post" action="options.php">
+				<?php settings_fields( 'leadflow-magnet-group' ); ?>
+				<p><label>Success Message</label><br>
+				<input type="text" name="leadflow_magnet_success" value="<?php echo esc_attr( get_option( 'leadflow_magnet_success', 'Success! Your audit is being generated and will be emailed to you shortly.' ) ); ?>" class="large-text"></p>
+				<p><label>Redirect URL (Optional)</label><br>
+				<input type="url" name="leadflow_magnet_redirect" value="<?php echo esc_url( get_option( 'leadflow_magnet_redirect' ) ); ?>" class="large-text" placeholder="https://..."></p>
+				<?php submit_button('Save Form Settings'); ?>
+			</form>
+		</div>
 	</div>
 </div>

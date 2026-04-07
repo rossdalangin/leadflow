@@ -203,9 +203,14 @@ class LeadFlow_Email {
 			}
 
 			// Auto-detect unsubscribe intent
-			if ( LeadFlow_Compliance::detect_unsubscribe_intent( $body ) ) {
+			if ( LeadFlow_Compliance::detect_unsubscribe_intent( $body ) || stripos( $sentiment, 'Unsubscribe' ) !== false ) {
 				LeadFlow_Compliance::add_opt_out( $email, 'Detected in reply' );
 				LeadFlow_CRM::add_note( $lead->id, "Lead automatically added to suppression list due to unsubscribe intent.", 0 );
+
+				if ( get_option( 'leadflow_auto_archive_negative', 1 ) ) {
+					LeadFlow_CRM::update_status( $lead->id, 'Closed Lost' );
+					LeadFlow_CRM::add_note( $lead->id, "Lead automatically moved to Closed Lost due to negative sentiment/opt-out.", 0 );
+				}
 			}
 
 			// Log as replied in email log

@@ -21,6 +21,6 @@
 		<button type="submit" style="width:100%; padding:12px; background:#6366f1; color:#fff; border:none; border-radius:6px; font-weight:700; cursor:pointer;">Generate My Free Audit</button>
 	</form>
 	<div id="leadflowFormSuccess" style="display:none; margin-top:20px; padding:15px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; color:#166534; text-align:center;">
-		<strong>Success!</strong> Your audit is being generated and will be emailed to you shortly.
+		<?php echo esc_html( get_option( 'leadflow_magnet_success', 'Success! Your audit is being generated and will be emailed to you shortly.' ) ); ?>
 	</div>
 </div>

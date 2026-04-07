@@ -57,6 +57,8 @@ class LeadFlow_CRM {
 			return new WP_Error( 'db_error', 'Failed to create lead.' );
 		}
 
+		delete_transient( 'leadflow_leads_by_status' );
+
 		$lead_id = $wpdb->insert_id;
 
 		// Add lead to scraping queue
@@ -139,8 +141,11 @@ class LeadFlow_CRM {
 
 		$result = $wpdb->update( "{$prefix}leads", $data, array( 'id' => $lead_id ) );
 
-		if ( $result && isset( $data['status'] ) && 'Qualified' === $data['status'] ) {
-			self::trigger_webhook( $lead_id, 'qualified' );
+		if ( $result ) {
+			delete_transient( 'leadflow_leads_by_status' );
+			if ( isset( $data['status'] ) && 'Qualified' === $data['status'] ) {
+				self::trigger_webhook( $lead_id, 'qualified' );
+			}
 		}
 
 		return $result;
@@ -183,14 +188,20 @@ class LeadFlow_CRM {
 
 		if ( ! $lead ) return 0;
 
-		$score = 0;
-		if ( ! empty( $lead->business_name ) ) $score += 20;
-		if ( ! empty( $lead->website_url ) ) $score += 20;
-		if ( ! empty( $lead->email ) ) $score += 30;
-		if ( ! empty( $lead->phone ) ) $score += 15;
-		if ( ! empty( $lead->social_links ) && '[]' !== $lead->social_links ) $score += 15;
+		$w_name   = (int) get_option( 'leadflow_weight_name', 20 );
+		$w_url    = (int) get_option( 'leadflow_weight_url', 20 );
+		$w_email  = (int) get_option( 'leadflow_weight_email', 30 );
+		$w_phone  = (int) get_option( 'leadflow_weight_phone', 15 );
+		$w_social = (int) get_option( 'leadflow_weight_social', 15 );
 
-		return $score;
+		$score = 0;
+		if ( ! empty( $lead->business_name ) ) $score += $w_name;
+		if ( ! empty( $lead->website_url ) ) $score += $w_url;
+		if ( ! empty( $lead->email ) ) $score += $w_email;
+		if ( ! empty( $lead->phone ) ) $score += $w_phone;
+		if ( ! empty( $lead->social_links ) && '[]' !== $lead->social_links ) $score += $w_social;
+
+		return min( $score, 100 );
 	}
 
 	/**

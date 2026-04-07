@@ -15,9 +15,15 @@ class LeadFlow_Analytics {
 	 * Get lead counts by status for doughnut chart.
 	 */
 	public static function get_leads_by_status() {
+		$cache = get_transient( 'leadflow_leads_by_status' );
+		if ( false !== $cache ) return $cache;
+
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
-		return $wpdb->get_results( "SELECT status, COUNT(*) as count FROM {$prefix}leads GROUP BY status", ARRAY_A );
+		$results = $wpdb->get_results( "SELECT status, COUNT(*) as count FROM {$prefix}leads GROUP BY status", ARRAY_A );
+
+		set_transient( 'leadflow_leads_by_status', $results, HOUR_IN_SECONDS );
+		return $results;
 	}
 
 	/**
@@ -92,6 +98,32 @@ class LeadFlow_Analytics {
 			HAVING count > 0";
 
 		return $wpdb->get_results( $query, ARRAY_A );
+	}
+
+	/**
+	 * Get leads that need immediate attention.
+	 */
+	public static function get_daily_pulse() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		// Leads who replied but haven't been contacted since
+		$replied_no_followup = $wpdb->get_results( "
+			SELECT l.id, l.business_name, l.status, 'Replied - No follow-up' as reason
+			FROM {$prefix}leads l
+			WHERE l.status = 'Replied'
+			AND l.id NOT IN (SELECT lead_id FROM {$prefix}email_log WHERE status = 'Sent' AND created_at > (SELECT MAX(created_at) FROM {$prefix}lead_notes WHERE lead_id = l.id AND content LIKE 'Inbound%'))
+			LIMIT 5", ARRAY_A );
+
+		// Leads with failed scraper jobs
+		$failed_scrapes = $wpdb->get_results( "
+			SELECT l.id, l.business_name, l.status, 'Website audit failed' as reason
+			FROM {$prefix}leads l
+			JOIN {$prefix}scrape_queue q ON l.id = q.lead_id
+			WHERE q.status = 'Failed'
+			LIMIT 5", ARRAY_A );
+
+		return array_merge( $replied_no_followup, $failed_scrapes );
 	}
 
 	/**

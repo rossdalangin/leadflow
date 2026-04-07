@@ -69,25 +69,6 @@
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
 				success: function(data) {
-					// Render AI Usage Bars
-					const usageContainer = $('#aiUsageBars');
-					usageContainer.empty();
-					data.ai_usage.forEach(u => {
-						const budget = leadflowData.budgets[u.provider] || 50000;
-						const percent = Math.min((u.total_tokens / budget) * 100, 100);
-						usageContainer.append(`
-							<div style="margin-bottom:15px;">
-								<div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:5px;">
-									<span>${u.provider.toUpperCase()}</span>
-									<span>${Number(u.total_tokens).toLocaleString()} / ${Number(budget).toLocaleString()} tokens</span>
-								</div>
-								<div style="background:#eee; height:10px; border-radius:5px; overflow:hidden;">
-									<div style="background:var(--leadflow-primary); width:${percent}%; height:100%;"></div>
-								</div>
-							</div>
-						`);
-					});
-
 					renderLeadTable(data);
 				}
 			});
@@ -131,25 +112,6 @@
 			});
 		});
 
-		// Inbox Item Click
-		$(document).on('click', '.inbox-item', function() {
-			const leadId = $(this).data('lead-id');
-			const leadName = $(this).find('.inbox-item-lead').text();
-
-			// Find the lead data from the table (simulated state)
-			// In a real app, you'd fetch the full lead object
-
-			$('#viewLeadName').text(leadName);
-			$('.inbox-item').removeClass('active');
-			$(this).addClass('active');
-			$('#inboxReply').show();
-			$('#aiLeadTools').show().find('button').data('lead-id', leadId);
-			$('.export-data-btn, .delete-lead-btn').data('lead-id', leadId);
-
-			loadThread(leadId);
-			loadLeadSidebar(leadId);
-			triggerAiDraft(leadId);
-		});
 
 		function triggerAiDraft(leadId) {
 			const draftBox = $('#aiDraftBox');
@@ -252,6 +214,58 @@
 		if ($('#addTagSelect').length) {
 			loadTags();
 		}
+
+		function loadInbox() {
+			const list = $('#inboxItems');
+			if (!list.length) return;
+
+			$.ajax({
+				url: apiUrl + '/inbox',
+				method: 'GET',
+				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
+				success: function(data) {
+					list.empty();
+					if (data.length === 0) {
+						list.append('<p style="padding:20px;">No replies yet.</p>');
+						return;
+					}
+					data.forEach(item => {
+						list.append(`
+							<div class="inbox-item" data-lead-id="${item.id}">
+								<div class="inbox-item-header">
+									<span class="inbox-item-lead">${escapeHtml(item.business_name)}</span>
+									<span class="inbox-item-time">${item.last_reply}</span>
+								</div>
+								<div class="inbox-item-excerpt">Click to view conversation</div>
+								<div class="inbox-item-sentiment positive">Replied</div>
+							</div>
+						`);
+					});
+				}
+			});
+		}
+
+		if ($('.leadflow-inbox').length) {
+			loadInbox();
+		}
+
+		// Click handling for inbox items to make it dynamic
+		$(document).on('click', '.inbox-item', function() {
+			const leadId = $(this).data('lead-id');
+			const leadName = $(this).find('.inbox-item-lead').text();
+
+			$('#viewLeadName').text(leadName);
+			$('.inbox-item').removeClass('active');
+			$(this).addClass('active');
+
+			$('#inboxReply').show();
+			$('#aiLeadTools').show().find('button').data('lead-id', leadId);
+			$('.export-data-btn, .delete-lead-btn').data('lead-id', leadId);
+
+			loadThread(leadId);
+			loadLeadSidebar(leadId);
+			triggerAiDraft(leadId);
+		});
 
 		function loadThread(leadId) {
 			$('#inboxThread').html('<p>Loading conversation...</p>');
@@ -1090,6 +1104,27 @@
 						});
 					}
 
+					// Render AI Usage Bars
+					const usageContainer = $('#aiUsageBars');
+					if (usageContainer.length) {
+						usageContainer.empty();
+						(data.ai_usage || []).forEach(u => {
+							const budget = leadflowData.budgets[u.provider] || 50000;
+							const percent = Math.min((u.total_tokens / budget) * 100, 100);
+							usageContainer.append(`
+								<div style="margin-bottom:15px;">
+									<div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:5px;">
+										<span>${u.provider.toUpperCase()}</span>
+										<span>${Number(u.total_tokens).toLocaleString()} / ${Number(budget).toLocaleString()} tokens</span>
+									</div>
+									<div style="background:#eee; height:10px; border-radius:5px; overflow:hidden;">
+										<div style="background:var(--leadflow-primary); width:${percent}%; height:100%;"></div>
+									</div>
+								</div>
+							`);
+						});
+					}
+
 					// Update KPI values if elements exist
 					if ($('.leadflow-kpi-grid').length) {
 						$('.kpi-card:nth-child(3) .kpi-value').text( (data.metrics.sent > 0 ? Math.round((data.metrics.opened / data.metrics.sent) * 100) : 0) + '%' );
@@ -1099,6 +1134,23 @@
 						}
 						$('#topTemplateName').text(data.metrics.top_template || 'None yet');
 					}
+
+					// Pulse Table
+					const pulseBody = $('#pulseTableBody');
+					pulseBody.empty();
+					if (data.daily_pulse.length === 0) {
+						pulseBody.append('<tr><td colspan="4">No leads need immediate attention. Great job!</td></tr>');
+					}
+					data.daily_pulse.forEach(p => {
+						pulseBody.append(`
+							<tr>
+								<td><strong>${escapeHtml(p.business_name)}</strong></td>
+								<td>${escapeHtml(p.status)}</td>
+								<td>${escapeHtml(p.reason)}</td>
+								<td><button class="button button-small view-lead" data-id="${p.id}">Resolve</button></td>
+							</tr>
+						`);
+					});
 				}
 			});
 
