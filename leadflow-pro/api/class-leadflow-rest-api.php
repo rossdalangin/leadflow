@@ -29,6 +29,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/settings/save', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'save_settings' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -490,6 +498,30 @@ class LeadFlow_REST_API {
 	public function test_imap() {
 		$success = LeadFlow_Email::test_imap_connectivity();
 		return is_wp_error( $success ) ? $success : rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function save_settings( $request ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new WP_Error( 'rest_forbidden', 'You do not have permission to save settings.', array( 'status' => 401 ) );
+		}
+
+		$params = $request->get_params();
+		$allowed_options = array(
+			'leadflow_openai_api_key',
+			'leadflow_google_places_api_key',
+			'leadflow_smtp_from_name',
+			'leadflow_smtp_from_email',
+			'leadflow_setup_complete',
+			'leadflow_license_server_url'
+		);
+
+		foreach ( $params as $key => $value ) {
+			if ( in_array( $key, $allowed_options ) ) {
+				update_option( $key, $value ); // Security filter in Core handles encryption
+			}
+		}
+
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function activate_license( $request ) {
