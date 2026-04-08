@@ -28,6 +28,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/enrich', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'enrich_lead' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/ai-hook', array(
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -505,6 +513,17 @@ class LeadFlow_REST_API {
 		$id = $request['id'];
 		LeadFlow_Scraper::run_manual_audit( $id );
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function enrich_lead( $request ) {
+		$id = $request['id'];
+		$result = LeadFlow_Enrichment::enrich_lead( $id );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response( array( 'success' => true, 'data' => $result ) );
 	}
 
 	public function generate_lead_ai_hook( $request ) {

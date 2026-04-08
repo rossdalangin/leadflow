@@ -603,6 +603,7 @@
 					}
 
 					$('#detailAiTools button').data('lead-id', leadId);
+					$('#enrichLeadBtn').data('id', leadId);
 					$('#proposalUrl').val(targetLead.proposal_url || '');
 					$('#saveProposalBtn').data('id', leadId);
 
@@ -2119,6 +2120,38 @@
 							});
 						}
 					});
+				}
+			});
+		});
+
+		// Generate Report Trigger
+		$(document).on('click', '#generateReportBtn', function() {
+			const id = window.currentLead.id;
+			window.open(leadflowData.adminUrl + 'admin.php?page=leadflow-audit-report&lead_id=' + id, '_blank');
+		});
+
+		// Lead Enrichment Trigger
+		$(document).on('click', '#enrichLeadBtn', function() {
+			if (!isPro) { showUpgradeModal('Lead Enrichment'); return; }
+			const id = $(this).data('id');
+			const btn = $(this);
+			btn.text('Enriching...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/leads/' + id + '/enrich',
+				method: 'POST',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(response) {
+					alert('Lead enriched successfully!');
+					btn.text('Enrich Lead').prop('disabled', false);
+					// Refresh sidebar
+					loadLeadSidebar(id);
+				},
+				error: function(err) {
+					alert('Enrichment failed: ' + err.responseJSON.message);
+					btn.text('Enrich Lead').prop('disabled', false);
 				}
 			});
 		});

@@ -105,10 +105,10 @@ class LeadFlow_AI {
 	}
 
 	/**
-	 * AI: Reply sentiment analyzer.
+	 * AI: Reply sentiment and intent analyzer.
 	 */
 	public static function analyze_sentiment( $reply_text ) {
-		$prompt = "Classify this email reply sentiment as Positive, Neutral, Negative, or Unsubscribe Intent: \"$reply_text\"";
+		$prompt = "Classify this email reply sentiment as Positive, Neutral, Negative, or Unsubscribe Intent. Also detect if the user is requesting a Meeting or more Information. Format: [Sentiment] | Intent: [Intent]. Message: \"$reply_text\"";
 		return self::complete( $prompt, array( 'feature' => 'sentiment_analysis' ) );
 	}
 

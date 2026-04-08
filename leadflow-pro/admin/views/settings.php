@@ -56,6 +56,14 @@
 					</td>
 				</tr>
 				<tr>
+					<th scope="row">Hunter.io API Key</th>
+					<td><input type="text" name="leadflow_hunter_api_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_hunter_api_key' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
+					<th scope="row">Clearbit API Key</th>
+					<td><input type="text" name="leadflow_clearbit_api_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_clearbit_api_key' ) ); ?>" class="regular-text"></td>
+				</tr>
+				<tr>
 					<th scope="row">LinkedIn API (Client ID)</th>
 					<td><input type="text" name="leadflow_linkedin_client_id" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_linkedin_client_id' ) ); ?>" class="regular-text"></td>
 				</tr>

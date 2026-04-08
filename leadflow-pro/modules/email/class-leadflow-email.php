@@ -186,14 +186,27 @@ class LeadFlow_Email {
 		if ( $lead ) {
 			LeadFlow_CRM::update_status( $lead->id, 'Replied' );
 
-			// AI: Analyze sentiment
-			$sentiment = LeadFlow_AI::analyze_sentiment( $body );
-			LeadFlow_CRM::add_note( $lead->id, "Inbound Reply (Sentiment: $sentiment): " . $body );
+			// AI: Analyze sentiment and intent
+			$sentiment_full = LeadFlow_AI::analyze_sentiment( $body );
+			LeadFlow_CRM::add_note( $lead->id, "Inbound Reply AI Analysis: $sentiment_full", 0 );
+
+			// Intent-based automation
+			if ( stripos( $sentiment_full, 'Meeting' ) !== false ) {
+				LeadFlow_CRM::update_status( $lead->id, 'Qualified' );
+				LeadFlow_CRM::add_note( $lead->id, "Status automatically updated to Qualified: AI detected Meeting Intent.", 0 );
+				LeadFlow_CRM::add_task( array(
+					'lead_id'     => $lead->id,
+					'task_type'   => 'follow-up',
+					'description' => 'Schedule discovery call with lead (AI detected meeting intent)',
+					'due_date'    => date( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS ),
+					'assigned_to' => $lead->assigned_to
+				) );
+			}
 
 			// Auto-tagging based on sentiment
 			$tag_slug = '';
-			if ( stripos( $sentiment, 'Positive' ) !== false ) $tag_slug = 'high-intent';
-			elseif ( stripos( $sentiment, 'Unsubscribe' ) !== false ) $tag_slug = 'opt-out';
+			if ( stripos( $sentiment_full, 'Positive' ) !== false ) $tag_slug = 'high-intent';
+			elseif ( stripos( $sentiment_full, 'Unsubscribe' ) !== false ) $tag_slug = 'opt-out';
 
 			if ( $tag_slug ) {
 				$tag_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$prefix}lead_tags WHERE slug = %s", $tag_slug ) );
@@ -203,7 +216,7 @@ class LeadFlow_Email {
 			}
 
 			// Auto-detect unsubscribe intent
-			if ( LeadFlow_Compliance::detect_unsubscribe_intent( $body ) || stripos( $sentiment, 'Unsubscribe' ) !== false ) {
+			if ( LeadFlow_Compliance::detect_unsubscribe_intent( $body ) || stripos( $sentiment_full, 'Unsubscribe' ) !== false ) {
 				LeadFlow_Compliance::add_opt_out( $email, 'Detected in reply' );
 				LeadFlow_CRM::add_note( $lead->id, "Lead automatically added to suppression list due to unsubscribe intent.", 0 );
 

@@ -146,6 +146,8 @@
 					<div id="detailAiTools" style="margin-top:20px;">
 						<button class="button button-small ai-score-btn">✨ AI: Score</button>
 						<button class="button button-small ai-summarize-btn">✨ AI: Hook</button>
+						<button class="button button-small" id="enrichLeadBtn" style="margin-top:5px;">🔍 Enrich Lead (Pro)</button>
+						<button class="button button-small" id="generateReportBtn" style="margin-top:5px;">📄 Branded Report</button>
 					</div>
 					<div class="proposal-tracking" style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
 						<h3>Proposal Tracking</h3>

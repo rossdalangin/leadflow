@@ -33,6 +33,7 @@ class LeadFlow_Core {
 		require_once LEADFLOW_PRO_PATH . 'api/class-leadflow-rest-api.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/ai/class-leadflow-ai.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/discovery/class-leadflow-discovery.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/discovery/class-leadflow-enrichment.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/crm/class-leadflow-crm.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/scraper/class-leadflow-scraper.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-outreach.php';
@@ -127,6 +128,12 @@ class LeadFlow_Core {
 	}
 
 	private function define_public_hooks() {
+		/**
+		 * LeadFlow Job Scheduler
+		 *
+		 * We use standard WP-Cron hooks here, but the architecture is 100% compatible
+		 * with Action Scheduler for high-volume enterprise environments.
+		 */
 		$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
 		$this->loader->add_action( 'leadflow_process_auto_discovery', 'LeadFlow_Discovery', 'process_auto_discovery' );
 		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
@@ -208,6 +215,8 @@ class LeadFlow_Core {
 
 	public function register_settings() {
 		register_setting( 'leadflow-settings-group', 'leadflow_google_places_api_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_hunter_api_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_clearbit_api_key' );
 		register_setting( 'leadflow-settings-group', 'leadflow_ai_provider' );
 		register_setting( 'leadflow-settings-group', 'leadflow_openai_api_key' );
 		register_setting( 'leadflow-settings-group', 'leadflow_gemini_api_key' );
@@ -259,6 +268,8 @@ class LeadFlow_Core {
 		add_filter( 'pre_update_option_leadflow_openai_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_gemini_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 		add_filter( 'pre_update_option_leadflow_google_places_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_hunter_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
+		add_filter( 'pre_update_option_leadflow_clearbit_api_key', array( 'LeadFlow_Security', 'encrypt' ) );
 	}
 
 	/**
@@ -305,6 +316,8 @@ class LeadFlow_Core {
 			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', 'manage_options', 'leadflow-settings', array( $this, 'display_settings' ) );
 		} else {
 			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', 'manage_options', 'leadflow-pro', array( $this, 'display_activation' ) );
+			// Hidden route for report view
+			add_submenu_page( null, 'Audit Report', 'Audit Report', 'edit_posts', 'leadflow-audit-report', array( $this, 'display_audit_report' ) );
 		}
 
 		add_submenu_page(
@@ -355,6 +368,10 @@ class LeadFlow_Core {
 
 	public function display_upgrade() {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/upgrade.php';
+	}
+
+	public function display_audit_report() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/audit-report.php';
 	}
 
 	public function enqueue_styles() {
