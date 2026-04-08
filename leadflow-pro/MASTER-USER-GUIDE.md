@@ -7,7 +7,8 @@ Welcome to the documentation for **LeadFlow Pro** — the most advanced autonomo
 ### Installation
 1. Upload the `leadflow-pro` folder to your `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Upon activation, the plugin will automatically create 14 custom database tables for maximum performance.
+3. Upon activation, the plugin will automatically create 16 custom database tables for maximum performance.
+4. **Setup Wizard:** Follow the interactive Setup Wizard to configure your agency identity and API keys in under 3 minutes.
 
 ### License Activation
 1. Navigate to **LeadFlow Pro > Settings > License**.
@@ -57,6 +58,12 @@ Based on your current **Lead Velocity** and **Pipeline Value**, the dashboard pr
 ---
 
 ## 🛡️ 5. Safety & Compliance
+
+### Lead Enrichment (Pro)
+Found a lead but missing their email? Use the **🔍 Enrich Lead** button in the CRM. LeadFlow Pro connects to Hunter.io and Clearbit to find valid contact details and social profiles automatically.
+
+### Branded Audit Reports (Sales Collateral)
+Generate a professional **📄 Branded Report** from the Lead Detail view. Share this clean HTML/PDF audit with leads to visually prove their website's technical flaws and increase your closing rate.
 
 ### Auto-Discovery
 Save your search parameters and enable **Auto-Discover**. The plugin will run these searches daily and import new leads while you sleep.

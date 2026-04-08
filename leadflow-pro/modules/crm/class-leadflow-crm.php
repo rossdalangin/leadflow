@@ -18,8 +18,10 @@ class LeadFlow_CRM {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		if ( ! LeadFlow_License::check_limit( 'leads' ) ) {
-			return new WP_Error( 'limit_reached', 'Lead limit reached on Free plan.' );
+		$assigned_to = isset( $data['assigned_to'] ) ? (int) $data['assigned_to'] : get_current_user_id();
+
+		if ( ! LeadFlow_License::check_limit( 'leads', $assigned_to ) ) {
+			return new WP_Error( 'limit_reached', 'Lead limit reached for this user or plan.' );
 		}
 
 		$defaults = array(
@@ -60,6 +62,8 @@ class LeadFlow_CRM {
 		delete_transient( 'leadflow_leads_by_status' );
 
 		$lead_id = $wpdb->insert_id;
+
+		LeadFlow_Webhooks::trigger( 'lead_created', $data );
 
 		// Add lead to scraping queue
 		if ( ! empty( $data['website_url'] ) ) {
@@ -167,24 +171,13 @@ class LeadFlow_CRM {
 	 * Trigger external webhook.
 	 */
 	private static function trigger_webhook( $lead_id, $event ) {
-		$url = get_option( "leadflow_webhook_$event" );
-		if ( ! $url || ! LeadFlow_License::is_pro() ) return;
-
 		global $wpdb;
 		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}leadflow_leads WHERE id = %d", $lead_id ), ARRAY_A );
-
-		wp_remote_post( $url, array(
-			'body' => array(
-				'event' => $event,
-				'lead'  => $lead,
-				'site'  => get_site_url(),
-				'timestamp' => current_time('timestamp')
-			)
-		) );
+		LeadFlow_Webhooks::trigger( "lead_$event", $lead );
 	}
 
 	/**
-	 * Calculate lead score based on data completeness (0-100).
+	 * Calculate lead score based on data completeness and custom rules (0-100).
 	 */
 	public static function calculate_completeness_score( $lead_id ) {
 		global $wpdb;
@@ -193,6 +186,7 @@ class LeadFlow_CRM {
 
 		if ( ! $lead ) return 0;
 
+		// Default weights
 		$w_name   = (int) get_option( 'leadflow_weight_name', 20 );
 		$w_url    = (int) get_option( 'leadflow_weight_url', 20 );
 		$w_email  = (int) get_option( 'leadflow_weight_email', 30 );
@@ -206,7 +200,31 @@ class LeadFlow_CRM {
 		if ( ! empty( $lead->phone ) ) $score += $w_phone;
 		if ( ! empty( $lead->social_links ) && '[]' !== $lead->social_links ) $score += $w_social;
 
-		return min( $score, 100 );
+		// Apply Custom Scoring Rules (Pro Feature)
+		if ( LeadFlow_License::is_pro() ) {
+			$rules = get_option( 'leadflow_scoring_rules', array() );
+			$audit = json_decode( $lead->audit_data, true ) ?: array();
+
+			foreach ( $rules as $rule ) {
+				$match = false;
+				$key = $rule['key'];
+				$val = $rule['value'];
+
+				if ( isset( $audit[$key] ) ) {
+					if ( is_bool( $audit[$key] ) ) {
+						$match = ( (bool) $val === $audit[$key] );
+					} else {
+						$match = ( stripos( (string) $audit[$key], (string) $val ) !== false );
+					}
+				}
+
+				if ( $match ) {
+					$score += (int) $rule['points'];
+				}
+			}
+		}
+
+		return max( 0, min( $score, 100 ) );
 	}
 
 	/**

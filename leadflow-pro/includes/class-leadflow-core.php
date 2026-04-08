@@ -28,6 +28,7 @@ class LeadFlow_Core {
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-loader.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-security.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-logger.php';
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-webhooks.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-deliverability.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-meta.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-license.php';
@@ -247,7 +248,7 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_pass' );
 		register_setting( 'leadflow-settings-group', 'leadflow_imap_encryption' );
 		register_setting( 'leadflow-settings-group', 'leadflow_email_signature' );
-		register_setting( 'leadflow-settings-group', 'leadflow_webhook_qualified' );
+		register_setting( 'leadflow-settings-group', 'leadflow_webhooks' );
 		register_setting( 'leadflow-settings-group', 'leadflow_weight_name' );
 		register_setting( 'leadflow-settings-group', 'leadflow_weight_url' );
 		register_setting( 'leadflow-settings-group', 'leadflow_weight_email' );
@@ -256,6 +257,7 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_auto_archive_negative' );
 
 		// Lead Magnet Settings
+		register_setting( 'leadflow-settings-group', 'leadflow_scoring_rules' );
 		register_setting( 'leadflow-magnet-group', 'leadflow_magnet_success' );
 		register_setting( 'leadflow-magnet-group', 'leadflow_magnet_redirect' );
 

@@ -103,8 +103,21 @@ class LeadFlow_License {
 
 		switch ( $resource ) {
 			case 'leads':
+				// Global check
 				$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads" );
-				return $count < 50;
+				if ( ! self::is_pro() && $count >= 50 ) return false;
+
+				// Team Quota check (Pro feature)
+				$args = func_get_args();
+				$user_id = isset( $args[1] ) ? $args[1] : get_current_user_id();
+				$quota = (int) get_option( "leadflow_quota_user_$user_id", 0 );
+
+				if ( $quota > 0 ) {
+					$user_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}leads WHERE assigned_to = %d", $user_id ) );
+					if ( $user_count >= $quota ) return false;
+				}
+
+				return true;
 			case 'campaigns':
 				$count = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}campaigns" );
 				return $count < 1;

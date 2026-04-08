@@ -18,6 +18,9 @@ Create a new lead. Also triggers background audit if website URL is provided.
 ### `POST /leads/(?P<id>\d+)`
 Update an existing lead record. Automatically updates Lead Score.
 
+### `POST /leads/(?P<id>\d+)/enrich`
+Manually trigger Hunter.io/Clearbit enrichment for a lead.
+
 ### `GET /leads/(?P<id>\d+)/activity`
 Get combined activity log (emails + notes) for a lead.
 
@@ -98,6 +101,12 @@ Send a test email to verify SMTP/Gmail config.
 
 ### `POST /settings/revoke-gmail`
 Disconnect Gmail API account.
+
+### `GET /settings/domain-health`
+Perform DNS checks for SPF/DKIM/DMARC.
+
+### `GET /settings/logs`
+Fetch the latest system background logs.
 
 ## Analytics Module
 

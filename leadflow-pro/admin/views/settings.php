@@ -8,6 +8,7 @@
 		<a href="#ai" class="nav-tab"><span class="dashicons dashicons-cloud"></span> AI Provider</a>
 		<a href="#license" class="nav-tab"><span class="dashicons dashicons-shield"></span> License</a>
 		<a href="#whitelabel" class="nav-tab"><span class="dashicons dashicons-admin-appearance"></span> White-label</a>
+		<a href="#team" class="nav-tab"><span class="dashicons dashicons-groups"></span> Team Quotas</a>
 		<a href="#webhooks" class="nav-tab"><span class="dashicons dashicons-rest-api"></span> Webhooks</a>
 		<a href="#status" class="nav-tab"><span class="dashicons dashicons-performance"></span> System Status</a>
 		<a href="#logs" class="nav-tab"><span class="dashicons dashicons-list-view"></span> Logs</a>
@@ -42,6 +43,28 @@
 				<tr>
 					<th scope="row">Scraping Ethics (Crawl Delay)</th>
 					<td><input type="number" name="leadflow_crawl_delay" value="<?php echo esc_attr( get_option( 'leadflow_crawl_delay', 2 ) ); ?>" class="small-text"> seconds</td>
+				</tr>
+				<tr>
+					<th scope="row">Custom Scoring Rules (Pro)</th>
+					<td>
+						<div id="scoringRulesContainer">
+							<?php
+							$rules = get_option( 'leadflow_scoring_rules', array() );
+							foreach ( $rules as $index => $rule ) :
+							?>
+								<div class="scoring-rule-row" style="margin-bottom:10px; display:flex; gap:10px;">
+									<select name="leadflow_scoring_rules[<?php echo $index; ?>][key]">
+										<option value="has_ssl" <?php selected( 'has_ssl', $rule['key'] ); ?>>Has SSL</option>
+										<option value="cms" <?php selected( 'cms', $rule['key'] ); ?>>CMS</option>
+										<option value="is_ecommerce" <?php selected( 'is_ecommerce', $rule['key'] ); ?>>eCommerce</option>
+									</select>
+									<input type="text" name="leadflow_scoring_rules[<?php echo $index; ?>][value]" value="<?php echo esc_attr( $rule['value'] ); ?>" placeholder="Value">
+									<input type="number" name="leadflow_scoring_rules[<?php echo $index; ?>][points]" value="<?php echo esc_attr( $rule['points'] ); ?>" style="width:60px;"> pts
+								</div>
+							<?php endforeach; ?>
+						</div>
+						<p class="description">Add points for specific technical signals found during audit.</p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row">AI Outreach Language</th>
@@ -225,6 +248,24 @@
 			</table>
 		</div>
 
+		<div id="team" class="settings-section" style="display:none;">
+			<h2>Agency Team Quotas (Pro)</h2>
+			<p class="description">Set lead limits for individual team members to manage workload and resource allocation.</p>
+			<table class="form-table">
+				<?php
+				$users = get_users(array('role__in' => array('administrator', 'editor')));
+				foreach ($users as $user) : ?>
+					<tr>
+						<th scope="row"><?php echo esc_html($user->display_name); ?></th>
+						<td>
+							<input type="number" name="leadflow_quota_user_<?php echo $user->ID; ?>" value="<?php echo esc_attr(get_option('leadflow_quota_user_' . $user->ID, 0)); ?>" class="small-text"> leads
+							<p class="description">Set to 0 for unlimited (Pro global limits still apply).</p>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</table>
+		</div>
+
 		<div id="whitelabel" class="settings-section" style="display:none;">
 			<h2>Agency White-labeling (Pro)</h2>
 			<p class="description">Rebrand the plugin interface for your clients. Changes will apply to the main menu and dashboard titles.</p>
@@ -241,17 +282,25 @@
 		</div>
 
 		<div id="webhooks" class="settings-section" style="display:none;">
-			<h2>Webhook Integrations (Pro)</h2>
-			<p class="description">Connect LeadFlow Pro to external tools like Zapier or Make.com. Trigger actions when leads change status.</p>
-			<table class="form-table">
-				<tr>
-					<th scope="row">Qualified Lead Webhook URL</th>
-					<td>
-						<input type="url" name="leadflow_webhook_qualified" value="<?php echo esc_url( get_option( 'leadflow_webhook_qualified' ) ); ?>" class="regular-text" placeholder="https://hooks.zapier.com/...">
-						<p class="description">Triggers when a lead is automatically or manually marked as 'Qualified'.</p>
-					</td>
-				</tr>
-			</table>
+			<h2>Advanced Webhook Manager (Pro)</h2>
+			<p class="description">Send real-time data to external apps (Zapier, Make, custom APIs) when key events happen.</p>
+
+			<div id="webhookList">
+				<?php
+				$webhooks = get_option('leadflow_webhooks', array());
+				foreach ($webhooks as $i => $wh) : ?>
+					<div class="webhook-row chart-box" style="margin-bottom:15px; padding:20px;">
+						<p><label>Webhook URL</label><br><input type="url" name="leadflow_webhooks[<?php echo $i; ?>][url]" value="<?php echo esc_url($wh['url']); ?>" class="large-text"></p>
+						<p><label>Trigger Events</label><br>
+							<?php $evts = isset($wh['events']) ? $wh['events'] : array(); ?>
+							<label><input type="checkbox" name="leadflow_webhooks[<?php echo $i; ?>][events][]" value="lead_created" <?php checked(in_array('lead_created', $evts)); ?>> Lead Created</label>
+							<label style="margin-left:15px;"><input type="checkbox" name="leadflow_webhooks[<?php echo $i; ?>][events][]" value="lead_qualified" <?php checked(in_array('lead_qualified', $evts)); ?>> Lead Qualified</label>
+							<label style="margin-left:15px;"><input type="checkbox" name="leadflow_webhooks[<?php echo $i; ?>][events][]" value="lead_replied" <?php checked(in_array('lead_replied', $evts)); ?>> Lead Replied</label>
+						</p>
+					</div>
+				<?php endforeach; ?>
+			</div>
+			<button type="button" class="button" onclick="alert('Multiple webhooks is a Pro feature.')">+ Add New Webhook</button>
 		</div>
 
 		<div id="logs" class="settings-section" style="display:none;">
