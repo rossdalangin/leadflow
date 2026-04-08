@@ -43,13 +43,26 @@ LeadFlow Pro uses a **Unified AI Adapter**. You can switch between providers wit
 
 ## 📊 4. ROI & Performance
 
-### Daily Pulse
-Check your Dashboard every morning. The **Daily Pulse** widget highlights:
-- Leads who replied but haven't been followed up with.
-- Failed website audits that need manual review.
+### Daily Pulse & Global Tasks
+LeadFlow Pro keeps you organized with a unified command center.
+- **Daily Pulse:** Automatically identifies leads needing immediate attention (e.g., replied but no follow-up).
+- **Global Tasks:** A dedicated dashboard for all manual actions created by your campaigns (calls, LinkedIn messages, etc.).
+
+### AI Sentiment Trends
+The **Sentiment Pulse** chart on your dashboard aggregates lead replies over 30 days, showing you the ratio of positive interest vs. opt-outs at a glance.
 
 ### Growth Forecast
-Based on your current **Lead Velocity**, the dashboard predicts your pipeline value for the next 30 days, helping you scale your agency predictably.
+Based on your current **Lead Velocity** and **Pipeline Value**, the dashboard predicts your future revenue potential, helping you scale your agency predictably.
+
+---
+
+## 🛡️ 5. Safety & Compliance
+
+### Auto-Discovery
+Save your search parameters and enable **Auto-Discover**. The plugin will run these searches daily and import new leads while you sleep.
+
+### Sending Safety
+To protect your email reputation, you can set **Daily Sending Limits** per campaign and the system automatically adds **Randomized Jitter** between sends.
 
 ---
 

@@ -23,6 +23,13 @@
 				<option value="Closed Lost">Closed Lost</option>
 			</select>
 			<input type="text" id="leadSearch" placeholder="Search leads...">
+			<select id="leadMetaKeyFilter">
+				<option value="">No Meta Filter</option>
+				<option value="cms">CMS</option>
+				<option value="page_builder">Page Builder</option>
+				<option value="is_ecommerce">eCommerce</option>
+			</select>
+			<input type="text" id="leadMetaValueFilter" placeholder="Meta value (e.g. WordPress)">
 			<button class="button" id="applyFilters">Apply Filters</button>
 		</div>
 
@@ -44,8 +51,8 @@
 				<thead>
 					<tr>
 						<th class="manage-column column-cb check-column"><input type="checkbox" id="selectAllLeads"></th>
-						<th>Business Name</th>
-						<th>Score</th>
+						<th title="Company name and associated lead tags.">Business Name <span class="dashicons dashicons-editor-help" style="font-size:12px;"></span></th>
+						<th title="Data completeness score (0-100%).">Score <span class="dashicons dashicons-editor-help" style="font-size:12px;"></span></th>
 						<th>Website</th>
 						<th>Email</th>
 						<th>Assigned To</th>
@@ -72,6 +79,7 @@
 				</select>
 				<button class="button" id="applyBulkStatus">Apply Status</button>
 				<button class="button" id="bulkAuditLeads" style="margin-left:10px;">Bulk Audit</button>
+				<button class="button" id="bulkAiHooks" style="margin-left:10px;">✨ Bulk AI Hooks</button>
 				<button class="button" id="bulkDeleteLeads" style="color:#d63638; margin-left:10px;">Bulk Delete</button>
 			</div>
 		</div>

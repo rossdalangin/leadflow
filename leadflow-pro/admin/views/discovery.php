@@ -33,9 +33,10 @@
 	</div>
 
 	<div id="savedSearchesSection" class="chart-box" style="margin-top: 20px;">
-		<h3>Saved Searches</h3>
+		<h3>Saved Searches & Auto-Discovery</h3>
+		<p class="description">Enable "Auto-Discover" to have LeadFlow Pro automatically run these searches daily and import new leads.</p>
 		<table class="wp-list-table widefat fixed striped">
-			<thead><tr><th>Name</th><th>Source</th><th>Keyword</th><th>Location</th><th>Actions</th></tr></thead>
+			<thead><tr><th>Name</th><th>Source</th><th>Keyword</th><th>Location</th><th>Auto-Discover</th><th>Last Run</th><th>Actions</th></tr></thead>
 			<tbody id="savedSearchesBody"></tbody>
 		</table>
 	</div>

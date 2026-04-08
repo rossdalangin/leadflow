@@ -175,6 +175,30 @@ class LeadFlow_Analytics {
 	}
 
 	/**
+	 * Get sentiment breakdown for the last 30 days.
+	 */
+	public static function get_sentiment_pulse() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$results = $wpdb->get_results( "
+			SELECT
+				CASE
+					WHEN content LIKE '%Sentiment: Positive%' THEN 'Positive'
+					WHEN content LIKE '%Sentiment: Negative%' THEN 'Negative'
+					WHEN content LIKE '%Sentiment: Unsubscribe%' THEN 'Opt-out'
+					ELSE 'Neutral'
+				END as sentiment,
+				COUNT(*) as count
+			FROM {$prefix}lead_notes
+			WHERE content LIKE 'Inbound Reply%'
+			AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+			GROUP BY sentiment", ARRAY_A );
+
+		return $results;
+	}
+
+	/**
 	 * Get latest activity across the plugin.
 	 */
 	public static function get_recent_activity( $limit = 10 ) {

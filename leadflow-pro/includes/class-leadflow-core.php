@@ -36,6 +36,7 @@ class LeadFlow_Core {
 		require_once LEADFLOW_PRO_PATH . 'modules/crm/class-leadflow-crm.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/scraper/class-leadflow-scraper.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-outreach.php';
+		require_once LEADFLOW_PRO_PATH . 'modules/outreach/class-leadflow-queue.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-email.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/email/class-leadflow-templates.php';
 		require_once LEADFLOW_PRO_PATH . 'modules/compliance/class-leadflow-compliance.php';
@@ -127,6 +128,7 @@ class LeadFlow_Core {
 
 	private function define_public_hooks() {
 		$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
+		$this->loader->add_action( 'leadflow_process_auto_discovery', 'LeadFlow_Discovery', 'process_auto_discovery' );
 		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
 		$this->loader->add_action( 'leadflow_process_sending_queue', 'LeadFlow_Outreach', 'process_sending_queue' );
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
@@ -299,6 +301,7 @@ class LeadFlow_Core {
 			add_submenu_page( 'leadflow-pro', 'Campaigns', 'Campaigns', 'edit_posts', 'leadflow-campaigns', array( $this, 'display_campaigns' ) );
 			add_submenu_page( 'leadflow-pro', 'Inbox', 'Inbox', 'edit_posts', 'leadflow-inbox', array( $this, 'display_inbox' ) );
 			add_submenu_page( 'leadflow-pro', 'Email Templates', 'Templates', 'edit_posts', 'leadflow-templates', array( $this, 'display_templates' ) );
+			add_submenu_page( 'leadflow-pro', 'Global Tasks', 'Tasks', 'edit_posts', 'leadflow-tasks', array( $this, 'display_tasks' ) );
 			add_submenu_page( 'leadflow-pro', 'Settings', 'Settings', 'manage_options', 'leadflow-settings', array( $this, 'display_settings' ) );
 		} else {
 			add_submenu_page( 'leadflow-pro', 'Activate', 'Activate License', 'manage_options', 'leadflow-pro', array( $this, 'display_activation' ) );
@@ -340,6 +343,10 @@ class LeadFlow_Core {
 
 	public function display_templates() {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/templates.php';
+	}
+
+	public function display_tasks() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/tasks.php';
 	}
 
 	public function display_settings() {

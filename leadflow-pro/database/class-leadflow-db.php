@@ -72,6 +72,8 @@ class LeadFlow_DB {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			name varchar(100) NOT NULL,
 			goal text,
+			conversion_status varchar(30) DEFAULT 'Qualified',
+			daily_limit int(10) unsigned DEFAULT 50,
 			status_filter varchar(30),
 			is_active tinyint(1) DEFAULT 0,
 			start_hour tinyint(2) DEFAULT 9,
@@ -155,6 +157,8 @@ class LeadFlow_DB {
 			source varchar(20) NOT NULL,
 			keyword varchar(255) NOT NULL,
 			location varchar(255),
+			auto_discover tinyint(1) DEFAULT 0,
+			last_run_at datetime,
 			created_at datetime NOT NULL,
 			PRIMARY KEY  (id)
 		) $charset_collate;

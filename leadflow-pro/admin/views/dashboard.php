@@ -24,7 +24,7 @@ $roi = LeadFlow_Analytics::get_roi_metrics();
 		     Pro Tip: Watch the Open Rate; if it drops below 20%, try the AI Subject Line Generator. -->
 		<div class="kpi-card">
 			<span class="dashicons dashicons-groups" style="font-size:32px; color:var(--leadflow-primary);"></span>
-			<h3>Total Leads</h3>
+			<h3 title="Total number of leads discovered or imported into your CRM.">Total Leads <span class="dashicons dashicons-editor-help" style="font-size:14px; vertical-align:middle; cursor:help;"></span></h3>
 			<p class="kpi-value"><?php echo esc_html( $total_leads ); ?></p>
 		</div>
 		<div class="kpi-card">
@@ -44,7 +44,7 @@ $roi = LeadFlow_Analytics::get_roi_metrics();
 		</div>
 		<div class="kpi-card">
 			<span class="dashicons dashicons-chart-line" style="font-size:32px; color:var(--leadflow-secondary);"></span>
-			<h3>Lead Velocity</h3>
+			<h3 title="Percentage growth in new leads compared to the previous 30-day period.">Lead Velocity <span class="dashicons dashicons-editor-help" style="font-size:14px; vertical-align:middle; cursor:help;"></span></h3>
 			<p class="kpi-value" style="color: <?php echo $roi['lead_velocity'] >= 0 ? '#10b981' : '#ef4444'; ?>;">
 				<?php echo ( $roi['lead_velocity'] > 0 ? '+' : '' ) . $roi['lead_velocity']; ?>%
 			</p>
@@ -72,6 +72,10 @@ $roi = LeadFlow_Analytics::get_roi_metrics();
 		<div class="chart-box">
 			<h3>Leads by Assignee</h3>
 			<canvas id="leadsAssigneeChart"></canvas>
+		</div>
+		<div class="chart-box">
+			<h3>Sentiment Pulse (30d)</h3>
+			<canvas id="sentimentPulseChart"></canvas>
 		</div>
 	</div>
 

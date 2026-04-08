@@ -198,6 +198,13 @@ class LeadFlow_Outreach {
 
 				// Respect business hours
 				if ( $current_hour < $campaign->start_hour || $current_hour >= $campaign->end_hour ) continue;
+
+				// Respect daily limits
+				$sent_today = $wpdb->get_var( $wpdb->prepare(
+					"SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND DATE(created_at) = CURDATE()",
+					$campaign->id
+				) );
+				if ( $sent_today >= $campaign->daily_limit ) continue;
 			}
 
 			$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}leads WHERE id = %d", $item->lead_id ) );
@@ -210,6 +217,8 @@ class LeadFlow_Outreach {
 
 			if ( 'email' === $step->step_type ) {
 				self::send_step_email( $lead, $step, $item->campaign_id );
+				// Randomized jitter between sends to avoid bot detection (10-30 seconds)
+				if ( count($items) > 1 ) sleep( rand( 10, 30 ) );
 			} else {
 				self::create_manual_task( $lead, $step, $item->campaign_id );
 			}
@@ -268,6 +277,19 @@ class LeadFlow_Outreach {
 			);
 
 			LeadFlow_CRM::update_status( $lead->id, 'Contacted' );
+		} else {
+			// Log error for debugging
+			global $wpdb;
+			$prefix = $wpdb->prefix . 'leadflow_';
+			$wpdb->insert( "{$prefix}email_log", array(
+				'lead_id'     => $lead->id,
+				'campaign_id' => $campaign_id,
+				'step_id'     => $step->id,
+				'subject'     => 'FAILED: ' . $personalized_subj,
+				'status'      => 'Failed',
+				'created_at'  => current_time( 'mysql' ),
+			) );
+			LeadFlow_CRM::add_note( $lead->id, "Email Failed: " . $sent->get_error_message(), 0 );
 		}
 	}
 

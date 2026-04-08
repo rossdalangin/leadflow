@@ -88,10 +88,13 @@ class LeadFlow_Discovery {
 		if ( isset( $body['results'] ) ) {
 			$leads = array();
 			foreach ( $body['results'] as $place ) {
+				// To get website and formatted phone number, we often need a separate Details call
+				$details = self::get_place_details( $place['place_id'], $api_key );
+
 				$lead_data = array(
-					'business_name' => $place['name'],
-					'website_url'   => isset( $place['website'] ) ? $place['website'] : '',
-					'phone'         => isset( $place['formatted_phone_number'] ) ? $place['formatted_phone_number'] : '',
+					'business_name' => isset( $details['name'] ) ? $details['name'] : $place['name'],
+					'website_url'   => isset( $details['website'] ) ? $details['website'] : '',
+					'phone'         => isset( $details['formatted_phone_number'] ) ? $details['formatted_phone_number'] : ( isset( $place['formatted_phone_number'] ) ? $place['formatted_phone_number'] : '' ),
 					'email'         => '', // Google Places doesn't return emails directly
 					'lead_source'   => 'Google Places',
 				);
@@ -104,6 +107,21 @@ class LeadFlow_Discovery {
 		}
 
 		return array();
+	}
+
+	/**
+	 * Fetch detailed information for a specific place.
+	 */
+	private static function get_place_details( $place_id, $api_key ) {
+		$url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$place_id&fields=name,website,formatted_phone_number&key=$api_key";
+		$response = wp_remote_get( $url );
+
+		if ( is_wp_error( $response ) ) {
+			return array();
+		}
+
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		return isset( $body['result'] ) ? $body['result'] : array();
 	}
 
 	/**
@@ -213,5 +231,38 @@ class LeadFlow_Discovery {
 		if ( is_wp_error( $response ) ) return false;
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 		return ( 'OK' === $body['status'] || 'ZERO_RESULTS' === $body['status'] );
+	}
+
+	/**
+	 * Process all Auto-Discover searches.
+	 */
+	public static function process_auto_discovery() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$searches = $wpdb->get_results( "SELECT * FROM {$prefix}saved_searches WHERE auto_discover = 1" );
+
+		foreach ( $searches as $search ) {
+			// Throttle: only run once every 24 hours
+			if ( $search->last_run_at && ( time() - strtotime( $search->last_run_at ) < DAY_IN_SECONDS ) ) {
+				continue;
+			}
+
+			if ( 'google' === $search->source ) {
+				$leads = self::search_google_places( $search->keyword, $search->location );
+			} elseif ( 'linkedin' === $search->source ) {
+				$leads = self::search_linkedin( $search->keyword );
+			} elseif ( 'facebook' === $search->source ) {
+				$leads = self::search_facebook_groups( $search->keyword );
+			}
+
+			if ( ! is_wp_error( $leads ) && ! empty( $leads ) ) {
+				foreach ( $leads as $lead ) {
+					LeadFlow_CRM::create_lead( $lead );
+				}
+			}
+
+			$wpdb->update( "{$prefix}saved_searches", array( 'last_run_at' => current_time( 'mysql' ) ), array( 'id' => $search->id ) );
+		}
 	}
 }

@@ -68,9 +68,20 @@
 
 		// Fetch Leads for Table
 		function fetchLeads() {
+			const status = $('#leadStatusFilter').val();
+			const search = $('#leadSearch').val();
+			const metaKey = $('#leadMetaKeyFilter').val();
+			const metaValue = $('#leadMetaValueFilter').val();
+
 			$.ajax({
 				url: apiUrl + "/leads",
 				method: "GET",
+				data: {
+					status: status,
+					search: search,
+					meta_key: metaKey,
+					meta_value: metaValue
+				},
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader("X-WP-Nonce", nonce);
 				},
@@ -79,6 +90,10 @@
 				}
 			});
 		}
+
+		$('#applyFilters').on('click', function() {
+			fetchLeads();
+		});
 
 		// Bulk Import Selected
 		$('#importSelectedLeads').on('click', function() {
@@ -112,6 +127,38 @@
 							alert('Bulk import complete!');
 							btn.text(originalText).prop('disabled', false);
 							location.reload();
+						}
+					}
+				});
+			});
+		});
+
+		// Bulk AI Outreach Hooks
+		$('#bulkAiHooks').on('click', function() {
+			const selectedIds = [];
+			$('.lead-checkbox:checked').each(function() {
+				selectedIds.push($(this).val());
+			});
+
+			if (selectedIds.length === 0) return;
+			if (!isPro) { showUpgradeModal('Bulk AI Personalization'); return; }
+
+			const btn = $(this);
+			btn.text('Thinking...').prop('disabled', true);
+
+			let processed = 0;
+			selectedIds.forEach(id => {
+				$.ajax({
+					url: apiUrl + '/leads/' + id + '/ai-hook',
+					method: 'POST',
+					beforeSend: function(xhr) {
+						xhr.setRequestHeader('X-WP-Nonce', nonce);
+					},
+					success: function() {
+						processed++;
+						if (processed === selectedIds.length) {
+							alert('Bulk AI Hooks generated and added to activity logs!');
+							btn.text('✨ Bulk AI Hooks').prop('disabled', false);
 						}
 					}
 				});
@@ -450,7 +497,7 @@
 			leads.forEach(lead => {
 				const audit = safeJsonParse(lead.audit_data);
 				const score = lead.completeness_score || 0;
-					const tagsHtml = (lead.tags || []).map(t => `<span class="status-badge" style="font-size:0.65rem; margin-right:4px;">${escapeHtml(t.name)}</span>`).join('');
+				const tagsHtml = (lead.tags || []).map(t => `<span class="status-badge" style="font-size:0.65rem; margin-right:4px;">${escapeHtml(t.name)}</span>`).join('');
 				const row = $(`
 					<tr>
 						<th class="check-column"><input type="checkbox" class="lead-checkbox" value="${lead.id}"></th>
@@ -505,15 +552,15 @@
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
-				success: function(data) {
-					const thread = $('#detailLeadThread');
-					thread.empty();
-					const items = [...data.notes, ...data.emails];
-					items.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-					items.forEach(item => {
-						const type = item.subject ? 'email' : 'note';
-						const content = item.body || item.content || item.subject;
-						thread.append(`<div class="thread-item ${type}"><div class="thread-meta">${item.created_at}</div><div class="thread-content">${content}</div></div>`);
+				success: function(actData) {
+					const detailThread = $('#detailLeadThread');
+					detailThread.empty();
+					const detailItems = [...actData.notes, ...actData.emails];
+					detailItems.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+					detailItems.forEach(item => {
+						const itemType = item.subject ? 'email' : 'note';
+						const itemContent = item.body || item.content || item.subject;
+						detailThread.append(`<div class="thread-item ${itemType}"><div class="thread-meta">${item.created_at}</div><div class="thread-content">${itemContent}</div></div>`);
 					});
 				}
 			});
@@ -525,38 +572,38 @@
 				beforeSend: function(xhr) {
 					xhr.setRequestHeader('X-WP-Nonce', nonce);
 				},
-				success: function(leads) {
-					const lead = Array.isArray(leads) ? leads.find(l => l.id == leadId) : leads;
-					if (!lead) return;
-					window.currentLead = lead; // Update global context for AI buttons
-					$('#detailLeadName').text(escapeHtml(lead.business_name));
+				success: function(leadsList) {
+					const targetLead = Array.isArray(leadsList) ? leadsList.find(l => l.id == leadId) : leadsList;
+					if (!targetLead) return;
+					window.currentLead = targetLead; // Update global context for AI buttons
+					$('#detailLeadName').text(escapeHtml(targetLead.business_name));
 
-					if (lead.audit_data) {
-						const audit = safeJsonParse(lead.audit_data);
-						const tags = lead.tags || [];
-						let html = `
+					if (targetLead.audit_data) {
+						const auditDataObj = safeJsonParse(targetLead.audit_data);
+						const leadTags = targetLead.tags || [];
+						let sidebarHtml = `
 							<div class="lead-tags-sidebar" style="margin-bottom:20px;">
-								${tags.map(t => `<span class="status-badge" style="margin-bottom:5px; position:relative; padding-right:20px;">${escapeHtml(t.name)} <span class="remove-tag-icon" data-tag-id="${t.id}" style="position:absolute; right:5px; cursor:pointer; font-weight:bold;">×</span></span>`).join(' ')}
+								${leadTags.map(t => `<span class="status-badge" style="margin-bottom:5px; position:relative; padding-right:20px;">${escapeHtml(t.name)} <span class="remove-tag-icon" data-tag-id="${t.id}" style="position:absolute; right:5px; cursor:pointer; font-weight:bold;">×</span></span>`).join(' ')}
 							</div>
 							<div class="audit-summary">
 								<div class="audit-score-gauge" style="text-align:center; margin-bottom:20px;">
-									<div style="font-size:3rem;">${audit.has_ssl && audit.is_mobile_responsive ? '✅' : '⚠️'}</div>
+									<div style="font-size:3rem;">${auditDataObj.has_ssl && auditDataObj.is_mobile_responsive ? '✅' : '⚠️'}</div>
 									<strong>Audit Status</strong>
 								</div>
 								<ul class="audit-checklist">
-									<li class="${audit.has_ssl ? 'success' : 'danger'}">${audit.has_ssl ? '✅ SSL Certificate Found' : '❌ No SSL (Security Risk)'}</li>
-									<li class="${audit.is_mobile_responsive ? 'success' : 'danger'}">${audit.is_mobile_responsive ? '✅ Mobile Responsive' : '❌ Not Mobile Friendly'}</li>
-									<li class="${audit.has_contact_form ? 'success' : 'danger'}">${audit.has_contact_form ? '✅ Contact Form Detected' : '❌ No Contact Form Found'}</li>
-									<li class="${audit.outdated_design ? 'danger' : 'success'}">${audit.outdated_design ? '❌ Outdated Design (Old Copyright)' : '✅ Modern Design Signals'}</li>
-									<li style="font-weight:bold; border-top:1px solid #eee; padding-top:10px; margin-top:10px;">⏱️ Response Time: ${audit.load_time || 0}s</li>
+									<li class="${auditDataObj.has_ssl ? 'success' : 'danger'}">${auditDataObj.has_ssl ? '✅ SSL Certificate Found' : '❌ No SSL (Security Risk)'}</li>
+									<li class="${auditDataObj.is_mobile_responsive ? 'success' : 'danger'}">${auditDataObj.is_mobile_responsive ? '✅ Mobile Responsive' : '❌ Not Mobile Friendly'}</li>
+									<li class="${auditDataObj.has_contact_form ? 'success' : 'danger'}">${auditDataObj.has_contact_form ? '✅ Contact Form Detected' : '❌ No Contact Form Found'}</li>
+									<li class="${auditDataObj.outdated_design ? 'danger' : 'success'}">${auditDataObj.outdated_design ? '❌ Outdated Design (Old Copyright)' : '✅ Modern Design Signals'}</li>
+									<li style="font-weight:bold; border-top:1px solid #eee; padding-top:10px; margin-top:10px;">⏱️ Response Time: ${auditDataObj.load_time || 0}s</li>
 								</ul>
-								<p><button class="button button-small manual-audit" data-id="${lead.id}">🔄 Re-Run Audit</button></p>
+								<p><button class="button button-small manual-audit" data-id="${targetLead.id}">🔄 Re-Run Audit</button></p>
 							</div>`;
-						$('#detailLeadSidebar').html(html);
+						$('#detailLeadSidebar').html(sidebarHtml);
 					}
 
 					$('#detailAiTools button').data('lead-id', leadId);
-					$('#proposalUrl').val(lead.proposal_url || '');
+					$('#proposalUrl').val(targetLead.proposal_url || '');
 					$('#saveProposalBtn').data('id', leadId);
 
 					// Update Timeline UI
@@ -1168,6 +1215,26 @@
 						});
 					}
 
+					// Sentiment Pulse Chart
+					if ($('#sentimentPulseChart').length && data.sentiment_pulse) {
+						const sentimentLabels = data.sentiment_pulse.map(s => s.sentiment);
+						const sentimentValues = data.sentiment_pulse.map(s => s.count);
+
+						new Chart(document.getElementById('sentimentPulseChart'), {
+							type: 'doughnut',
+							data: {
+								labels: sentimentLabels,
+								datasets: [{
+									data: sentimentValues,
+									backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#64748b']
+								}]
+							},
+							options: {
+								plugins: { legend: { position: 'bottom' } }
+							}
+						});
+					}
+
 					if ($('#leadsAssigneeChart').length) {
 						const assigneeLabels = data.assignee_counts.map(s => s.name);
 						const assigneeValues = data.assignee_counts.map(s => s.count);
@@ -1301,6 +1368,8 @@
 								<td>${escapeHtml(s.source)}</td>
 								<td>${escapeHtml(s.keyword)}</td>
 								<td>${escapeHtml(s.location || '-')}</td>
+								<td><input type="checkbox" class="toggle-auto-discover" data-id="${s.id}" ${s.auto_discover == 1 ? 'checked' : ''}></td>
+								<td>${s.last_run_at || 'Never'}</td>
 								<td>
 									<button class="button button-small run-saved-search" data-source="${s.source}" data-keyword="${s.keyword}" data-location="${s.location}">Run</button>
 									<button class="button button-small delete-saved-search" data-id="${s.id}" style="color:#d63638;">Delete</button>
@@ -1337,6 +1406,23 @@
 				success: function() {
 					alert('Search parameters saved!');
 					loadSavedSearches();
+				}
+			});
+		});
+
+		$(document).on('change', '.toggle-auto-discover', function() {
+			const id = $(this).data('id');
+			const autoDiscover = $(this).is(':checked') ? 1 : 0;
+
+			$.ajax({
+				url: apiUrl + '/discovery/saved-searches/' + id + '/auto-discover',
+				method: 'POST',
+				data: { auto_discover: autoDiscover },
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function() {
+					alert('Auto-Discovery ' + (autoDiscover ? 'enabled' : 'disabled') + ' for this search.');
 				}
 			});
 		});

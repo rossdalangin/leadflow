@@ -103,6 +103,11 @@ class LeadFlow_CRM {
 			$where[] = $wpdb->prepare( '(business_name LIKE %s OR email LIKE %s OR website_url LIKE %s)', '%' . $args['search'] . '%', '%' . $args['search'] . '%', '%' . $args['search'] . '%' );
 		}
 
+		// Meta filtering
+		if ( ! empty( $args['meta_key'] ) && ! empty( $args['meta_value'] ) ) {
+			$where[] = $wpdb->prepare( "id IN (SELECT lead_id FROM {$prefix}lead_meta WHERE meta_key = %s AND meta_value = %s)", $args['meta_key'], $args['meta_value'] );
+		}
+
 		$where_str = implode( ' AND ', $where );
 
 		$query = $wpdb->prepare(

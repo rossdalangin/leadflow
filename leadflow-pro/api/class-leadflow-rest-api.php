@@ -28,6 +28,30 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/ai-hook', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'generate_lead_ai_hook' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/tasks', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_tasks' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/discovery/saved-searches/(?P<id>\d+)/auto-discover', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'update_saved_search_auto_discover' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/tasks', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -483,6 +507,23 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 
+	public function generate_lead_ai_hook( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}leadflow_leads WHERE id = %d", $id ) );
+
+		if ( ! $lead ) {
+			return new WP_Error( 'not_found', 'Lead not found.', array( 'status' => 404 ) );
+		}
+
+		$audit_results = json_decode( $lead->audit_data, true ) ?: array();
+		$hook = LeadFlow_AI::summarize_audit( $audit_results );
+
+		LeadFlow_CRM::add_note( $id, "AI Outreach Hook: " . $hook, 0 );
+
+		return rest_ensure_response( array( 'success' => true, 'hook' => $hook ) );
+	}
+
 	public function get_users() {
 		$users = get_users( array( 'role__in' => array( 'administrator', 'editor' ) ) );
 		$data  = array();
@@ -638,6 +679,7 @@ class LeadFlow_REST_API {
 			'roi'             => LeadFlow_Analytics::get_roi_metrics(),
 			'daily_pulse'     => LeadFlow_Analytics::get_daily_pulse(),
 			'ab_insights'     => LeadFlow_Analytics::get_ab_test_insights(),
+			'sentiment_pulse' => LeadFlow_Analytics::get_sentiment_pulse(),
 		) );
 	}
 
@@ -654,12 +696,23 @@ class LeadFlow_REST_API {
 			$clicks = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND clicks_count > 0", $campaign->id ) );
 			$replies = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND status = 'Replied'", $campaign->id ) );
 
+			// Calculate conversion rate based on campaign goal
+			$goal_status = $wpdb->get_var( $wpdb->prepare( "SELECT conversion_status FROM {$prefix}campaigns WHERE id = %d", $campaign->id ) ) ?: 'Qualified';
+			$converted = $wpdb->get_var( $wpdb->prepare(
+				"SELECT COUNT(DISTINCT lead_id) FROM {$prefix}email_log e
+				 JOIN {$prefix}leads l ON e.lead_id = l.id
+				 WHERE e.campaign_id = %d AND l.status = %s",
+				$campaign->id, $goal_status
+			) );
+
 			$stats[] = array(
 				'name' => $campaign->name,
 				'sent' => $sent,
 				'opens' => $opens,
 				'clicks' => $clicks,
 				'replies' => $replies,
+				'conversions' => $converted,
+				'conversion_rate' => $sent > 0 ? round( ($converted / $sent) * 100, 1 ) : 0
 			);
 		}
 
@@ -752,6 +805,31 @@ class LeadFlow_REST_API {
 	public function delete_task( $request ) {
 		LeadFlow_CRM::delete_task( $request['id'] );
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_tasks( $request ) {
+		global $wpdb;
+		$status = $request->get_param( 'status' );
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$query = "
+			SELECT t.*, l.business_name, u.display_name as assignee_name
+			FROM {$prefix}tasks t
+			JOIN {$prefix}leads l ON t.lead_id = l.id
+			LEFT JOIN {$wpdb->users} u ON t.assigned_to = u.ID
+			WHERE 1=1";
+
+		if ( $status ) {
+			$query .= $wpdb->prepare( " AND t.status = %s", $status );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$query .= $wpdb->prepare( " AND (t.assigned_to = %d OR t.assigned_to IS NULL)", get_current_user_id() );
+		}
+
+		$query .= " ORDER BY t.due_date ASC";
+
+		return rest_ensure_response( $wpdb->get_results( $query ) );
 	}
 
 	public function add_lead_note( $request ) {
@@ -1013,6 +1091,17 @@ class LeadFlow_REST_API {
 		$id = $request['id'];
 		$prefix = $wpdb->prefix . 'leadflow_';
 		$wpdb->delete( "{$prefix}saved_searches", array( 'id' => $id ) );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function update_saved_search_auto_discover( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$auto_discover = (int) $request->get_param( 'auto_discover' );
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$wpdb->update( "{$prefix}saved_searches", array( 'auto_discover' => $auto_discover ), array( 'id' => $id ) );
+
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 
