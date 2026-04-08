@@ -70,6 +70,14 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/ai-hook', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'generate_lead_ai_hook' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/audit', array(
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
