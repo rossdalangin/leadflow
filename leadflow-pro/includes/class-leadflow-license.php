@@ -46,7 +46,9 @@ class LeadFlow_License {
 	 * Activate license key against the remote LeadFlow License Manager.
 	 */
 	public static function validate_license( $license_key ) {
-		$response = wp_remote_post( self::get_server_url() . '/activate', array(
+		$server_url = self::get_server_url();
+
+		$response = wp_remote_post( $server_url . '/activate', array(
 			'body' => array(
 				'license_key' => $license_key,
 				'domain'      => get_site_url(),
@@ -55,7 +57,12 @@ class LeadFlow_License {
 		) );
 
 		if ( is_wp_error( $response ) ) {
-			return array( 'success' => false, 'message' => 'Connection failed: ' . $response->get_error_message() );
+			return array( 'success' => false, 'message' => 'Failed to connect to license server at ' . $server_url . '. Error: ' . $response->get_error_message() );
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( $status_code !== 200 ) {
+			return array( 'success' => false, 'message' => 'License server returned HTTP ' . $status_code );
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );

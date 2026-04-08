@@ -403,11 +403,13 @@ class LeadFlow_Core {
 
 	public function maybe_redirect_to_wizard() {
 		if ( current_user_can( 'manage_options' ) && ! get_option( 'leadflow_setup_complete' ) ) {
+			// Skip for REST API, AJAX, or the setup page itself
+			if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) return;
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) return;
+
 			if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'leadflow-setup' ) {
-				if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
-					wp_safe_redirect( admin_url( 'admin.php?page=leadflow-setup' ) );
-					exit;
-				}
+				wp_safe_redirect( admin_url( 'admin.php?page=leadflow-setup' ) );
+				exit;
 			}
 		}
 	}

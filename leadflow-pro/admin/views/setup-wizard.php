@@ -86,21 +86,24 @@ jQuery(function($) {
 	$('#wizardActivateLicense').on('click', function() {
 		const key = $('#wizardLicenseKey').val();
 		const serverUrl = $('#wizardServerUrl').val();
-		if (!key || !serverUrl) return;
+		if (!key || !serverUrl) return alert('Please enter both key and server URL.');
 
 		$(this).text('Activating...').prop('disabled', true);
+		console.log('Attempting activation with URL:', apiUrl + '/license/activate');
 
 		$.ajax({
 			url: apiUrl + '/license/activate',
 			method: 'POST',
 			data: { license_key: key, license_server_url: serverUrl },
 			beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
-			success: function() {
+			success: function(response) {
+				console.log('Activation success:', response);
 				$('.wizard-step').hide();
 				$(`.wizard-step[data-step="2"]`).fadeIn();
 			},
 			error: function(err) {
-				alert(err.responseJSON ? err.responseJSON.message : 'Activation failed.');
+				console.error('Activation error:', err);
+				alert(err.responseJSON ? err.responseJSON.message : 'Activation failed. Status: ' + err.status);
 				$('#wizardActivateLicense').text('Activate & Continue').prop('disabled', false);
 			}
 		});
