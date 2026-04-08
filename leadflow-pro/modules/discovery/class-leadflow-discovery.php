@@ -28,12 +28,12 @@ class LeadFlow_Discovery {
 		// For this shippable version, we use an OAuth-ready structure that simulates data.
 		$leads = array(
 			array(
-				'business_name' => 'Tech Solutions Inc (LinkedIn)',
-				'website_url'   => 'https://techsolutions.io',
-				'phone'         => '',
-				'email'         => '',
+				'business_name' => $keyword . ' Expert (LinkedIn)',
+				'website_url'   => 'https://' . str_replace(' ', '', strtolower($keyword)) . '.io',
+				'phone'         => '+1-555-LINKED',
+				'email'         => 'contact@' . str_replace(' ', '', strtolower($keyword)) . '.io',
 				'lead_source'   => 'LinkedIn',
-				'social_links'  => wp_json_encode( array( 'linkedin' => 'https://linkedin.com/company/techsolutions' ) ),
+				'social_links'  => wp_json_encode( array( 'linkedin' => 'https://linkedin.com/in/sample-' . time() ) ),
 			),
 			array(
 				'business_name' => 'Creative Agency (LinkedIn)',

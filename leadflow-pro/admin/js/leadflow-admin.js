@@ -129,6 +129,33 @@
 		if ($('#leadTableBody').length) fetchLeads();
 		$('#applyFilters').on('click', fetchLeads);
 
+		$(document).on('click', '.view-lead', function() {
+			const id = $(this).data('id');
+			window.currentLeadId = id;
+			openLeadModal(id);
+		});
+
+		$('.ai-summarize-btn').on('click', function() {
+			const id = window.currentLeadId || $('.inbox-item.active').data('id');
+			if (!id) return;
+			const btn = $(this);
+			btn.text('✨ AI Thinking...').prop('disabled', true);
+			apiRequest('/leads/' + id + '/ai-hook', 'POST').done(res => {
+				alert('AI Outreach Hook Generated: ' + res.hook);
+				loadThreadInModal(id);
+			}).always(() => btn.text('✨ AI: Hook').prop('disabled', false));
+		});
+
+		$('.ai-score-btn').on('click', function() {
+			const id = window.currentLeadId || $('.inbox-item.active').data('id');
+			if (!id) return;
+			const btn = $(this);
+			btn.text('✨ AI Scoring...').prop('disabled', true);
+			apiRequest('/ai/complete', 'POST', { prompt: 'Score lead', context: { feature: 'lead_scorer', lead_id: id } }).done(res => {
+				alert('AI Lead Score: ' + res.result);
+			}).always(() => btn.text('✨ AI: Score').prop('disabled', false));
+		});
+
 		$(document).on('click', '.manual-audit', function() {
 			const id = $(this).data('id');
 			const btn = $(this);
@@ -415,7 +442,12 @@
 			const index = container.find('.campaign-step-card').length + 1;
 			container.append(`
 				<div class="campaign-step-card chart-box" data-index="${index}" style="margin-bottom:15px; padding:15px;">
-					<h4>Step ${index} <span class="remove-step" style="float:right; cursor:pointer;">&times;</span></h4>
+					<div style="float:right;">
+						<span class="move-step-up" style="cursor:pointer; margin-right:10px;" title="Move Up">🔼</span>
+						<span class="move-step-down" style="cursor:pointer; margin-right:10px;" title="Move Down">🔽</span>
+						<span class="remove-step" style="cursor:pointer;" title="Remove Step">&times;</span>
+					</div>
+					<h4>Step <span class="step-num-display">${index}</span></h4>
 					<p><label>Delay (Days)</label><br><input type="number" class="step-delay" value="${index === 1 ? 0 : 2}"></p>
 					<p><label>Type</label><br>
 						<select class="step-type">
@@ -430,7 +462,29 @@
 			`);
 		});
 
-		$(document).on('click', '.remove-step', function() { $(this).closest('.campaign-step-card').remove(); });
+		$(document).on('click', '.remove-step', function() {
+			$(this).closest('.campaign-step-card').remove();
+			reindexCampaignSteps();
+		});
+
+		$(document).on('click', '.move-step-up', function() {
+			const card = $(this).closest('.campaign-step-card');
+			card.prev('.campaign-step-card').before(card);
+			reindexCampaignSteps();
+		});
+
+		$(document).on('click', '.move-step-down', function() {
+			const card = $(this).closest('.campaign-step-card');
+			card.next('.campaign-step-card').after(card);
+			reindexCampaignSteps();
+		});
+
+		function reindexCampaignSteps() {
+			$('.campaign-step-card').each(function(i) {
+				$(this).data('index', i + 1);
+				$(this).find('.step-num-display').text(i + 1);
+			});
+		}
 
 		$('#campaignBuilderForm').on('submit', function(e) {
 			e.preventDefault();
@@ -525,6 +579,24 @@
 				$('#detailLeadName').text(lead.business_name);
 				$('#proposalUrl').val(lead.proposal_url);
 				$('#leadDetailModal').fadeIn();
+
+				const audit = safeJsonParse(lead.audit_data);
+				const sidebar = $('#detailLeadSidebar');
+				sidebar.empty();
+
+				if (audit.cms) {
+					sidebar.append(`
+						<div class="audit-item">
+							<p><strong>CMS:</strong> ${audit.cms}</p>
+							<p><strong>SSL:</strong> ${audit.has_ssl ? '✅' : '❌'}</p>
+							<p><strong>Mobile:</strong> ${audit.is_mobile_responsive ? '✅' : '❌'}</p>
+							<p><strong>Performance:</strong> ${audit.load_time}s</p>
+						</div>
+					`);
+				} else {
+					sidebar.append('<p>No audit data yet. Click Audit to start.</p>');
+				}
+
 				loadThreadInModal(id);
 			});
 		}
@@ -542,6 +614,23 @@
 				});
 			});
 		}
+
+		$('.ai-reply-btn').on('click', function() {
+			const leadId = $('.inbox-item.active').data('id');
+			if (!leadId) return;
+			const btn = $(this);
+			btn.text('✨ AI Drafting...').prop('disabled', true);
+
+			apiRequest('/ai/complete', 'POST', { prompt: 'Suggest reply', context: { feature: 'reply_suggestion', lead_id: leadId } }).done(res => {
+				$('#aiDraftContent').text(res.result);
+				$('#aiDraftBox').fadeIn();
+			}).always(() => btn.text('✨ AI: Re-Draft').prop('disabled', false));
+		});
+
+		$('#useAiDraftBtn').on('click', function() {
+			$('#replyText').val($('#aiDraftContent').text());
+			$('#aiDraftBox').fadeOut();
+		});
 
 		$('#sendReplyBtn').on('click', function() {
 			const leadId = $('.inbox-item.active').data('id');

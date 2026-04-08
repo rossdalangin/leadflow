@@ -397,9 +397,33 @@ class LeadFlow_REST_API {
 	}
 
 	public function send_reply( $request ) {
-		$result = LeadFlow_CRM::add_note( $request['lead_id'], "Outbound Reply: " . $request['message'] );
-		// In a real app, this would actually trigger LeadFlow_Email::send
-		return rest_ensure_response( array( 'success' => (bool) $result ) );
+		$lead_id = $request['lead_id'];
+		$message = $request['message'];
+
+		global $wpdb;
+		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}leadflow_leads WHERE id = %d", $lead_id ) );
+
+		if ( ! $lead ) {
+			return new WP_Error( 'not_found', 'Lead not found', array( 'status' => 404 ) );
+		}
+
+		$sent = LeadFlow_Email::send( $lead->email, 'Re: Your inquiry', $message );
+
+		if ( is_wp_error( $sent ) ) {
+			return $sent;
+		}
+
+		LeadFlow_CRM::add_note( $lead_id, "Outbound Reply: " . $message, get_current_user_id() );
+
+		// Log to email log without campaign context
+		$wpdb->insert( $wpdb->prefix . 'leadflow_email_log', array(
+			'lead_id' => $lead_id,
+			'subject' => 'Re: Your inquiry',
+			'status'  => 'Sent',
+			'created_at' => current_time( 'mysql' ),
+		) );
+
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function get_overview_analytics() {
@@ -413,8 +437,28 @@ class LeadFlow_REST_API {
 	}
 
 	public function get_campaign_analytics() {
-		// Simplified for brevity, would aggregate email_log stats per campaign
-		return rest_ensure_response( array() );
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$campaigns = $wpdb->get_results( "SELECT id, name FROM {$prefix}campaigns" );
+		$stats = array();
+
+		foreach ( $campaigns as $campaign ) {
+			$sent = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d", $campaign->id ) );
+			$opens = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND opens_count > 0", $campaign->id ) );
+			$clicks = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND clicks_count > 0", $campaign->id ) );
+			$replies = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND status = 'Replied'", $campaign->id ) );
+
+			$stats[] = array(
+				'name'    => $campaign->name,
+				'sent'    => (int) $sent,
+				'opens'   => (int) $opens,
+				'clicks'  => (int) $clicks,
+				'replies' => (int) $replies,
+			);
+		}
+
+		return rest_ensure_response( $stats );
 	}
 
 	public function get_activity_feed() {
