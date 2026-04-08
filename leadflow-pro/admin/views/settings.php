@@ -230,6 +230,10 @@
 					<th scope="row">IMAP Password</th>
 					<td><input type="password" name="leadflow_imap_pass" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_imap_pass' ) ); ?>" class="regular-text"></td>
 				</tr>
+				<tr>
+					<th scope="row">Test Inbox Connection</th>
+					<td><button type="button" class="button" id="testImapBtn">Test IMAP Connection</button></td>
+				</tr>
 			</table>
 		</div>
 

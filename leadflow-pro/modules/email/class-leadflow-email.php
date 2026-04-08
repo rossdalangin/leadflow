@@ -120,6 +120,35 @@ class LeadFlow_Email {
 	}
 
 	/**
+	 * Test IMAP connectivity.
+	 */
+	public static function test_imap_connectivity() {
+		if ( ! function_exists( 'imap_open' ) ) {
+			return new WP_Error( 'missing_extension', 'PHP IMAP extension is not installed.' );
+		}
+
+		$host = get_option( 'leadflow_imap_host' );
+		$port = get_option( 'leadflow_imap_port' );
+		$user = get_option( 'leadflow_imap_user' );
+		$pass = LeadFlow_Security::get_decrypted_option( 'leadflow_imap_pass' );
+		$enc  = get_option( 'leadflow_imap_encryption', 'ssl' );
+
+		if ( ! $host || ! $user || ! $pass ) {
+			return new WP_Error( 'missing_config', 'IMAP settings are not fully configured.' );
+		}
+
+		$mailbox = "{" . $host . ":" . $port . "/imap/" . $enc . "}INBOX";
+		$inbox = @imap_open( $mailbox, $user, $pass );
+
+		if ( ! $inbox ) {
+			return new WP_Error( 'connection_failed', 'IMAP connection failed: ' . imap_last_error() );
+		}
+
+		imap_close( $inbox );
+		return true;
+	}
+
+	/**
 	 * Poll IMAP inbox for replies.
 	 */
 	public static function poll_inbox() {

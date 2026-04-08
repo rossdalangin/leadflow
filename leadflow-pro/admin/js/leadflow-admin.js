@@ -21,16 +21,6 @@
 			return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 		}
 
-		function safeJsonParse(json, defaultVal = {}) {
-			try { return json ? JSON.parse(json) : defaultVal; } catch (e) { return defaultVal; }
-		}
-
-		function getScoreColor(score) {
-			if (score >= 80) return 'green';
-			if (score >= 50) return 'orange';
-			return 'red';
-		}
-
 		/**
 		 * API WRAPPER
 		 */
@@ -38,9 +28,8 @@
 			return $.ajax({
 				url: apiUrl + endpoint,
 				method: method,
-				data: data instanceof FormData ? data : (data ? JSON.stringify(data) : null),
-				contentType: data instanceof FormData ? false : 'application/json',
-				processData: !(data instanceof FormData),
+				data: data ? JSON.stringify(data) : null,
+				contentType: 'application/json',
 				beforeSend: function(xhr) { xhr.setRequestHeader("X-WP-Nonce", nonce); }
 			});
 		}
@@ -107,6 +96,7 @@
 								${users.map(u => `<option value="${u.id}" ${lead.assigned_to == u.id ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}
 							</select>
 						</td>
+						<td>${tagsHtml}</td>
 						<td>
 							<select class="inline-status-update" data-id="${lead.id}">
 								<option value="New" ${lead.status === 'New' ? 'selected' : ''}>New</option>
@@ -130,6 +120,12 @@
 			});
 		}
 
+		function getScoreColor(score) {
+			if (score >= 80) return 'green';
+			if (score >= 50) return 'orange';
+			return 'red';
+		}
+
 		if ($('#leadTableBody').length) fetchLeads();
 		$('#applyFilters').on('click', fetchLeads);
 
@@ -137,7 +133,7 @@
 			const id = $(this).data('id');
 			const btn = $(this);
 			btn.text('Auditing...').prop('disabled', true);
-			apiRequest('/scraper/audit/' + id, 'POST').done(() => {
+			apiRequest('/leads/' + id + '/audit', 'POST').done(() => {
 				alert('Audit request queued!');
 				btn.text('Audit').prop('disabled', false);
 			});
@@ -147,6 +143,12 @@
 			if (!confirm('Are you sure you want to delete this lead?')) return;
 			const id = $(this).data('id');
 			apiRequest('/leads/' + id, 'DELETE').done(fetchLeads);
+		});
+
+		$(document).on('change', '.inline-status-update', function() {
+			const id = $(this).data('id');
+			const status = $(this).val();
+			updateLeadStatus(id, status);
 		});
 
 		/**
@@ -160,8 +162,7 @@
 				success: function(leads) {
 					const columns = ['New', 'Contacted', 'Replied', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'];
 					columns.forEach(status => {
-						const columnId = status.toLowerCase().replace(/\s+/g, '-');
-						const columnCards = $(`.kanban-column[data-status="${status}"] .kanban-cards`);
+						const columnCards = $(`.kanban-column[data-status="${status}"] .kanban-items`);
 						if (!columnCards.length) return;
 						columnCards.empty();
 						leads.filter(l => l.status === status).forEach(lead => {
@@ -187,8 +188,9 @@
 				e.preventDefault();
 				const leadId = e.originalEvent.dataTransfer.getData('leadId');
 				const newStatus = $(this).data('status');
-				updateLeadStatus(leadId, newStatus);
-				setTimeout(loadKanbanData, 500);
+				updateLeadStatus(leadId, newStatus).done(() => {
+					setTimeout(loadKanbanData, 200);
+				});
 			});
 		}
 
@@ -233,7 +235,7 @@
 			leads.forEach((lead, index) => {
 				tbody.append(`
 					<tr>
-						<th class="check-column"><input type="checkbox" class="discovery-item-check" value="${index}"></th>
+						<th class="check-column"><input type="checkbox" class="discovery-item-check" data-index="${index}"></th>
 						<td><strong>${escapeHtml(lead.business_name)}</strong></td>
 						<td><a href="${escapeHtml(lead.website_url)}" target="_blank">${escapeHtml(lead.website_url)}</a></td>
 						<td>${escapeHtml(lead.phone)}</td>
@@ -245,6 +247,36 @@
 			window.currentDiscoveryResults = leads;
 		}
 
+		$(document).on('click', '.import-lead', function() {
+			const index = $(this).data('index');
+			const lead = window.currentDiscoveryResults[index];
+			const btn = $(this);
+
+			btn.text('Importing...').prop('disabled', true);
+			apiRequest('/leads', 'POST', lead).done(() => {
+				btn.text('Imported!').removeClass('button-primary');
+			}).fail(err => {
+				alert('Import failed: ' + (err.responseJSON ? err.responseJSON.message : 'Unknown error'));
+				btn.text('Import').prop('disabled', false);
+			});
+		});
+
+		$('#importSelectedLeads').on('click', function() {
+			const selectedIndexes = $('.discovery-item-check:checked').map(function() { return $(this).data('index'); }).get();
+			if (!selectedIndexes.length) return;
+
+			const btn = $(this);
+			btn.text('Importing ' + selectedIndexes.length + ' leads...').prop('disabled', true);
+
+			const promises = selectedIndexes.map(idx => apiRequest('/leads', 'POST', window.currentDiscoveryResults[idx]));
+
+			$.when.apply($, promises).then(() => {
+				alert('Bulk import complete!');
+				btn.text('Bulk Import Selected').prop('disabled', false);
+				$('.discovery-item-check:checked').closest('tr').css('opacity', 0.5);
+			});
+		});
+
 		/**
 		 * ANALYTICS & DASHBOARD
 		 */
@@ -254,7 +286,6 @@
 				method: 'GET',
 				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
 				success: function(data) {
-					// Status Chart
 					if (document.getElementById('leadsStatusChart')) {
 						new Chart(document.getElementById('leadsStatusChart'), {
 							type: 'bar',
@@ -266,8 +297,7 @@
 						});
 					}
 
-					// Sentiment Chart
-					if ($('#sentimentPulseChart').length && data.sentiment_pulse) {
+					if (document.getElementById('sentimentPulseChart') && data.sentiment_pulse) {
 						new Chart(document.getElementById('sentimentPulseChart'), {
 							type: 'doughnut',
 							data: {
@@ -276,11 +306,55 @@
 							}
 						});
 					}
+
+					if (document.getElementById('leadsSourceChart')) {
+						new Chart(document.getElementById('leadsSourceChart'), {
+							type: 'pie',
+							data: {
+								labels: data.source_counts.map(s => s.source),
+								datasets: [{ data: data.source_counts.map(s => s.count), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444'] }]
+							}
+						});
+					}
+
+					if (document.getElementById('leadsAssigneeChart')) {
+						new Chart(document.getElementById('leadsAssigneeChart'), {
+							type: 'bar',
+							data: {
+								labels: data.assignee_counts.map(a => a.name),
+								datasets: [{ label: 'Leads Assigned', data: data.assignee_counts.map(a => a.count), backgroundColor: '#10b981' }]
+							}
+						});
+					}
 				}
 			});
 		}
 
-		if ($('#leadsStatusChart').length) renderCharts();
+		if ($('#leadsStatusChart').length) {
+			renderCharts();
+			loadRecentActivity();
+			loadCampaignStats();
+		}
+
+		function loadRecentActivity() {
+			apiRequest('/analytics/activity').done(function(data) {
+				const tbody = $('#recentActivityBody');
+				tbody.empty();
+				data.forEach(act => {
+					tbody.append(`<tr><td>${escapeHtml(act.activity)}</td><td>${escapeHtml(act.lead)}</td><td>${act.created_at}</td></tr>`);
+				});
+			});
+		}
+
+		function loadCampaignStats() {
+			apiRequest('/analytics/campaigns').done(function(data) {
+				const tbody = $('#campaignStatsBody');
+				tbody.empty();
+				data.forEach(c => {
+					tbody.append(`<tr><td><strong>${escapeHtml(c.name)}</strong></td><td>${c.sent}</td><td>${c.opens}</td><td>${c.clicks}</td><td>${c.replies}</td></tr>`);
+				});
+			});
+		}
 
 		/**
 		 * SYSTEM LOGS & HEALTH
@@ -309,17 +383,11 @@
 			const provider = $(this).data('provider');
 			const btn = $(this);
 			btn.text('Testing...').prop('disabled', true);
-			$.ajax({
-				url: apiUrl + '/ai/complete',
-				method: 'POST',
-				data: JSON.stringify({ prompt: 'Ping', context: { provider, feature: 'test_connection' } }),
-				contentType: 'application/json',
-				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
-				success: function(response) {
-					alert(provider + ' connected! Response: ' + response.result);
-					btn.text('Test Connection').prop('disabled', false);
-				}
-			});
+			apiRequest('/ai/complete', 'POST', { prompt: 'Ping', context: { provider, feature: 'test_connection' } })
+			.done(function(response) {
+				alert(provider + ' connected! Response: ' + response.result);
+			})
+			.always(() => btn.text('Test Connection').prop('disabled', false));
 		});
 
 		// Bulk Actions
@@ -327,53 +395,50 @@
 			const selectedIds = $('.lead-checkbox:checked').map(function() { return $(this).val(); }).get();
 			const newStatus = $('#bulkStatusUpdate').val();
 			if (!selectedIds.length || !newStatus) return;
-			selectedIds.forEach(id => updateLeadStatus(id, newStatus));
-			alert('Bulk update complete!');
-			fetchLeads();
+
+			const promises = selectedIds.map(id => updateLeadStatus(id, newStatus));
+			$.when.apply($, promises).then(() => {
+				alert('Bulk update complete!');
+				fetchLeads();
+			});
 		});
 
 		function updateLeadStatus(leadId, status) {
-			$.ajax({
-				url: apiUrl + '/leads/' + leadId,
-				method: 'POST',
-				data: { status },
-				beforeSend: function(xhr) { xhr.setRequestHeader("X-WP-Nonce", nonce); }
-			});
+			return apiRequest('/leads/' + leadId, 'POST', { status: status });
 		}
 
 		/**
 		 * CAMPAIGNS & OUTREACH
 		 */
-		$('#addCampaignStep').on('click', function() {
-			const container = $('#campaignStepsContainer');
+		$('#addStepBtn').on('click', function() {
+			const container = $('#sequenceSteps');
 			const index = container.find('.campaign-step-card').length + 1;
 			container.append(`
-				<div class="campaign-step-card" data-index="${index}">
-					<h4>Step ${index} <span class="remove-step">&times;</span></h4>
-					<div class="field-row">
-						<label>Delay (Days)</label>
-						<input type="number" class="step-delay" value="${index === 1 ? 0 : 2}">
-					</div>
-					<div class="field-row">
-						<label>Subject</label>
-						<input type="text" class="step-subject" placeholder="Email subject...">
-					</div>
-					<div class="field-row">
-						<label>Body</label>
-						<textarea class="step-body" rows="4" placeholder="Email body... Use {{first_name}}, {{business_name}} tokens."></textarea>
-					</div>
+				<div class="campaign-step-card chart-box" data-index="${index}" style="margin-bottom:15px; padding:15px;">
+					<h4>Step ${index} <span class="remove-step" style="float:right; cursor:pointer;">&times;</span></h4>
+					<p><label>Delay (Days)</label><br><input type="number" class="step-delay" value="${index === 1 ? 0 : 2}"></p>
+					<p><label>Type</label><br>
+						<select class="step-type">
+							<option value="email">Email</option>
+							<option value="linkedin">LinkedIn Connection</option>
+							<option value="call">Phone Call</option>
+						</select>
+					</p>
+					<p><label>Subject (for Emails)</label><br><input type="text" class="step-subject" style="width:100%"></p>
+					<p><label>Body / Task Description</label><br><textarea class="step-body" rows="4" style="width:100%"></textarea></p>
 				</div>
 			`);
 		});
 
 		$(document).on('click', '.remove-step', function() { $(this).closest('.campaign-step-card').remove(); });
 
-		$('#saveCampaignBtn').on('click', function() {
+		$('#campaignBuilderForm').on('submit', function(e) {
+			e.preventDefault();
 			const steps = [];
 			$('.campaign-step-card').each(function() {
 				steps.push({
-					step_number: $(this).data('index'),
-					delay_days: $(this).find('.step-delay').val(),
+					delay: $(this).find('.step-delay').val(),
+					type: $(this).find('.step-type').val(),
 					subject: $(this).find('.step-subject').val(),
 					body: $(this).find('.step-body').val()
 				});
@@ -381,11 +446,14 @@
 
 			const data = {
 				name: $('#campaignName').val(),
-				status_trigger: $('#campaignStatusTrigger').val(),
+				status_filter: $('#campaignStatusFilter').val(),
+				start_hour: $('#campaignStartHour').val(),
+				end_hour: $('#campaignEndHour').val(),
+				skip_weekends: $('#campaignSkipWeekends').is(':checked') ? 1 : 0,
 				steps: steps
 			};
 
-			apiRequest('/outreach/campaigns', 'POST', data).done(function() {
+			apiRequest('/campaigns', 'POST', data).done(function() {
 				alert('Campaign saved!');
 				location.reload();
 			});
@@ -395,57 +463,96 @@
 		 * INBOX & CONVERSATIONS
 		 */
 		function loadInbox() {
-			if (!$('#inboxList').length) return;
-			apiRequest('/email/inbox').done(function(threads) {
-				const list = $('#inboxList');
+			if (!$('#inboxItems').length) return;
+			apiRequest('/inbox').done(function(threads) {
+				const list = $('#inboxItems');
 				list.empty();
 				threads.forEach(t => {
 					list.append(`
-						<div class="inbox-item ${t.unread ? 'unread' : ''}" data-id="${t.lead_id}">
-							<strong>${escapeHtml(t.business_name)}</strong>
-							<span class="msg-date">${t.last_message_date}</span>
-							<p>${escapeHtml(t.last_message_excerpt)}</p>
+						<div class="inbox-item" data-id="${t.id}">
+							<div class="inbox-item-header">
+								<span class="inbox-item-lead">${escapeHtml(t.business_name)}</span>
+								<span class="inbox-item-time">${t.last_reply}</span>
+							</div>
 						</div>
 					`);
 				});
 			});
 		}
 
-		if ($('#inboxList').length) loadInbox();
+		if ($('#inboxItems').length) loadInbox();
 
 		$(document).on('click', '.inbox-item', function() {
 			const leadId = $(this).data('id');
+			const leadName = $(this).find('.inbox-item-lead').text();
 			$('.inbox-item').removeClass('active');
 			$(this).addClass('active');
+			$('#inboxReply').show();
+			$('#viewLeadName').text(leadName);
 			loadThread(leadId);
 		});
 
 		function loadThread(leadId) {
-			apiRequest('/email/thread/' + leadId).done(function(messages) {
-				const container = $('#messageThreadContainer');
+			apiRequest('/leads/' + leadId + '/activity').done(function(data) {
+				const container = $('#inboxThread');
 				container.empty();
-				messages.forEach(msg => {
+				const activities = [...(data.notes||[]), ...(data.emails||[])].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+				if (!activities.length) {
+					container.append('<div class="inbox-placeholder">No activity yet.</div>');
+				}
+
+				activities.forEach(act => {
+					const isOutbound = act.subject || (act.content && (act.content.startsWith('Outbound') || act.content.startsWith('Sent')));
 					container.append(`
-						<div class="message-bubble ${msg.direction}">
-							<div class="msg-meta">${msg.created_at} ${msg.direction === 'inbound' ? '(Received)' : '(Sent)'}</div>
-							<div class="msg-body">${msg.body}</div>
+						<div class="message-bubble ${isOutbound ? 'outbound' : 'inbound'}">
+							<div class="msg-meta">${act.created_at}</div>
+							<div class="msg-body">${escapeHtml(act.content || act.subject)}</div>
 						</div>
 					`);
 				});
-				$('#replyLeadId').val(leadId);
 				container.scrollTop(container[0].scrollHeight);
 			});
 		}
 
+		$('#viewLeadBtn').on('click', function() {
+			const leadId = $('.inbox-item.active').data('id');
+			if (leadId) openLeadModal(leadId);
+		});
+
+		function openLeadModal(id) {
+			apiRequest('/leads/' + id).done(function(lead) {
+				$('#detailLeadName').text(lead.business_name);
+				$('#proposalUrl').val(lead.proposal_url);
+				$('#leadDetailModal').fadeIn();
+				loadThreadInModal(id);
+			});
+		}
+
+		function loadThreadInModal(leadId) {
+			apiRequest('/leads/' + leadId + '/activity').done(function(data) {
+				const container = $('#detailLeadThread');
+				container.empty();
+				const activities = [...(data.notes||[]), ...(data.emails||[])].sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+				activities.forEach(act => {
+					const isOutbound = act.subject || (act.content && act.content.startsWith('Outbound'));
+					container.append(`<div class="message-bubble ${isOutbound ? 'outbound' : 'inbound'}" style="font-size:0.8rem; margin-bottom:10px; padding:10px; border-radius:8px; background:${isOutbound?'#f0f7ff':'#f9f9f9'};">
+						<strong>${act.created_at}</strong><br>${escapeHtml(act.content || act.subject)}
+					</div>`);
+				});
+			});
+		}
+
 		$('#sendReplyBtn').on('click', function() {
-			const leadId = $('#replyLeadId').val();
-			const body = $('#replyBody').val();
-			if (!leadId || !body) return;
+			const leadId = $('.inbox-item.active').data('id');
+			const message = $('#replyText').val();
+			if (!leadId || !message) return;
 
 			$(this).prop('disabled', true).text('Sending...');
-			apiRequest('/email/send', 'POST', { lead_id: leadId, body: body }).done(() => {
-				$('#replyBody').val('');
+			apiRequest('/inbox/reply', 'POST', { lead_id: leadId, message: message }).done(() => {
+				$('#replyText').val('');
 				loadThread(leadId);
+			}).always(() => {
 				$(this).prop('disabled', false).text('Send Reply');
 			});
 		});
@@ -454,19 +561,18 @@
 		 * GLOBAL TASKS
 		 */
 		function loadTasks() {
-			const tbody = $('#tasksTableBody');
+			const tbody = $('#pulseTableBody');
 			if (!tbody.length) return;
-			apiRequest('/crm/tasks').done(function(tasks) {
+			apiRequest('/tasks').done(function(tasks) {
 				tbody.empty();
 				tasks.forEach(task => {
 					tbody.append(`
 						<tr>
-							<td>${task.due_date}</td>
-							<td><strong>${task.task_type}</strong>: ${task.business_name}</td>
-							<td>${task.description}</td>
+							<td>${escapeHtml(task.business_name)}</td>
+							<td>${task.status}</td>
+							<td>${escapeHtml(task.description)}</td>
 							<td>
 								<button class="button complete-task" data-id="${task.id}">Complete</button>
-								<button class="button fail-task" data-id="${task.id}" style="color:red;">Fail</button>
 							</td>
 						</tr>
 					`);
@@ -474,31 +580,24 @@
 			});
 		}
 
-		if ($('#tasksTableBody').length) loadTasks();
+		if ($('#pulseTableBody').length) loadTasks();
 
 		$(document).on('click', '.complete-task', function() {
 			const id = $(this).data('id');
-			apiRequest('/crm/tasks/' + id + '/complete', 'POST').done(loadTasks);
+			apiRequest('/tasks/' + id, 'POST', { status: 'completed' }).done(loadTasks);
 		});
 
-		/**
-		 * SETUP WIZARD
-		 */
-		$('#wizardNext').on('click', function() {
-			const current = $('.wizard-step:visible');
-			const next = current.next('.wizard-step');
-			if (next.length) {
-				current.hide();
-				next.show();
-			} else {
-				apiRequest('/settings/setup-complete', 'POST').done(() => {
-					window.location.href = leadflowData.adminUrl + 'admin.php?page=leadflow-pro';
-				});
-			}
+		$('#testImapBtn').on('click', function() {
+			const btn = $(this);
+			btn.text('Testing...').prop('disabled', true);
+			apiRequest('/settings/test-imap', 'POST').done(() => {
+				alert('IMAP Connection Successful!');
+			}).fail(err => {
+				alert('IMAP Connection Failed: ' + (err.responseJSON ? err.responseJSON.message : 'Unknown error'));
+			}).always(() => {
+				btn.text('Test IMAP Connection').prop('disabled', false);
+			});
 		});
-
-		// Initializations
-		$('.close-modal').on('click', function() { $('.leadflow-modal').fadeOut(); });
 
 	});
 })(jQuery);

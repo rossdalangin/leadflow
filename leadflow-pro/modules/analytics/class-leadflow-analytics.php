@@ -100,10 +100,16 @@ class LeadFlow_Analytics {
 		$total_leads = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads" );
 		$conversion_rate = $total_leads > 0 ? round( ( $qualified_count / $total_leads ) * 100, 1 ) : 0;
 
+		// Estimated CAC (Customer Acquisition Cost) based on AI costs
+		$ai_cost = $wpdb->get_var( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage" );
+		$estimated_cac = $qualified_count > 0 ? round( ( $ai_cost * 0.00001 ) / $qualified_count, 2 ) : 0; // Simulated AI cost logic
+
 		return array(
 			'pipeline_value'  => (float) $pipeline_value,
 			'lead_velocity'   => (float) $velocity,
 			'conversion_rate' => (float) $conversion_rate,
+			'estimated_cac'   => (float) $estimated_cac,
+			'engagement_rate' => (float) ( $total_leads > 0 ? round( ( $wpdb->get_var("SELECT COUNT(*) FROM {$prefix}leads WHERE status != 'New'") / $total_leads ) * 100, 1 ) : 0 ),
 		);
 	}
 
