@@ -14,16 +14,17 @@ And you lose track of follow-ups because your CRM is a mess.
 
 ---
 
-## 🛠 ONE PLUGIN. EIGHT POWERFUL MODULES.
+## 🛠 ONE PLUGIN. NINE POWERFUL MODULES.
 
-1.  **Lead Discovery Engine:** Search Google Places, LinkedIn, and Facebook Groups simultaneously. Pull names, websites, and phones in seconds.
-2.  **Smart Website Auditor:** Our crawler finds technical flaws (no SSL, slow speed, outdated design) and hands them to you as the perfect outreach "hook."
-3.  **Unified AI Outreach:** Integration with GPT-4o and Gemini 1.5 Pro to write personalized emails, score leads, and analyze reply sentiment.
-4.  **Automated Sequences:** Build multi-step campaigns that send while you sleep. Auto-pause when they reply.
-5.  **Built-in Sales CRM:** A high-performance Kanban board to move leads from "New" to "Closed Won."
-6.  **Unified Inbox:** Manage all conversations inside WordPress. No more switching between 10 tabs.
-7.  **Real-Time Analytics:** See exactly which templates are converting and your real ROI on every campaign.
-8.  **GDPR & Safety:** Built-in tools to keep you legal and ethical.
+1.  **Lead Discovery & Enrichment:** Search Google, LinkedIn, and Facebook, then hunt missing emails/phones with built-in Hunter.io and Clearbit integrations.
+2.  **Smart Website Auditor:** Find technical flaws (no SSL, slow speed, outdated design) and generate **Branded PDF Reports** to send as high-value sales hooks.
+3.  **Unified AI Assistant:** GPT-4o & Gemini detection for meeting intent, sentiment analysis, and multi-language automated outreach.
+4.  **Automated Sequences:** Build multi-step campaigns with daily sending caps, randomized jitter, and A/B Testing.
+5.  **Built-in Sales CRM 2.0:** Manage pipeline with technical signal filtering, team quotas, and a global activity timeline.
+6.  **Global Task Dashboard:** Never lose a deal. Manage calls, LinkedIn connections, and follow-ups from a unified team board.
+7.  **Unified Inbox:** AI-suggested reply drafts and sentiment tracking inside your dashboard.
+8.  **Growth Analytics:** ROI forecasting, Lead Velocity tracking, and 30-day sentiment pulse trends.
+9.  **SaaS Reliability:** Deliverability health checks (SPF/DKIM) and Action Scheduler support for enterprise-scale volume.
 
 ---
 

@@ -87,6 +87,7 @@
 
 		function renderLeadTable(leads) {
 			const tbody = $('#leadTableBody');
+			if (!tbody.length) return;
 			tbody.empty();
 			const users = leadflowData.users || [];
 
@@ -120,7 +121,6 @@
 						<td>${escapeHtml(lead.updated_at)}</td>
 						<td>
 							<button class="button button-small view-lead" data-id="${lead.id}">View</button>
-							<button class="button button-small edit-lead-btn" data-id="${lead.id}">Edit</button>
 							<button class="button button-small manual-audit" data-id="${lead.id}">Audit</button>
 							<button class="button button-small delete-lead-btn-row" data-id="${lead.id}" style="color:#d63638;">Delete</button>
 						</td>
@@ -132,6 +132,65 @@
 
 		if ($('#leadTableBody').length) fetchLeads();
 		$('#applyFilters').on('click', fetchLeads);
+
+		$(document).on('click', '.manual-audit', function() {
+			const id = $(this).data('id');
+			const btn = $(this);
+			btn.text('Auditing...').prop('disabled', true);
+			apiRequest('/scraper/audit/' + id, 'POST').done(() => {
+				alert('Audit request queued!');
+				btn.text('Audit').prop('disabled', false);
+			});
+		});
+
+		$(document).on('click', '.delete-lead-btn-row', function() {
+			if (!confirm('Are you sure you want to delete this lead?')) return;
+			const id = $(this).data('id');
+			apiRequest('/leads/' + id, 'DELETE').done(fetchLeads);
+		});
+
+		/**
+		 * KANBAN VIEW
+		 */
+		function loadKanbanData() {
+			$.ajax({
+				url: apiUrl + "/leads",
+				method: "GET",
+				beforeSend: function(xhr) { xhr.setRequestHeader("X-WP-Nonce", nonce); },
+				success: function(leads) {
+					const columns = ['New', 'Contacted', 'Replied', 'Qualified', 'Proposal Sent', 'Closed Won', 'Closed Lost'];
+					columns.forEach(status => {
+						const columnId = status.toLowerCase().replace(/\s+/g, '-');
+						const columnCards = $(`.kanban-column[data-status="${status}"] .kanban-cards`);
+						if (!columnCards.length) return;
+						columnCards.empty();
+						leads.filter(l => l.status === status).forEach(lead => {
+							columnCards.append(`
+								<div class="kanban-card" data-id="${lead.id}" draggable="true">
+									<strong>${escapeHtml(lead.business_name)}</strong>
+									<div class="score-pill score-${getScoreColor(lead.completeness_score)}">${lead.completeness_score}%</div>
+								</div>
+							`);
+						});
+					});
+					setupKanbanDragDrop();
+				}
+			});
+		}
+
+		function setupKanbanDragDrop() {
+			$('.kanban-card').on('dragstart', function(e) {
+				e.originalEvent.dataTransfer.setData('leadId', $(this).data('id'));
+			});
+			$('.kanban-column').on('dragover', function(e) { e.preventDefault(); });
+			$('.kanban-column').on('drop', function(e) {
+				e.preventDefault();
+				const leadId = e.originalEvent.dataTransfer.getData('leadId');
+				const newStatus = $(this).data('status');
+				updateLeadStatus(leadId, newStatus);
+				setTimeout(loadKanbanData, 500);
+			});
+		}
 
 		/**
 		 * DISCOVERY
@@ -196,14 +255,16 @@
 				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
 				success: function(data) {
 					// Status Chart
-					new Chart(document.getElementById('leadsStatusChart'), {
-						type: 'bar',
-						data: {
-							labels: data.status_counts.map(s => s.status),
-							datasets: [{ label: 'Leads', data: data.status_counts.map(s => s.count), backgroundColor: '#6366f1' }]
-						},
-						options: { indexAxis: 'y' }
-					});
+					if (document.getElementById('leadsStatusChart')) {
+						new Chart(document.getElementById('leadsStatusChart'), {
+							type: 'bar',
+							data: {
+								labels: data.status_counts.map(s => s.status),
+								datasets: [{ label: 'Leads', data: data.status_counts.map(s => s.count), backgroundColor: '#6366f1' }]
+							},
+							options: { indexAxis: 'y' }
+						});
+					}
 
 					// Sentiment Chart
 					if ($('#sentimentPulseChart').length && data.sentiment_pulse) {
@@ -276,9 +337,165 @@
 				url: apiUrl + '/leads/' + leadId,
 				method: 'POST',
 				data: { status },
-				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); }
+				beforeSend: function(xhr) { xhr.setRequestHeader("X-WP-Nonce", nonce); }
 			});
 		}
+
+		/**
+		 * CAMPAIGNS & OUTREACH
+		 */
+		$('#addCampaignStep').on('click', function() {
+			const container = $('#campaignStepsContainer');
+			const index = container.find('.campaign-step-card').length + 1;
+			container.append(`
+				<div class="campaign-step-card" data-index="${index}">
+					<h4>Step ${index} <span class="remove-step">&times;</span></h4>
+					<div class="field-row">
+						<label>Delay (Days)</label>
+						<input type="number" class="step-delay" value="${index === 1 ? 0 : 2}">
+					</div>
+					<div class="field-row">
+						<label>Subject</label>
+						<input type="text" class="step-subject" placeholder="Email subject...">
+					</div>
+					<div class="field-row">
+						<label>Body</label>
+						<textarea class="step-body" rows="4" placeholder="Email body... Use {{first_name}}, {{business_name}} tokens."></textarea>
+					</div>
+				</div>
+			`);
+		});
+
+		$(document).on('click', '.remove-step', function() { $(this).closest('.campaign-step-card').remove(); });
+
+		$('#saveCampaignBtn').on('click', function() {
+			const steps = [];
+			$('.campaign-step-card').each(function() {
+				steps.push({
+					step_number: $(this).data('index'),
+					delay_days: $(this).find('.step-delay').val(),
+					subject: $(this).find('.step-subject').val(),
+					body: $(this).find('.step-body').val()
+				});
+			});
+
+			const data = {
+				name: $('#campaignName').val(),
+				status_trigger: $('#campaignStatusTrigger').val(),
+				steps: steps
+			};
+
+			apiRequest('/outreach/campaigns', 'POST', data).done(function() {
+				alert('Campaign saved!');
+				location.reload();
+			});
+		});
+
+		/**
+		 * INBOX & CONVERSATIONS
+		 */
+		function loadInbox() {
+			if (!$('#inboxList').length) return;
+			apiRequest('/email/inbox').done(function(threads) {
+				const list = $('#inboxList');
+				list.empty();
+				threads.forEach(t => {
+					list.append(`
+						<div class="inbox-item ${t.unread ? 'unread' : ''}" data-id="${t.lead_id}">
+							<strong>${escapeHtml(t.business_name)}</strong>
+							<span class="msg-date">${t.last_message_date}</span>
+							<p>${escapeHtml(t.last_message_excerpt)}</p>
+						</div>
+					`);
+				});
+			});
+		}
+
+		if ($('#inboxList').length) loadInbox();
+
+		$(document).on('click', '.inbox-item', function() {
+			const leadId = $(this).data('id');
+			$('.inbox-item').removeClass('active');
+			$(this).addClass('active');
+			loadThread(leadId);
+		});
+
+		function loadThread(leadId) {
+			apiRequest('/email/thread/' + leadId).done(function(messages) {
+				const container = $('#messageThreadContainer');
+				container.empty();
+				messages.forEach(msg => {
+					container.append(`
+						<div class="message-bubble ${msg.direction}">
+							<div class="msg-meta">${msg.created_at} ${msg.direction === 'inbound' ? '(Received)' : '(Sent)'}</div>
+							<div class="msg-body">${msg.body}</div>
+						</div>
+					`);
+				});
+				$('#replyLeadId').val(leadId);
+				container.scrollTop(container[0].scrollHeight);
+			});
+		}
+
+		$('#sendReplyBtn').on('click', function() {
+			const leadId = $('#replyLeadId').val();
+			const body = $('#replyBody').val();
+			if (!leadId || !body) return;
+
+			$(this).prop('disabled', true).text('Sending...');
+			apiRequest('/email/send', 'POST', { lead_id: leadId, body: body }).done(() => {
+				$('#replyBody').val('');
+				loadThread(leadId);
+				$(this).prop('disabled', false).text('Send Reply');
+			});
+		});
+
+		/**
+		 * GLOBAL TASKS
+		 */
+		function loadTasks() {
+			const tbody = $('#tasksTableBody');
+			if (!tbody.length) return;
+			apiRequest('/crm/tasks').done(function(tasks) {
+				tbody.empty();
+				tasks.forEach(task => {
+					tbody.append(`
+						<tr>
+							<td>${task.due_date}</td>
+							<td><strong>${task.task_type}</strong>: ${task.business_name}</td>
+							<td>${task.description}</td>
+							<td>
+								<button class="button complete-task" data-id="${task.id}">Complete</button>
+								<button class="button fail-task" data-id="${task.id}" style="color:red;">Fail</button>
+							</td>
+						</tr>
+					`);
+				});
+			});
+		}
+
+		if ($('#tasksTableBody').length) loadTasks();
+
+		$(document).on('click', '.complete-task', function() {
+			const id = $(this).data('id');
+			apiRequest('/crm/tasks/' + id + '/complete', 'POST').done(loadTasks);
+		});
+
+		/**
+		 * SETUP WIZARD
+		 */
+		$('#wizardNext').on('click', function() {
+			const current = $('.wizard-step:visible');
+			const next = current.next('.wizard-step');
+			if (next.length) {
+				current.hide();
+				next.show();
+			} else {
+				apiRequest('/settings/setup-complete', 'POST').done(() => {
+					window.location.href = leadflowData.adminUrl + 'admin.php?page=leadflow-pro';
+				});
+			}
+		});
 
 		// Initializations
 		$('.close-modal').on('click', function() { $('.leadflow-modal').fadeOut(); });

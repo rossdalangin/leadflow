@@ -38,11 +38,12 @@ LeadFlow Pro is built for freelancers and agencies who want to stop manually pro
 ---
 
 ## 3. CORE FEATURE MODULES
-- **Discovery Engine:** Multichannel search (Google, LinkedIn, Facebook).
-- **Website Auditor:** Automatic technical flaw detection (SSL, Mobile, Speed).
-- **Campaign Engine:** Multi-step sequences with automated follow-ups.
-- **Lead CRM:** Drag-and-drop Kanban board for pipeline management.
-- **Unified Inbox:** Integrated messaging with AI sentiment analysis.
+- **Discovery Engine:** Multichannel search (Google, LinkedIn, Facebook) with Details API & Lead Enrichment.
+- **Website Auditor:** Automatic technical flaw detection (SSL, Mobile, Speed) with Branded PDF Reports.
+- **Campaign Engine:** Multi-step sequences with daily caps, jitter, and A/B Testing.
+- **Lead CRM:** Kanban board, technical signal filtering, and Global Task Dashboard.
+- **Unified Inbox:** Integrated messaging with AI sentiment analysis & auto-drafting.
+- **AI Intelligence:** GPT-4o & Gemini with intent detection & multi-language support.
 
 ---
 
@@ -69,9 +70,11 @@ LeadFlow Pro is built for freelancers and agencies who want to stop manually pro
 
 ## 7. TECHNICAL REFERENCE
 ### REST API
-- `GET /leads`: Fetch CRM data.
-- `POST /ai/complete`: Trigger AI logic.
-- `GET /analytics/overview`: Real-time KPI data.
+- `GET /leads`: Fetch CRM data with meta-filtering.
+- `POST /leads/{id}/enrich`: Find missing emails/phones.
+- `GET /settings/domain-health`: Check SPF/DKIM/DMARC.
+- `GET /tasks`: Global task management feed.
+- `POST /ai/complete`: Trigger AI logic (Intent, Multi-language).
 
 ---
 

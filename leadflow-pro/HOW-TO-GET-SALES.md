@@ -11,8 +11,8 @@ Imagine there are people whose job is to build websites or help businesses get f
 
 ## Step 2: Be a "Helpful Scout" (The Strategy)
 Don't just say "Buy my stuff!" That’s boring. Instead, use LeadFlow Pro to find a problem on *their* website first.
-*   **The Task:** Use the "Smart Auditor" in the plugin. Find a business that has a slow website or no "Green Lock" (SSL).
-*   **The Task:** Send them a nice message: "Hi! I noticed your website is a bit slow and it might be losing you money. I have a tool that found this for me in 2 seconds. Want to see how it works?"
+*   **The Task:** Use the "Smart Auditor" and click **📄 Branded Report**.
+*   **The Strategy:** Send them a nice message with their report: "Hi! I ran a professional audit on your site and found a few things costing you customers. Here is the full report for free. Want to see the tool that made this?"
 
 ## Step 3: Show them the "Magic Wand" (The Demo)
 People love seeing magic. When they say "Yes," show them a video of LeadFlow Pro working.

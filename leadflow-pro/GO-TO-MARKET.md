@@ -4,9 +4,9 @@
 LeadFlow Pro is the ultimate autonomous lead generation machine for WordPress. It replaces $500/mo SaaS stacks (Hunter, Lemlist, CRM, Scraper) with a single plugin.
 
 ### Why people need this:
-- **Agencies:** Automate prospecting so you can focus on strategy, not hunting.
-- **Freelancers:** Get a steady stream of clients without the "feast and famine" cycle.
-- **B2B Companies:** Turn your website into a high-performance outbound sales team.
+- **Agencies:** Scale your team with **Quotas** and **Global Tasks**. Automate discovery so your reps only handle hot leads with **Meeting Intent**.
+- **Freelancers:** Use **Branded Reports** as a high-value "Trojan Horse" to land your first meeting.
+- **Global Players:** Outreach in any language with **AI Localization** (Spanish, French, German).
 
 ---
 
@@ -15,10 +15,11 @@ LeadFlow Pro is the ultimate autonomous lead generation machine for WordPress. I
 | Day | Platform | Content Type | Hook/Topic |
 |---|---|---|---|
 | 1 | LinkedIn | Text/Story | "How I automated my agency's client acquisition in 24 hours." |
-| 5 | TikTok | Video/POV | "Stop manually scraping leads. Do this instead." (Screen record Scraper) |
-| 10 | YouTube | Tutorial | "LeadFlow Pro Masterclass: Zero to First Client on Autopilot." |
-| 15 | Facebook | Group Post | "Giving away my cold outreach templates (implemented in LeadFlow Pro)." |
-| 20 | LinkedIn | Case Study | "How [Agency Name] grew 300% using AI-powered lead scoring." |
+| 5 | TikTok | Video/POV | "Sending branded site audits on autopilot." (Show Branded Report view) |
+| 10 | YouTube | Tutorial | "LeadFlow Pro Masterclass: The Automated 3-Step Setup Wizard." |
+| 15 | Facebook | Group Post | "The Trojan Horse: Sending professional site audits to get clients." |
+| 20 | LinkedIn | Case Study | "How we scaled to 5 countries using AI Multi-Language outreach." |
+| 25 | Twitter/X | Thread | "The 16 custom tables that power our agency's CRM machine." |
 | 30 | All | Sales | "Final call for the Lifetime Deal. Automate or stay manual." |
 
 ---

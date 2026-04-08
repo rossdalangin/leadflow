@@ -35,8 +35,8 @@ LeadFlow Pro uses a **Unified AI Adapter**. You can switch between providers wit
 
 ## 🏗️ 3. Building Your First Campaign
 
-1. **Discovery:** Go to **Lead Discovery** and search for "Dentist Chicago".
-2. **Scraper:** The system will automatically audit their sites for SSL, mobile responsiveness, and CMS (WordPress/Shopify).
+1. **Discovery:** Go to **Lead Discovery** and search for "Dentist Chicago". Use the **Details API** for rich data and the **Enrichment Tool** to hunt for missing emails.
+2. **Scraper:** The system will automatically audit their sites for SSL, mobile responsiveness, and CMS (WordPress/Shopify). Generate a **Branded Audit Report** to use as a high-value sales hook.
 3. **Sequence:** Create a campaign in **Campaigns**. Use tokens like `{{audit_flag}}` to automatically mention their website's specific issues.
 4. **Sending Windows:** Configure your campaign to only send emails between **9 AM and 5 PM** to ensure higher open rates.
 

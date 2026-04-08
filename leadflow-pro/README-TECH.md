@@ -12,8 +12,12 @@
 - `leadflow-pro/includes/class-leadflow-core.php`: Main plugin controller, handles initialization and hooks.
 - `leadflow-pro/includes/class-leadflow-loader.php`: Orchestrates all actions and filters.
 - `leadflow-pro/includes/class-leadflow-activator.php`: Handles plugin activation logic (e.g., DB creation).
+- `leadflow-pro/includes/class-leadflow-security.php`: AES-256 CTR encryption for all API keys.
+- `leadflow-pro/includes/class-leadflow-deliverability.php`: SPF/DKIM/DMARC health check engine.
+- `leadflow-pro/includes/class-leadflow-logger.php`: Centralized system activity logger.
+- `leadflow-pro/includes/class-leadflow-webhooks.php`: Multi-event webhook dispatcher.
 - `leadflow-pro/includes/class-leadflow-license.php`: License key validation and Pro-gate logic.
-- `leadflow-pro/modules/discovery/`: Lead discovery engine (Google Places, LinkedIn stubs).
+- `leadflow-pro/modules/discovery/`: Lead discovery and enrichment (Hunter/Clearbit) engine.
 - `leadflow-pro/modules/scraper/class-leadflow-scraper.php`: Background website auditor and crawler.
 - `leadflow-pro/modules/crm/class-leadflow-crm.php`: Lead management logic and custom DB interactions.
 - `leadflow-pro/modules/outreach/class-leadflow-outreach.php`: Campaign and sequence automation engine.
@@ -23,8 +27,11 @@
 - `leadflow-pro/modules/ai/class-leadflow-ai-gemini.php`: Google Gemini 1.5 Pro specific adapter.
 - `leadflow-pro/modules/analytics/class-leadflow-analytics.php`: Data aggregation and reporting logic.
 - `leadflow-pro/modules/compliance/`: GDPR, opt-out, and scraping ethics logic.
-- `leadflow-pro/admin/views/dashboard.php`: Main analytics dashboard.
+- `leadflow-pro/admin/views/dashboard.php`: Main analytics dashboard with ROI forecasting.
 - `leadflow-pro/admin/views/leads.php`: CRM lead list and Kanban view.
+- `leadflow-pro/admin/views/tasks.php`: Global team task management board.
+- `leadflow-pro/admin/views/setup-wizard.php`: Interactive onboarding experience.
+- `leadflow-pro/admin/views/audit-report.php`: Branded sales collateral generator.
 - `leadflow-pro/admin/views/campaigns.php`: Outreach campaign management.
 - `leadflow-pro/admin/views/inbox.php`: Unified communication inbox.
 - `leadflow-pro/admin/views/settings.php`: General and SMTP settings.

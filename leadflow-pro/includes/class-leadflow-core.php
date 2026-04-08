@@ -341,6 +341,15 @@ class LeadFlow_Core {
 			'leadflow-upgrade',
 			array( $this, 'display_upgrade' )
 		);
+
+		add_submenu_page(
+			null,
+			'Setup Wizard',
+			'Setup Wizard',
+			'manage_options',
+			'leadflow-setup',
+			array( $this, 'display_setup_wizard' )
+		);
 	}
 
 	public function display_activation() {

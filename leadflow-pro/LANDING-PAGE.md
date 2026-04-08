@@ -22,9 +22,11 @@
 4.  **CLOSE:** Manage everything in a high-performance Kanban CRM.
 
 ## 5. Feature Deep Dive (The Proof)
-- **Unified AI:** "We don't just send emails. We use GPT-4o to analyze sentiment and write messages that actually get replies."
-- **Social Discovery:** "Find leads where your competitors aren't looking: Facebook Groups and LinkedIn Profiles."
-- **GDPR Native:** "Stay safe. Automated unsubscribe handling and Article 17/20 compliance built-in."
+- **Unified AI:** "We don't just send emails. We use GPT-4o to detect intent, analyze sentiment, and auto-draft replies that move the needle."
+- **Social Discovery & Enrichment:** "Find leads on Google, LinkedIn, and Facebook, then hunt down missing contact data with built-in Hunter.io and Clearbit integrations."
+- **Branded Sales Collateral:** "Generate professional Website Audit Reports in one click. Prove your value with data-backed PDFs that leads actually read."
+- **Global Task Dashboard:** "Never let a lead go cold. Manage calls, LinkedIn connections, and follow-ups from a unified team task board."
+- **GDPR & Deliverability Native:** "Built-in SPF/DKIM health checks and Article 17/20 compliance keep you safe and out of the spam folder."
 
 ## 6. Social Proof & Authority (The Trust)
 - Three video testimonials from agency owners.
