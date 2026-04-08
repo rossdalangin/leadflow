@@ -55,7 +55,16 @@
 			'created_at' => current_time( 'mysql' ),
 			'status' => 'active'
 		) );
-		echo '<div class="notice notice-success"><p>Generated: <code>' . $key . '</code></p></div>';
+		$server_url = esc_url( get_rest_url( null, 'lfm/v1' ) );
+		echo '<div class="notice notice-success" style="padding:20px; border-left:4px solid #10b981;">
+			<h3>✅ New License Generated!</h3>
+			<p>Copy and send the instructions below to your customer:</p>
+			<div style="background:#f1f5f9; padding:15px; border-radius:8px; border:1px solid #cbd5e1; font-family:monospace;">
+				<strong>License Key:</strong> ' . $key . '<br>
+				<strong>License Server URL:</strong> ' . $server_url . '<br><br>
+				<em>Paste these into LeadFlow Pro -> Settings -> License to activate.</em>
+			</div>
+		</div>';
 	}
 
 	if ( isset( $_GET['toggle_status'] ) && check_admin_referer( 'toggle_license_' . $_GET['toggle_status'] ) ) {

@@ -493,6 +493,11 @@ class LeadFlow_REST_API {
 	}
 
 	public function activate_license( $request ) {
+		$server_url = $request->get_param( 'license_server_url' );
+		if ( ! empty( $server_url ) ) {
+			update_option( 'leadflow_license_server_url', esc_url_raw( $server_url ) );
+		}
+
 		$result = LeadFlow_License::validate_license( $request['license_key'] );
 		return $result['success'] ? rest_ensure_response( $result ) : new WP_Error( 'failed', $result['message'], array( 'status' => 403 ) );
 	}
