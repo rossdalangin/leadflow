@@ -37,7 +37,7 @@ class LeadFlow_Scraper {
 		$prefix = $wpdb->prefix . 'leadflow_';
 
 		// Process Pending or Failed jobs eligible for retry (max 3 retries)
-		$jobs = $wpdb->get_results( "SELECT * FROM {$prefix}scrape_queue WHERE (status = 'Pending' OR (status = 'Failed' AND retry_count < 3)) AND scheduled_at <= NOW() LIMIT 5" );
+		$jobs = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}scrape_queue WHERE (status = 'Pending' OR (status = 'Failed' AND retry_count < 3)) AND scheduled_at <= %s LIMIT 5", current_time( 'mysql' ) ) );
 
 		$delay = (int) get_option( 'leadflow_crawl_delay', 2 );
 

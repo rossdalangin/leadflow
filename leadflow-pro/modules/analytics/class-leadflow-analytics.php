@@ -73,6 +73,40 @@ class LeadFlow_Analytics {
 		);
 	}
 
+	/**
+	 * Get ROI and performance metrics.
+	 */
+	public static function get_roi_metrics() {
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$now = current_time( 'mysql' );
+
+		// Pipeline Value: Estimate $1000 per qualified lead (Simulated model)
+		$qualified_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads WHERE status = 'Qualified'" );
+		$pipeline_value  = $qualified_count * 1000;
+
+		// Lead Velocity: Growth in last 30 days vs previous 30 days
+		$last_30_days = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}leads WHERE created_at >= DATE_SUB(%s, INTERVAL 30 DAY)", $now ) );
+		$prev_30_days = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$prefix}leads WHERE created_at BETWEEN DATE_SUB(%s, INTERVAL 60 DAY) AND DATE_SUB(%s, INTERVAL 30 DAY)", $now, $now ) );
+
+		$velocity = 0;
+		if ( $prev_30_days > 0 ) {
+			$velocity = round( ( ( $last_30_days - $prev_30_days ) / $prev_30_days ) * 100, 1 );
+		} elseif ( $last_30_days > 0 ) {
+			$velocity = 100; // First month growth
+		}
+
+		$total_leads = $wpdb->get_var( "SELECT COUNT(*) FROM {$prefix}leads" );
+		$conversion_rate = $total_leads > 0 ? round( ( $qualified_count / $total_leads ) * 100, 1 ) : 0;
+
+		return array(
+			'pipeline_value'  => (float) $pipeline_value,
+			'lead_velocity'   => (float) $velocity,
+			'conversion_rate' => (float) $conversion_rate,
+		);
+	}
+
 	public static function get_top_performing_template() {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
@@ -157,12 +191,12 @@ class LeadFlow_Analytics {
 			LIMIT 5", ARRAY_A );
 
 		// Pending tasks
-		$pending_tasks = $wpdb->get_results( "
+		$pending_tasks = $wpdb->get_results( $wpdb->prepare( "
 			SELECT l.id, l.business_name, l.status, CONCAT('Pending task: ', t.description) as reason
 			FROM {$prefix}leads l
 			JOIN {$prefix}tasks t ON l.id = t.lead_id
-			WHERE t.status = 'pending' AND t.due_date <= NOW()
-			LIMIT 5", ARRAY_A );
+			WHERE t.status = 'pending' AND t.due_date <= %s
+			LIMIT 5", current_time( 'mysql' ) ), ARRAY_A );
 
 		return array(
 			'leads' => array_merge( $replied_no_followup, $failed_scrapes, $pending_tasks ),
@@ -181,7 +215,7 @@ class LeadFlow_Analytics {
 		global $wpdb;
 		$prefix = $wpdb->prefix . 'leadflow_';
 
-		$results = $wpdb->get_results( "
+		$results = $wpdb->get_results( $wpdb->prepare( "
 			SELECT
 				CASE
 					WHEN content LIKE '%Sentiment: Positive%' THEN 'Positive'
@@ -192,8 +226,8 @@ class LeadFlow_Analytics {
 				COUNT(*) as count
 			FROM {$prefix}lead_notes
 			WHERE content LIKE 'Inbound Reply%'
-			AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-			GROUP BY sentiment", ARRAY_A );
+			AND created_at >= DATE_SUB(%s, INTERVAL 30 DAY)
+			GROUP BY sentiment", current_time( 'mysql' ) ), ARRAY_A );
 
 		return $results;
 	}

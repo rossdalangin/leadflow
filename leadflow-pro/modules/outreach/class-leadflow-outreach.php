@@ -187,7 +187,7 @@ class LeadFlow_Outreach {
 		$current_hour = (int) current_time( 'H' );
 		$is_weekend   = in_array( current_time( 'w' ), array( 0, 6 ) );
 
-		$items = $wpdb->get_results( "SELECT * FROM {$prefix}sending_queue WHERE status = 'Scheduled' AND scheduled_at <= NOW() LIMIT 20" );
+		$items = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}sending_queue WHERE status = 'Scheduled' AND scheduled_at <= %s LIMIT 20", current_time( 'mysql' ) ) );
 
 		foreach ( $items as $item ) {
 			$campaign = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaigns WHERE id = %d", $item->campaign_id ) );
@@ -201,8 +201,9 @@ class LeadFlow_Outreach {
 
 				// Respect daily limits
 				$sent_today = $wpdb->get_var( $wpdb->prepare(
-					"SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND DATE(created_at) = CURDATE()",
-					$campaign->id
+					"SELECT COUNT(*) FROM {$prefix}email_log WHERE campaign_id = %d AND DATE(created_at) = %s",
+					$campaign->id,
+					current_time( 'Y-m-d' )
 				) );
 				if ( $sent_today >= $campaign->daily_limit ) continue;
 			}

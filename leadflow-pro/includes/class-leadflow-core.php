@@ -135,13 +135,20 @@ class LeadFlow_Core {
 		/**
 		 * LeadFlow Job Scheduler
 		 *
-		 * We use standard WP-Cron hooks here, but the architecture is 100% compatible
-		 * with Action Scheduler for high-volume enterprise environments.
+		 * We prioritize Action Scheduler if available, falling back to WP-Cron.
 		 */
-		$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
-		$this->loader->add_action( 'leadflow_process_auto_discovery', 'LeadFlow_Discovery', 'process_auto_discovery' );
-		$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
-		$this->loader->add_action( 'leadflow_process_sending_queue', 'LeadFlow_Outreach', 'process_sending_queue' );
+		if ( function_exists( 'as_enqueue_async_action' ) ) {
+			$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
+			$this->loader->add_action( 'leadflow_process_auto_discovery', 'LeadFlow_Discovery', 'process_auto_discovery' );
+			$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
+			$this->loader->add_action( 'leadflow_process_sending_queue', 'LeadFlow_Outreach', 'process_sending_queue' );
+		} else {
+			$this->loader->add_action( 'leadflow_process_scraper_queue', 'LeadFlow_Scraper', 'process_batch' );
+			$this->loader->add_action( 'leadflow_process_auto_discovery', 'LeadFlow_Discovery', 'process_auto_discovery' );
+			$this->loader->add_action( 'leadflow_process_campaigns', 'LeadFlow_Outreach', 'process_campaigns' );
+			$this->loader->add_action( 'leadflow_process_sending_queue', 'LeadFlow_Outreach', 'process_sending_queue' );
+		}
+
 		$this->loader->add_action( 'leadflow_poll_inbox', 'LeadFlow_Email', 'poll_inbox' );
 		$this->loader->add_action( 'leadflow_check_usage', $this, 'check_ai_usage_alerts' );
 		$this->loader->add_action( 'phpmailer_init', 'LeadFlow_Email', 'configure_smtp' );
@@ -211,7 +218,7 @@ class LeadFlow_Core {
 				$used = $wpdb->get_var( $wpdb->prepare( "SELECT SUM(tokens_used) FROM {$prefix}ai_usage WHERE provider = %s", $provider ) );
 
 				if ( $used >= ( $budget * 0.8 ) ) {
-					echo '<div class="notice notice-warning"><p><strong>LeadFlow Pro:</strong> You have consumed ' . $used . ' ' . ucfirst( $provider ) . ' tokens (80% of your budget). Consider upgrading to Pro for unlimited AI.</p></div>';
+					echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'LeadFlow Pro:', 'leadflow-pro' ) . '</strong> ' . sprintf( esc_html__( 'You have consumed %1$s %2$s tokens (80%% of your budget). Consider upgrading to Pro for unlimited AI.', 'leadflow-pro' ), esc_html( $used ), esc_html( ucfirst( $provider ) ) ) . '</p></div>';
 				}
 			}
 		}
@@ -385,12 +392,12 @@ class LeadFlow_Core {
 	}
 
 	public function maybe_redirect_to_wizard() {
-		if ( ! get_option( 'leadflow_setup_complete' ) && ! isset( $_GET['page'] ) || ( isset($_GET['page']) && $_GET['page'] !== 'leadflow-setup' && strpos($_GET['page'], 'leadflow-') !== false ) ) {
-			if ( current_user_can( 'manage_options' ) && ! get_option( 'leadflow_setup_complete' ) && ( !isset($_GET['page']) || $_GET['page'] !== 'leadflow-setup' ) ) {
-				// Avoid loop
-				if ( isset($_GET['page']) && $_GET['page'] === 'leadflow-setup' ) return;
-				// wp_safe_redirect( admin_url( 'admin.php?page=leadflow-setup' ) );
-				// exit;
+		if ( current_user_can( 'manage_options' ) && ! get_option( 'leadflow_setup_complete' ) ) {
+			if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'leadflow-setup' ) {
+				if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+					wp_safe_redirect( admin_url( 'admin.php?page=leadflow-setup' ) );
+					exit;
+				}
 			}
 		}
 	}
