@@ -10,6 +10,7 @@
 		<a href="#whitelabel" class="nav-tab"><span class="dashicons dashicons-admin-appearance"></span> White-label</a>
 		<a href="#webhooks" class="nav-tab"><span class="dashicons dashicons-rest-api"></span> Webhooks</a>
 		<a href="#status" class="nav-tab"><span class="dashicons dashicons-performance"></span> System Status</a>
+		<a href="#logs" class="nav-tab"><span class="dashicons dashicons-list-view"></span> Logs</a>
 	</h2>
 
 	<form method="post" action="options.php" class="leadflow-settings-form">
@@ -41,6 +42,18 @@
 				<tr>
 					<th scope="row">Scraping Ethics (Crawl Delay)</th>
 					<td><input type="number" name="leadflow_crawl_delay" value="<?php echo esc_attr( get_option( 'leadflow_crawl_delay', 2 ) ); ?>" class="small-text"> seconds</td>
+				</tr>
+				<tr>
+					<th scope="row">AI Outreach Language</th>
+					<td>
+						<select name="leadflow_outreach_language">
+							<option value="English" <?php selected( 'English', get_option( 'leadflow_outreach_language', 'English' ) ); ?>>English</option>
+							<option value="Spanish" <?php selected( 'Spanish', get_option( 'leadflow_outreach_language', 'English' ) ); ?>>Spanish</option>
+							<option value="French" <?php selected( 'French', get_option( 'leadflow_outreach_language', 'English' ) ); ?>>French</option>
+							<option value="German" <?php selected( 'German', get_option( 'leadflow_outreach_language', 'English' ) ); ?>>German</option>
+						</select>
+						<p class="description">The AI will automatically write or translate your outreach into this language.</p>
+					</td>
 				</tr>
 				<tr>
 					<th scope="row">Lead Scoring Weights</th>
@@ -164,6 +177,15 @@
 						<button type="button" class="button" id="sendTestEmail">Send Test Email</button>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">Domain Deliverability</th>
+					<td>
+						<div id="domainHealthReport" style="padding:15px; background:#f9f9f9; border-radius:8px; border:1px solid #ddd;">
+							<button type="button" class="button" id="checkDomainHealth">Check SPF/DKIM/DMARC</button>
+							<div id="domainHealthResults" style="margin-top:10px; display:none;"></div>
+						</div>
+					</td>
+				</tr>
 			</table>
 
 			<h2>IMAP (Inbox Receiving)</h2>
@@ -230,6 +252,16 @@
 					</td>
 				</tr>
 			</table>
+		</div>
+
+		<div id="logs" class="settings-section" style="display:none;">
+			<h2>System Logs</h2>
+			<p class="description">Review the latest background activity, enrichment hits, and API errors.</p>
+			<table class="wp-list-table widefat fixed striped">
+				<thead><tr><th>Time</th><th>Module</th><th>Level</th><th>Message</th></tr></thead>
+				<tbody id="systemLogsBody"></tbody>
+			</table>
+			<p><button type="button" class="button" id="refreshLogsBtn">Refresh Logs</button></p>
 		</div>
 
 		<div id="status" class="settings-section" style="display:none;">

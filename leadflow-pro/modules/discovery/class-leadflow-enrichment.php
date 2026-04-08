@@ -59,6 +59,9 @@ class LeadFlow_Enrichment {
 		if ( ! empty( $enriched_data ) ) {
 			LeadFlow_CRM::update_lead( $lead_id, $enriched_data );
 			LeadFlow_CRM::add_note( $lead_id, "Lead enriched with missing data via Discovery APIs.", 0 );
+			LeadFlow_Logger::log( 'Discovery', "Successfully enriched lead ID $lead_id (domain: $domain)" );
+		} else {
+			LeadFlow_Logger::log( 'Discovery', "No enrichment data found for lead ID $lead_id", 'warning' );
 		}
 
 		return $enriched_data;

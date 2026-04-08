@@ -2251,6 +2251,70 @@
 			window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
 		});
 
+		// Check Domain Health
+		$('#checkDomainHealth').on('click', function() {
+			const btn = $(this);
+			const results = $('#domainHealthResults');
+			btn.text('Checking DNS...').prop('disabled', true);
+
+			$.ajax({
+				url: apiUrl + '/settings/domain-health',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(data) {
+					btn.text('Re-check Deliverability').prop('disabled', false);
+					results.empty().show();
+
+					let html = `<p><strong>Domain:</strong> ${data.domain}</p>`;
+					html += `<p><strong>Score:</strong> <span class="score-pill score-${data.status === 'good' ? 'green' : (data.status === 'warning' ? 'orange' : 'red')}">${data.score}%</span></p>`;
+					html += `<ul class="audit-checklist">
+						<li class="${data.spf.valid ? 'success' : 'danger'}">${data.spf.message}</li>
+						<li class="${data.dmarc.valid ? 'success' : 'danger'}">${data.dmarc.message}</li>
+						<li class="${data.dkim.valid ? 'success' : 'danger'}">${data.dkim.message}</li>
+					</ul>`;
+
+					results.html(html);
+				}
+			});
+		});
+
+		// System Logs
+		function loadSystemLogs() {
+			const tbody = $('#systemLogsBody');
+			tbody.html('<tr><td colspan="4">Loading logs...</td></tr>');
+
+			$.ajax({
+				url: apiUrl + '/settings/logs',
+				method: 'GET',
+				beforeSend: function(xhr) {
+					xhr.setRequestHeader('X-WP-Nonce', nonce);
+				},
+				success: function(logs) {
+					tbody.empty();
+					if (logs.length === 0) {
+						tbody.append('<tr><td colspan="4">No logs found.</td></tr>');
+						return;
+					}
+					logs.forEach(log => {
+						const levelClass = log.level === 'error' ? 'score-red' : 'score-green';
+						tbody.append(`
+							<tr>
+								<td>${log.created_at}</td>
+								<td><strong>${log.module}</strong></td>
+								<td><span class="score-pill ${levelClass}">${log.level}</span></td>
+								<td>${escapeHtml(log.message)}</td>
+							</tr>
+						`);
+					});
+				}
+			});
+		}
+
+		$('#refreshLogsBtn').on('click', loadSystemLogs);
+		$('a[href="#logs"]').on('click', loadSystemLogs);
+
 		// Test AI Connection
 		$('.test-ai-connection').on('click', function() {
 			const provider = $(this).data('provider');

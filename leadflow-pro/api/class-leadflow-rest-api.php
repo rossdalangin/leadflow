@@ -28,6 +28,22 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/settings/logs', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_system_logs' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/settings/domain-health', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_domain_health' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)/enrich', array(
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -509,6 +525,10 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 
+	public function get_system_logs() {
+		return rest_ensure_response( LeadFlow_Logger::get_logs() );
+	}
+
 	public function manual_audit( $request ) {
 		$id = $request['id'];
 		LeadFlow_Scraper::run_manual_audit( $id );
@@ -608,6 +628,10 @@ class LeadFlow_REST_API {
 		}
 
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_domain_health() {
+		return rest_ensure_response( LeadFlow_Deliverability::check_domain_health() );
 	}
 
 	public function ai_complete( $request ) {

@@ -203,6 +203,14 @@ class LeadFlow_DB {
 			PRIMARY KEY  (id),
 			KEY lead_id (lead_id),
 			KEY meta_key (meta_key)
+		) $charset_collate;
+		CREATE TABLE {$prefix}logs (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			level varchar(20) NOT NULL DEFAULT 'info',
+			module varchar(50) NOT NULL,
+			message text NOT NULL,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id)
 		) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

@@ -27,6 +27,8 @@ class LeadFlow_Core {
 	private function load_dependencies() {
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-loader.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-security.php';
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-logger.php';
+		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-deliverability.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-meta.php';
 		require_once LEADFLOW_PRO_PATH . 'includes/class-leadflow-license.php';
 		require_once LEADFLOW_PRO_PATH . 'database/class-leadflow-db.php';
@@ -51,6 +53,7 @@ class LeadFlow_Core {
 	}
 
 	private function define_admin_hooks() {
+		$this->loader->add_action( 'admin_init', $this, 'maybe_redirect_to_wizard' );
 		$this->loader->add_action( 'admin_init', $this, 'check_license_kill_switch' );
 		$this->loader->add_action( 'admin_footer', $this, 'display_upgrade_modal' );
 		$this->loader->add_action( 'admin_menu', $this, 'add_admin_menu' );
@@ -215,6 +218,7 @@ class LeadFlow_Core {
 
 	public function register_settings() {
 		register_setting( 'leadflow-settings-group', 'leadflow_google_places_api_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_outreach_language' );
 		register_setting( 'leadflow-settings-group', 'leadflow_hunter_api_key' );
 		register_setting( 'leadflow-settings-group', 'leadflow_clearbit_api_key' );
 		register_setting( 'leadflow-settings-group', 'leadflow_ai_provider' );
@@ -372,6 +376,21 @@ class LeadFlow_Core {
 
 	public function display_audit_report() {
 		include_once LEADFLOW_PRO_PATH . 'admin/views/audit-report.php';
+	}
+
+	public function display_setup_wizard() {
+		include_once LEADFLOW_PRO_PATH . 'admin/views/setup-wizard.php';
+	}
+
+	public function maybe_redirect_to_wizard() {
+		if ( ! get_option( 'leadflow_setup_complete' ) && ! isset( $_GET['page'] ) || ( isset($_GET['page']) && $_GET['page'] !== 'leadflow-setup' && strpos($_GET['page'], 'leadflow-') !== false ) ) {
+			if ( current_user_can( 'manage_options' ) && ! get_option( 'leadflow_setup_complete' ) && ( !isset($_GET['page']) || $_GET['page'] !== 'leadflow-setup' ) ) {
+				// Avoid loop
+				if ( isset($_GET['page']) && $_GET['page'] === 'leadflow-setup' ) return;
+				// wp_safe_redirect( admin_url( 'admin.php?page=leadflow-setup' ) );
+				// exit;
+			}
+		}
 	}
 
 	public function enqueue_styles() {

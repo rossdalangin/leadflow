@@ -37,6 +37,12 @@ class LeadFlow_AI {
 
 		$provider = isset( $context['provider'] ) ? $context['provider'] : self::get_active_provider();
 
+		// Multi-language support: if a target language is specified, wrap the prompt
+		$target_lang = get_option( 'leadflow_outreach_language', 'English' );
+		if ( 'English' !== $target_lang && isset( $context['feature'] ) && 'email_writer' === $context['feature'] ) {
+			$prompt = "Write the following in $target_lang: " . $prompt;
+		}
+
 		// Pro gate for switching providers
 		if ( $provider !== 'openai' && ! LeadFlow_License::is_pro() ) {
 			return 'Switching AI providers is a Pro feature.';
@@ -45,13 +51,21 @@ class LeadFlow_AI {
 		switch ( $provider ) {
 			case 'openai':
 				require_once LEADFLOW_PRO_PATH . 'modules/ai/class-leadflow-ai-openai.php';
-				return LeadFlow_AI_OpenAI::complete( $prompt, $context );
+				$result = LeadFlow_AI_OpenAI::complete( $prompt, $context );
+				break;
 			case 'gemini':
 				require_once LEADFLOW_PRO_PATH . 'modules/ai/class-leadflow-ai-gemini.php';
-				return LeadFlow_AI_Gemini::complete( $prompt, $context );
+				$result = LeadFlow_AI_Gemini::complete( $prompt, $context );
+				break;
 			default:
 				return 'No AI provider selected or configured.';
 		}
+
+		if ( strpos( $result, 'failed' ) !== false || strpos( $result, 'Error' ) !== false ) {
+			LeadFlow_Logger::error( 'AI', "Request failed for $provider: $result" );
+		}
+
+		return $result;
 	}
 
 	/**
