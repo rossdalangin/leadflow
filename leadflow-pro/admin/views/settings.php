@@ -363,6 +363,13 @@
 			<p class="description">Enter your license key to unlock unlimited leads, advanced AI tools, Kanban views, and more.</p>
 			<table class="form-table">
 				<tr>
+					<th scope="row">License Server URL</th>
+					<td>
+						<input type="url" name="leadflow_license_server_url" value="<?php echo esc_attr( get_option( 'leadflow_license_server_url', 'https://license.leadflowpro.com/wp-json/lfm/v1' ) ); ?>" class="regular-text" placeholder="https://your-license-server.com/wp-json/lfm/v1">
+						<p class="description">The API endpoint of your LeadFlow License Manager installation.</p>
+					</td>
+				</tr>
+				<tr>
 					<th scope="row">License Key</th>
 					<td>
 						<input type="text" name="leadflow_license_key" value="<?php echo esc_attr( LeadFlow_Security::get_decrypted_option( 'leadflow_license_key' ) ); ?>" class="regular-text">

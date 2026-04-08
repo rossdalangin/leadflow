@@ -13,7 +13,10 @@ class LeadFlow_License {
 
 	private static $license_option = 'leadflow_license_key';
 	private static $license_status = 'leadflow_license_status';
-	private static $server_url     = 'https://license.leadflowpro.com/wp-json/lfm/v1'; // Default placeholder
+
+	private static function get_server_url() {
+		return get_option( 'leadflow_license_server_url', 'https://license.leadflowpro.com/wp-json/lfm/v1' );
+	}
 
 	/**
 	 * Check if the current user has access to Pro features.
@@ -43,7 +46,7 @@ class LeadFlow_License {
 	 * Activate license key against the remote LeadFlow License Manager.
 	 */
 	public static function validate_license( $license_key ) {
-		$response = wp_remote_post( self::$server_url . '/activate', array(
+		$response = wp_remote_post( self::get_server_url() . '/activate', array(
 			'body' => array(
 				'license_key' => $license_key,
 				'domain'      => get_site_url(),
@@ -71,7 +74,7 @@ class LeadFlow_License {
 	 * Internal validation check (periodic).
 	 */
 	private static function remote_validate( $license_key ) {
-		$response = wp_remote_post( self::$server_url . '/validate', array(
+		$response = wp_remote_post( self::get_server_url() . '/validate', array(
 			'body' => array(
 				'license_key' => $license_key,
 				'domain'      => get_site_url(),

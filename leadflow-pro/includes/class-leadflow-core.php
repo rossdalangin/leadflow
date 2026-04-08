@@ -233,6 +233,7 @@ class LeadFlow_Core {
 		register_setting( 'leadflow-settings-group', 'leadflow_openai_api_key' );
 		register_setting( 'leadflow-settings-group', 'leadflow_gemini_api_key' );
 		register_setting( 'leadflow-settings-group', 'leadflow_license_key' );
+		register_setting( 'leadflow-settings-group', 'leadflow_license_server_url' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_host' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_port' );
 		register_setting( 'leadflow-settings-group', 'leadflow_smtp_user' );

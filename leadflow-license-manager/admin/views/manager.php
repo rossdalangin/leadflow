@@ -14,6 +14,13 @@
 		<div class="card"><h3>Activated Domains</h3><p style="font-size:2rem; font-weight:bold; color:blue;"><?php echo $activated_domains; ?></p></div>
 	</div>
 
+	<div class="card developer-info" style="margin-bottom: 30px; border-left: 4px solid #6366f1;">
+		<h3>🚀 API Connectivity Details</h3>
+		<p>Use these details to connect your LeadFlow Pro client plugins to this server:</p>
+		<p><strong>REST API Endpoint:</strong> <code><?php echo esc_url( get_rest_url( null, 'lfm/v1' ) ); ?></code></p>
+		<p class="description">Paste this URL into the "License Server URL" field in the LeadFlow Pro client settings.</p>
+	</div>
+
 	<div class="leadflow-tabs" style="display:flex; gap:10px; margin-bottom:20px;">
 		<button class="button tab-btn active" data-target="licenseSection">Licenses</button>
 		<button class="button tab-btn" data-target="logSection">Activity Logs</button>
@@ -62,6 +69,10 @@
 		$wpdb->delete( $wpdb->prefix . 'lfm_licenses', array( 'id' => $_GET['delete_license'] ) );
 	}
 
+	if (isset( $_GET['reset_domain'] ) && check_admin_referer( 'reset_license_' . $_GET['reset_domain'] ) ) {
+		$wpdb->update( $wpdb->prefix . 'lfm_licenses', array( 'domain' => null, 'activated_at' => null ), array( 'id' => $_GET['reset_domain'] ) );
+	}
+
 	$licenses = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}lfm_licenses ORDER BY created_at DESC" );
 	?>
 
@@ -97,6 +108,7 @@
 						<a href="<?php echo wp_nonce_url( "?page=lf-licenses&toggle_status={$l->id}&status={$l->status}", 'toggle_license_' . $l->id ); ?>" class="button button-small">
 							<?php echo $l->status === 'active' ? 'Disable' : 'Enable'; ?>
 						</a>
+						<a href="<?php echo wp_nonce_url( "?page=lf-licenses&reset_domain={$l->id}", 'reset_license_' . $l->id ); ?>" class="button button-small" title="Allow moving to a new domain">Reset Domain</a>
 						<a href="<?php echo wp_nonce_url( "?page=lf-licenses&delete_license={$l->id}", 'delete_license_' . $l->id ); ?>" class="button button-small" onclick="return confirm('Delete this license?');" style="color:#d63638;">Delete</a>
 					</td>
 				</tr>
