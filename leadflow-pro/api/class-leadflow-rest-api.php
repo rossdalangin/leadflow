@@ -29,14 +29,6 @@ class LeadFlow_REST_API {
 			),
 		) );
 
-		register_rest_route( 'leadflow/v1', '/settings/save', array(
-			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'save_settings' ),
-				'permission_callback' => array( $this, 'check_permission' ),
-			),
-		) );
-
 		register_rest_route( 'leadflow/v1', '/leads/(?P<id>\d+)', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -160,6 +152,46 @@ class LeadFlow_REST_API {
 			),
 		) );
 
+		register_rest_route( 'leadflow/v1', '/campaigns/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_campaign' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_campaign' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		// Templates
+		register_rest_route( 'leadflow/v1', '/templates', array(
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_templates' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'create_template' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
+		register_rest_route( 'leadflow/v1', '/templates/(?P<id>\d+)', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_template' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_template' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		// Inbox
 		register_rest_route( 'leadflow/v1', '/inbox', array(
 			array(
@@ -212,6 +244,14 @@ class LeadFlow_REST_API {
 		) );
 
 		// Settings & Tools
+		register_rest_route( 'leadflow/v1', '/settings/save', array(
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'save_settings' ),
+				'permission_callback' => array( $this, 'check_permission' ),
+			),
+		) );
+
 		register_rest_route( 'leadflow/v1', '/settings/logs', array(
 			array(
 				'methods'             => WP_REST_Server::READABLE,
@@ -287,12 +327,38 @@ class LeadFlow_REST_API {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			$params['assigned_to'] = get_current_user_id();
 		}
-		return rest_ensure_response( LeadFlow_CRM::get_leads( $params ) );
+
+		$leads = LeadFlow_CRM::get_leads( $params );
+
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		foreach ( $leads as &$lead ) {
+			$lead->tags = $wpdb->get_results( $wpdb->prepare(
+				"SELECT t.id, t.name FROM {$prefix}lead_tags t JOIN {$prefix}lead_tag_relationships r ON t.id = r.tag_id WHERE r.lead_id = %d",
+				$lead->id
+			) );
+		}
+
+		return rest_ensure_response( $leads );
 	}
 
 	public function get_single_lead( $request ) {
-		$lead = LeadFlow_CRM::get_leads( array( 'id' => $request['id'] ) );
-		return rest_ensure_response( ! empty( $lead ) ? $lead[0] : new WP_Error( 'not_found', 'Lead not found', array( 'status' => 404 ) ) );
+		$leads = LeadFlow_CRM::get_leads( array( 'id' => $request['id'] ) );
+		if ( empty( $leads ) ) {
+			return new WP_Error( 'not_found', 'Lead not found', array( 'status' => 404 ) );
+		}
+
+		$lead = $leads[0];
+
+		global $wpdb;
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$lead->tags = $wpdb->get_results( $wpdb->prepare(
+			"SELECT t.id, t.name FROM {$prefix}lead_tags t JOIN {$prefix}lead_tag_relationships r ON t.id = r.tag_id WHERE r.lead_id = %d",
+			$lead->id
+		) );
+
+		return rest_ensure_response( $lead );
 	}
 
 	public function create_lead( $request ) {
@@ -335,6 +401,23 @@ class LeadFlow_REST_API {
 	public function manual_audit( $request ) {
 		LeadFlow_Scraper::run_manual_audit( $request['id'] );
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function generate_lead_ai_hook( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$lead = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}leadflow_leads WHERE id = %d", $id ) );
+
+		if ( ! $lead ) {
+			return new WP_Error( 'not_found', 'Lead not found.', array( 'status' => 404 ) );
+		}
+
+		$audit_results = json_decode( $lead->audit_data, true ) ?: array();
+		$hook = LeadFlow_AI::summarize_audit( $audit_results );
+
+		LeadFlow_CRM::add_note( $id, "AI Outreach Hook: " . $hook, 0 );
+
+		return rest_ensure_response( array( 'success' => true, 'hook' => $hook ) );
 	}
 
 	public function get_tasks( $request ) {
@@ -388,9 +471,20 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'success' => true ) );
 	}
 
-	public function get_campaigns() {
+	public function get_campaigns( $request ) {
 		global $wpdb;
-		return rest_ensure_response( $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}leadflow_campaigns" ) );
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$id = $request->get_param('id');
+
+		if ( $id ) {
+			$campaign = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaigns WHERE id = %d", $id ) );
+			if ( $campaign ) {
+				$campaign->steps = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}campaign_steps WHERE campaign_id = %d ORDER BY step_order ASC", $id ) );
+			}
+			return rest_ensure_response( $campaign );
+		}
+
+		return rest_ensure_response( $wpdb->get_results( "SELECT * FROM {$prefix}campaigns" ) );
 	}
 
 	public function create_campaign( $request ) {
@@ -403,6 +497,63 @@ class LeadFlow_REST_API {
 			}
 		}
 		return rest_ensure_response( array( 'id' => $id ) );
+	}
+
+	public function update_campaign( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$params = $request->get_params();
+		$prefix = $wpdb->prefix . 'leadflow_';
+
+		$data = array();
+		if ( isset( $params['name'] ) ) $data['name'] = sanitize_text_field( $params['name'] );
+		if ( isset( $params['is_active'] ) ) $data['is_active'] = (int) $params['is_active'];
+		if ( isset( $params['status_filter'] ) ) $data['status_filter'] = sanitize_text_field( $params['status_filter'] );
+
+		if ( ! empty( $data ) ) {
+			$wpdb->update( "{$prefix}campaigns", $data, array( 'id' => $id ) );
+		}
+
+		if ( isset( $params['steps'] ) && is_array( $params['steps'] ) ) {
+			$wpdb->delete( "{$prefix}campaign_steps", array( 'campaign_id' => $id ) );
+			foreach ( $params['steps'] as $idx => $step ) {
+				LeadFlow_Outreach::add_step( $id, array_merge( $step, array( 'order' => $idx + 1 ) ) );
+			}
+		}
+
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function delete_campaign( $request ) {
+		global $wpdb;
+		$id = $request['id'];
+		$prefix = $wpdb->prefix . 'leadflow_';
+		$wpdb->delete( "{$prefix}campaigns", array( 'id' => $id ) );
+		$wpdb->delete( "{$prefix}campaign_steps", array( 'campaign_id' => $id ) );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_templates() {
+		return rest_ensure_response( LeadFlow_Templates::get_templates() );
+	}
+
+	public function create_template( $request ) {
+		$params = $request->get_params();
+		$id = LeadFlow_Templates::create_template( $params );
+		return rest_ensure_response( array( 'id' => $id ) );
+	}
+
+	public function update_template( $request ) {
+		$id = $request['id'];
+		$params = $request->get_params();
+		LeadFlow_Templates::update_template( $id, $params );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function delete_template( $request ) {
+		$id = $request['id'];
+		LeadFlow_Templates::delete_template( $id );
+		return rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function get_inbox() {
@@ -431,7 +582,6 @@ class LeadFlow_REST_API {
 
 		LeadFlow_CRM::add_note( $lead_id, "Outbound Reply: " . $message, get_current_user_id() );
 
-		// Log to email log without campaign context
 		$wpdb->insert( $wpdb->prefix . 'leadflow_email_log', array(
 			'lead_id' => $lead_id,
 			'subject' => 'Re: Your inquiry',
@@ -444,10 +594,10 @@ class LeadFlow_REST_API {
 
 	public function get_overview_analytics() {
 		return rest_ensure_response( array(
-			'status_counts' => LeadFlow_Analytics::get_leads_by_status(),
-			'source_counts' => LeadFlow_Analytics::get_leads_by_source(),
+			'status_counts'   => LeadFlow_Analytics::get_leads_by_status(),
+			'source_counts'   => LeadFlow_Analytics::get_leads_by_source(),
 			'assignee_counts' => LeadFlow_Analytics::get_leads_by_assignee(),
-			'roi' => LeadFlow_Analytics::get_roi_metrics(),
+			'roi'             => LeadFlow_Analytics::get_roi_metrics(),
 			'sentiment_pulse' => LeadFlow_Analytics::get_sentiment_pulse(),
 		) );
 	}
@@ -486,20 +636,6 @@ class LeadFlow_REST_API {
 		return rest_ensure_response( array( 'result' => $result ) );
 	}
 
-	public function get_system_logs() {
-		return rest_ensure_response( LeadFlow_Logger::get_logs() );
-	}
-
-	public function test_email( $request ) {
-		$sent = LeadFlow_Email::send( $request['email'], 'Test', 'Connectivity Test' );
-		return is_wp_error( $sent ) ? $sent : rest_ensure_response( array( 'success' => true ) );
-	}
-
-	public function test_imap() {
-		$success = LeadFlow_Email::test_imap_connectivity();
-		return is_wp_error( $success ) ? $success : rest_ensure_response( array( 'success' => true ) );
-	}
-
 	public function save_settings( $request ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error( 'rest_forbidden', 'You do not have permission to save settings.', array( 'status' => 401 ) );
@@ -517,11 +653,25 @@ class LeadFlow_REST_API {
 
 		foreach ( $params as $key => $value ) {
 			if ( in_array( $key, $allowed_options ) ) {
-				update_option( $key, $value ); // Security filter in Core handles encryption
+				update_option( $key, $value );
 			}
 		}
 
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function get_system_logs() {
+		return rest_ensure_response( LeadFlow_Logger::get_logs() );
+	}
+
+	public function test_email( $request ) {
+		$sent = LeadFlow_Email::send( $request['email'], 'Test', 'Connectivity Test' );
+		return is_wp_error( $sent ) ? $sent : rest_ensure_response( array( 'success' => true ) );
+	}
+
+	public function test_imap() {
+		$success = LeadFlow_Email::test_imap_connectivity();
+		return is_wp_error( $success ) ? $success : rest_ensure_response( array( 'success' => true ) );
 	}
 
 	public function activate_license( $request ) {

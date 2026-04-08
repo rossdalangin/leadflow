@@ -77,7 +77,7 @@
 		$(document).on('click', '.edit-template', function() {
 			const id = $(this).data('id');
 			$.ajax({
-				url: apiUrl + '/templates', // In production, get by ID
+				url: apiUrl + '/templates',
 				method: 'GET',
 				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
 				success: function(data) {
