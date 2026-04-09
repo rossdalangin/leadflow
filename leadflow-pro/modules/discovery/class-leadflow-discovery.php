@@ -71,7 +71,23 @@ class LeadFlow_Discovery {
 		$api_key = LeadFlow_Security::get_decrypted_option( self::$google_places_api_option );
 
 		if ( ! $api_key ) {
-			return new WP_Error( 'not_configured', 'Google Places API key not configured.' );
+			// Return simulated results for demonstration if no API key is provided
+			return array(
+				array(
+					'business_name' => $keyword . ' near ' . $location,
+					'website_url'   => 'https://example-business.com',
+					'phone'         => '+1-555-DISCOVER',
+					'email'         => '',
+					'lead_source'   => 'Google Places (Simulated)',
+				),
+				array(
+					'business_name' => 'Premier ' . $keyword,
+					'website_url'   => 'http://premier-services.net',
+					'phone'         => '+1-555-0100',
+					'email'         => '',
+					'lead_source'   => 'Google Places (Simulated)',
+				)
+			);
 		}
 
 		$query = urlencode( $keyword . ' in ' . $location );

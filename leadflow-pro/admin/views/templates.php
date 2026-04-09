@@ -39,28 +39,36 @@
 		const apiUrl = leadflowData.apiUrl;
 		const nonce = leadflowData.nonce;
 
+		function apiRequest(endpoint, method = 'GET', data = null) {
+			const options = {
+				url: apiUrl + endpoint,
+				method: method,
+				beforeSend: function(xhr) { xhr.setRequestHeader("X-WP-Nonce", nonce); }
+			};
+			if (data) {
+				if (method === 'GET') options.data = data;
+				else { options.data = JSON.stringify(data); options.contentType = 'application/json'; }
+			}
+			return $.ajax(options);
+		}
+
 		function fetchTemplates() {
-			$.ajax({
-				url: apiUrl + '/templates',
-				method: 'GET',
-				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
-				success: function(data) {
-					const tbody = $('#templateListBody');
-					tbody.empty();
-					data.forEach(t => {
-						tbody.append(`
-							<tr>
-								<td><strong>${t.name}</strong></td>
-								<td>${t.subject}</td>
-								<td>${t.created_at}</td>
-								<td>
-									<button class="button button-small edit-template" data-id="${t.id}">Edit</button>
-									<button class="button button-small delete-template" data-id="${t.id}" style="color:#d63638;">Delete</button>
-								</td>
-							</tr>
-						`);
-					});
-				}
+			apiRequest('/templates').done(function(data) {
+				const tbody = $('#templateListBody');
+				tbody.empty();
+				(data || []).forEach(t => {
+					tbody.append(`
+						<tr>
+							<td><strong>${t.name}</strong></td>
+							<td>${t.subject}</td>
+							<td>${t.created_at}</td>
+							<td>
+								<button class="button button-small edit-template" data-id="${t.id}">Edit</button>
+								<button class="button button-small delete-template" data-id="${t.id}" style="color:#d63638;">Delete</button>
+							</td>
+						</tr>
+					`);
+				});
 			});
 		}
 
@@ -76,20 +84,15 @@
 
 		$(document).on('click', '.edit-template', function() {
 			const id = $(this).data('id');
-			$.ajax({
-				url: apiUrl + '/templates',
-				method: 'GET',
-				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
-				success: function(data) {
-					const t = data.find(x => x.id == id);
-					if (t) {
-						$('#templateId').val(t.id);
-						$('#templateName').val(t.name);
-						$('#templateSubject').val(t.subject);
-						$('#templateBody').val(t.body);
-						$('#templateModalTitle').text('Edit Template');
-						$('#templateModal').fadeIn();
-					}
+			apiRequest('/templates').done(function(data) {
+				const t = (data || []).find(x => x.id == id);
+				if (t) {
+					$('#templateId').val(t.id);
+					$('#templateName').val(t.name);
+					$('#templateSubject').val(t.subject);
+					$('#templateBody').val(t.body);
+					$('#templateModalTitle').text('Edit Template');
+					$('#templateModal').fadeIn();
 				}
 			});
 		});
@@ -103,28 +106,21 @@
 				body: $('#templateBody').val()
 			};
 
-			const url = id ? apiUrl + '/templates/' + id : apiUrl + '/templates';
-			$.ajax({
-				url: url,
-				method: 'POST',
-				data: data,
-				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
-				success: function() {
-					$('#templateModal').fadeOut();
-					fetchTemplates();
-				}
-			});
+			const url = id ? '/templates/' + id : '/templates';
+			const btn = $(this).find('button[type="submit"]');
+			btn.text('Saving...').prop('disabled', true);
+
+			apiRequest(url, 'POST', data).done(function() {
+				$('#templateModal').fadeOut();
+				fetchTemplates();
+			}).fail(() => alert('Failed to save template.'))
+			.always(() => btn.text('Save Template').prop('disabled', false));
 		});
 
 		$(document).on('click', '.delete-template', function() {
 			if (!confirm('Delete this template?')) return;
 			const id = $(this).data('id');
-			$.ajax({
-				url: apiUrl + '/templates/' + id,
-				method: 'DELETE',
-				beforeSend: function(xhr) { xhr.setRequestHeader('X-WP-Nonce', nonce); },
-				success: function() { fetchTemplates(); }
-			});
+			apiRequest('/templates/' + id, 'DELETE').done(fetchTemplates);
 		});
 	});
 	</script>

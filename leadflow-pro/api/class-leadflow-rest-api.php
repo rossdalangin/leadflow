@@ -154,7 +154,7 @@ class LeadFlow_REST_API {
 
 		register_rest_route( 'leadflow/v1', '/campaigns/(?P<id>\d+)', array(
 			array(
-				'methods'             => WP_REST_Server::EDITABLE,
+				'methods'             => array( 'POST', 'PUT', 'PATCH' ),
 				'callback'            => array( $this, 'update_campaign' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
@@ -181,7 +181,7 @@ class LeadFlow_REST_API {
 
 		register_rest_route( 'leadflow/v1', '/templates/(?P<id>\d+)', array(
 			array(
-				'methods'             => WP_REST_Server::EDITABLE,
+				'methods'             => array( 'POST', 'PUT', 'PATCH' ),
 				'callback'            => array( $this, 'update_template' ),
 				'permission_callback' => array( $this, 'check_permission' ),
 			),
