@@ -189,7 +189,7 @@ class LeadFlow_Outreach {
 
 		$items = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$prefix}sending_queue WHERE status = 'Scheduled' AND scheduled_at <= %s LIMIT 20", current_time( 'mysql' ) ) );
 
-		foreach ( $items as $item ) {
+		foreach ( $items as $idx => $item ) {
 			$campaign = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$prefix}campaigns WHERE id = %d", $item->campaign_id ) );
 
 			if ( $campaign ) {
@@ -219,7 +219,7 @@ class LeadFlow_Outreach {
 			if ( 'email' === $step->step_type ) {
 				self::send_step_email( $lead, $step, $item->campaign_id );
 				// Randomized jitter between sends to avoid bot detection (10-30 seconds)
-				if ( count($items) > 1 ) sleep( rand( 10, 30 ) );
+				if ( $idx < count($items) - 1 ) sleep( rand( 10, 30 ) );
 			} else {
 				self::create_manual_task( $lead, $step, $item->campaign_id );
 			}

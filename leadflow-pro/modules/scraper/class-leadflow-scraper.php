@@ -236,6 +236,10 @@ class LeadFlow_Scraper {
 		// CMS Detection
 		if ( stripos( $html, 'wp-content' ) !== false || stripos( $html, 'wp-includes' ) !== false ) {
 			$results['cms'] = 'WordPress';
+		} elseif ( stripos( $html, 'myshopify.com' ) !== false || stripos( $html, 'cdn.shopify.com' ) !== false ) {
+			$results['cms'] = 'Shopify';
+		} elseif ( stripos( $html, 'static1.squarespace.com' ) !== false ) {
+			$results['cms'] = 'Squarespace';
 		}
 
 		// eCommerce Detection
