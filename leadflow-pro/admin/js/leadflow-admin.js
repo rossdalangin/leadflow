@@ -140,9 +140,21 @@
 
 		$(document).on('click', '.view-lead', function() {
 			const id = $(this).data('id');
-			window.currentLeadId = id;
-			openLeadModal(id);
+			if ($('#leadDetailModal').length) {
+				window.currentLeadId = id;
+				openLeadModal(id);
+			} else {
+				window.location.href = leadflowData.adminUrl + 'admin.php?page=leadflow-leads&lead_id=' + id;
+			}
 		});
+
+		// Auto-open lead if ID in URL
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.has('lead_id') && $('#leadDetailModal').length) {
+			const id = urlParams.get('lead_id');
+			window.currentLeadId = id;
+			setTimeout(() => openLeadModal(id), 500);
+		}
 
 		$('.ai-summarize-btn').on('click', function() {
 			const id = window.currentLeadId || $('.inbox-item.active').data('id');
@@ -199,6 +211,25 @@
 			const id = $(this).data('id');
 			const status = $(this).val();
 			updateLeadStatus(id, status);
+		});
+
+		$('#generateReportBtn').on('click', function() {
+			const id = window.currentLeadId;
+			if (!id) return;
+			window.open(leadflowData.adminUrl + 'admin.php?page=leadflow-audit-report&lead_id=' + id, '_blank');
+		});
+
+		$('#saveProposalBtn').on('click', function() {
+			const id = window.currentLeadId;
+			const url = $('#proposalUrl').val();
+			if (!id) return;
+
+			const btn = $(this);
+			btn.text('Saving...').prop('disabled', true);
+			apiRequest('/leads/' + id, 'POST', { proposal_url: url }).done(() => {
+				alert('Proposal URL saved!');
+				fetchLeads();
+			}).always(() => btn.text('Save Proposal').prop('disabled', false));
 		});
 
 		/**
@@ -264,8 +295,17 @@
 			apiRequest(endpoint, 'GET', ajaxData).done(function(data) {
 				renderDiscoveryResults(data);
 				$('#discoveryResults').fadeIn();
+				if (!ajaxData.api_key && source === 'google') {
+					$('#discoveryResults').prepend('<div class="notice notice-warning inline"><p><strong>Demo Mode:</strong> You are seeing simulated results because no Google Places API key is configured.</p></div>');
+				}
 			}).fail(() => alert('Discovery failed.'))
 			.always(() => btn.text('Start Discovery').prop('disabled', false));
+		});
+
+		$('#clearDiscoveryResults').on('click', function() {
+			$('#discoveryResultsBody').empty();
+			$('#discoveryResults').fadeOut();
+			window.currentDiscoveryResults = [];
 		});
 
 		function renderDiscoveryResults(leads) {
@@ -372,6 +412,38 @@
 			renderCharts();
 			loadRecentActivity();
 			loadCampaignStats();
+			loadDailyPulse();
+		}
+
+		function loadDailyPulse() {
+			apiRequest('/analytics/overview', 'GET').done(function(data) {
+				const pulseTbody = $('#pulseTableBody');
+				const queuePulse = $('#queuePulseStats');
+				if (!pulseTbody.length || !data.daily_pulse) return;
+
+				pulseTbody.empty();
+				if (!data.daily_pulse.leads.length) {
+					pulseTbody.append('<tr><td colspan="4" style="text-align:center;">All systems normal. No critical leads.</td></tr>');
+				} else {
+					data.daily_pulse.leads.forEach(lead => {
+						pulseTbody.append(`
+							<tr>
+								<td><strong>${escapeHtml(lead.business_name)}</strong></td>
+								<td><span class="status-badge">${lead.status}</span></td>
+								<td>${escapeHtml(lead.reason)}</td>
+								<td><button class="button button-small view-lead" data-id="${lead.id}">Fix Now</button></td>
+							</tr>
+						`);
+					});
+				}
+
+				if (queuePulse.length) {
+					const stats = data.daily_pulse.queue_stats;
+					queuePulse.html(`
+						Scraper: ${stats.scraper} pending | Outreach: ${stats.outreach} scheduled | Tasks: ${stats.tasks} pending
+					`);
+				}
+			});
 		}
 
 		function loadRecentActivity() {
@@ -718,14 +790,42 @@
 							<p><strong>SSL:</strong> ${audit.has_ssl ? '✅ Secure' : '❌ Unsecured'}</p>
 							<p><strong>Mobile:</strong> ${audit.is_mobile_responsive ? '✅ Responsive' : '❌ Not Responsive'}</p>
 							<p><strong>Load Time:</strong> ${audit.load_time}s</p>
+							<button class="button button-small manual-audit" data-id="${id}" style="margin-top:10px;">Regenerate Audit</button>
 						</div>
 					`);
 				} else {
-					sidebar.append('<p>No audit data yet. Click Audit to start.</p>');
+					sidebar.append('<p>No audit data yet.</p><button class="button button-small manual-audit" data-id="${id}">Start Audit Now</button>');
 				}
 
+				updateLeadTimeline(lead);
 				loadThreadInModal(id);
 			});
+		}
+
+		function updateLeadTimeline(lead) {
+			const steps = $('.timeline-step');
+			const status = lead.status;
+			const audit = safeJsonParse(lead.audit_data);
+
+			steps.find('.step-icon').css({'background': '#fff', 'border-color': '#cbd5e1'});
+
+			// Step 1: Discovered (Always active)
+			steps.filter('[data-step="New"]').find('.step-icon').css({'background': '#6366f1', 'color': '#fff', 'border-color': '#6366f1'});
+
+			// Step 2: Audited
+			if (audit.cms) {
+				steps.filter('[data-step="Audited"]').find('.step-icon').css({'background': '#6366f1', 'color': '#fff', 'border-color': '#6366f1'});
+			}
+
+			// Step 3: Contacted
+			if (['Contacted', 'Replied', 'Qualified', 'Proposal Sent', 'Closed Won'].includes(status)) {
+				steps.filter('[data-step="Contacted"]').find('.step-icon').css({'background': '#6366f1', 'color': '#fff', 'border-color': '#6366f1'});
+			}
+
+			// Step 4: Qualified
+			if (['Qualified', 'Proposal Sent', 'Closed Won'].includes(status)) {
+				steps.filter('[data-step="Qualified"]').find('.step-icon').css({'background': '#10b981', 'color': '#fff', 'border-color': '#10b981'});
+			}
 		}
 
 		function loadThreadInModal(leadId) {
@@ -754,14 +854,15 @@
 			btn.text('✨ AI Drafting...').prop('disabled', true);
 
 			apiRequest('/ai/complete', 'POST', { prompt: 'Suggest reply', context: { feature: 'reply_suggestion', lead_id: leadId } }).done(res => {
-				$('#aiDraftContent').text(res.result);
+				const suggestion = res.result || 'AI was unable to generate a suggestion.';
+				$('#aiDraftContent').html(escapeHtml(suggestion).replace(/\n/g, '<br>'));
 				$('#aiDraftBox').fadeIn();
 			}).fail(() => alert('AI suggestion failed.'))
 			.always(() => btn.text('✨ AI: Re-Draft').prop('disabled', false));
 		});
 
 		$('#useAiDraftBtn').on('click', function() {
-			$('#replyText').val($('#aiDraftContent').text());
+			$('#replyText').val($('#aiDraftContent').text().replace(/<br>/g, '\n'));
 			$('#aiDraftBox').fadeOut();
 		});
 
@@ -812,6 +913,46 @@
 		$(document).on('click', '.complete-task', function() {
 			const id = $(this).data('id');
 			apiRequest('/tasks/' + id, 'POST', { status: 'completed' }).done(loadTasks);
+		});
+
+		/**
+		 * GLOBAL TASKS PAGE
+		 */
+		function fetchGlobalTasks() {
+			const status = $('#taskStatusFilter').val();
+			apiRequest('/tasks', 'GET', { status: status }).done(function(tasks) {
+				const tbody = $('#globalTasksBody');
+				if (!tbody.length) return;
+				tbody.empty();
+				if (tasks.length === 0) {
+					tbody.append('<tr><td colspan="6">No tasks found.</td></tr>');
+					return;
+				}
+				tasks.forEach(t => {
+					tbody.append(`
+						<tr>
+							<td>${t.due_date}</td>
+							<td><strong>${t.business_name}</strong></td>
+							<td><span class="status-badge status-contacted">${t.task_type}</span></td>
+							<td>${t.description}</td>
+							<td>${t.assignee_name || 'Unassigned'}</td>
+							<td>
+								<button class="button button-small toggle-task-global" data-id="${t.id}" data-status="${t.status}">${t.status === 'pending' ? 'Complete' : 'Re-open'}</button>
+								<button class="button button-small view-lead" data-id="${t.lead_id}">Go to Lead</button>
+							</td>
+						</tr>
+					`);
+				});
+			});
+		}
+
+		if ($('#globalTasksBody').length) fetchGlobalTasks();
+		$('#applyTaskFilters').on('click', fetchGlobalTasks);
+
+		$(document).on('click', '.toggle-task-global', function() {
+			const id = $(this).data('id');
+			const newStatus = $(this).data('status') === 'pending' ? 'completed' : 'pending';
+			apiRequest('/tasks/' + id, 'POST', { status: newStatus }).done(fetchGlobalTasks);
 		});
 
 		$('#testImapBtn').on('click', function() {

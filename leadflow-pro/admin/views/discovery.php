@@ -60,6 +60,7 @@
 		</table>
 		<div class="bulk-actions" style="margin-top: 15px;">
 			<button class="button button-primary" id="importSelectedLeads">Import Selected as CRM Leads</button>
+			<button class="button" id="clearDiscoveryResults">Clear Results</button>
 			<button class="button" id="exportDiscoveryResults">Export Results to CSV</button>
 		</div>
 	</div>
